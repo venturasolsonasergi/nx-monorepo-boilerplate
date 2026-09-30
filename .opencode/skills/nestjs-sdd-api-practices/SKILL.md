@@ -1,6 +1,6 @@
 ---
 name: nestjs-sdd-api-practices
-description: "Use when implementing, reviewing, or refactoring NestJS API code in this boilerplate. Applies to controllers, modules, use cases, repositories, Prisma adapters, OpenAPI-driven changes, and microservice boundaries under the SDD workflow."
+description: 'Use when implementing, reviewing, or refactoring NestJS API code in this boilerplate. Applies to controllers, modules, use cases, repositories, Prisma adapters, OpenAPI-driven changes, and microservice boundaries under the SDD workflow.'
 ---
 
 # NestJS SDD API Practices
@@ -20,16 +20,18 @@ workflow, dependency rules, or microservice boundaries.
 
 ## Source of Truth
 
-- `src/<service>/specs/openapi.yaml` is the source of truth
-- Implement feature code only after the spec is defined and reviewed
+- `openspec/specs/<service>/<capability>/spec.md` is the persistent behavioral contract
+- `openspec/changes/<change>/specs/<service>/<capability>/spec.md` records a change delta
+- `libs/<service>/specs/openapi.yaml` is the HTTP contract and must agree with those requirements
+- Implement behavior only after the OpenSpec change is reviewed and approved
 
 Preferred flow:
 
-1. `/enrich-us` updates the DDD context
-2. `/new` updates OpenAPI
-3. `/ff` validates the OpenAPI source
-4. `/apply` materializes implementation changes
-5. `/verify` validates architecture and contracts
+1. `/opsx-explore` clarifies behavior and affected service capabilities when needed
+2. `/opsx-propose` drafts requirements, design, and implementation tasks
+3. Review the artifacts, then validate the change and each affected OpenAPI contract
+4. `/opsx-apply` implements the approved tasks; run service-scoped tests and repo-wide architecture checks
+5. `/opsx-verify` reports implementation/spec mismatches; `/opsx-archive` syncs and archives after all gates pass
 
 ## Non-Negotiable Rules
 
@@ -61,9 +63,9 @@ Forbidden in `domain/`:
 
 One microservice must not import another microservice's `domain/`.
 
-### `generated-no-manual-edits`
+### `openapi-contract-sync`
 
-Do not create generated spec artifacts outside the OpenAPI source.
+Keep the service OpenAPI contract aligned with observable behavior. OpenSpec does not generate application code in this repository.
 
 ## Implementation Rules
 
@@ -118,13 +120,13 @@ Use NestJS as an adapter layer, not as the center of the design.
 
 Before considering a change done, verify:
 
-1. The OpenAPI spec was updated first when behavior changed
-2. Controllers remain thin
-3. Business rules are not in NestJS adapters
-4. Prisma stays in infrastructure
-5. No forbidden imports were introduced across layers
-6. No generated file was edited manually
-7. `/verify` can validate the slice without architectural drift
+1. The OpenSpec change was reviewed and approved before implementation.
+2. The affected OpenAPI contract matches the approved behavior requirements.
+3. Controllers remain thin and business rules are not in NestJS adapters.
+4. Prisma stays in infrastructure and application/domain imports respect layer rules.
+5. No forbidden cross-service domain imports were introduced.
+6. OpenSpec-generated workflow files were not edited manually.
+7. Service contract tests, OpenAPI validation, repo-wide architecture checks, and OpenSpec verification pass.
 
 ## Anti-Patterns
 
@@ -134,7 +136,7 @@ Avoid these patterns:
 - Importing Prisma from `application/` or `domain/`
 - Importing NestJS decorators or exceptions into `domain/`
 - Using Zod in `domain/`
-- Editing generated spec artifacts manually
+- Editing OpenSpec-generated workflow files manually
 - Skipping the spec step and coding from assumptions
 - Bypassing repository ports with direct infrastructure access from application
 
@@ -142,10 +144,10 @@ Avoid these patterns:
 
 Use these files as the local pattern baseline:
 
-- `src/orders/infrastructure/orders.controller.ts`
-- `src/orders/application/use-cases/create-order.use-case.ts`
-- `src/orders/application/order.repository.ts`
-- `src/orders/infrastructure/orders.repository.prisma.ts`
+- `libs/orders/infrastructure/orders.controller.ts`
+- `libs/orders/application/create-order.use-case.ts`
+- `libs/orders/application/order.repository.ts`
+- `libs/orders/infrastructure/orders.repository.prisma.ts`
 - `.agents/project-context.md`
 - `docs/sdd-flow.md`
 - `architecture/rules.json`

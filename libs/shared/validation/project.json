@@ -1,0 +1,7 @@
+{
+  "name": "shared-validation",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/shared/validation",
+  "tags": ["scope:shared", "platform:server"]
+}

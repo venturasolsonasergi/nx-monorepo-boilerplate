@@ -8,7 +8,7 @@ const report = [];
 let failed = false;
 
 for (const service of services) {
-  const base = path.join(root, 'src', service, 'domain');
+  const base = path.join(root, 'libs', service, 'domain');
   const domainFiles = fs.existsSync(base)
     ? fs.readdirSync(base).filter((file) => file.endsWith('.ts'))
     : [];

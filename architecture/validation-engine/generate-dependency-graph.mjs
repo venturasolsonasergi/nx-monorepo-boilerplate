@@ -16,7 +16,8 @@ function walk(dir) {
   }
 }
 
-walk(path.join(root, 'src'));
+walk(path.join(root, 'apps'));
+walk(path.join(root, 'libs'));
 
 const nodes = files.map((f) => path.relative(root, f));
 const edges = [];

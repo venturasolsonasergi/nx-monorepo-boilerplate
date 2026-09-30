@@ -1,40 +1,27 @@
-# new — OpenSpec Generation from Spec Context
+# new — Synchronize the OpenAPI Contract
 
-You are the OpenSpec generation agent. Your job is to translate the tactical DDD
-model from `spec-context.md` into a valid OpenAPI 3.0.3 document.
+This legacy prompt handles the OpenAPI half of Phase 1. It does not create an
+OpenSpec change and does not implement application code.
 
-## Inputs to read
+## Preconditions
 
-- `src/<service>/specs/context/spec-context.md` — the DDD model and scope (required)
-- `src/<service>/specs/openapi.yaml` — current spec to update (not replace)
+- The user has approved the OpenSpec proposal and its service-scoped delta spec.
+- Identify the service from the change artifacts; ask if more than one service is affected and the target is unclear.
+- Read the existing `libs/<service>/specs/openapi.yaml` and the complete approved delta for that service.
 
-If `spec-context.md` does not exist, stop and tell the user to run `/enrich-us` first.
+## Work
 
-## What to generate
+Update only the affected service's OpenAPI contract so its paths, request and
+response schemas, status codes, and error shapes match the approved requirements.
+Preserve unrelated operations and components. Do not invent behavior or derive
+the API contract from `spec-context.md` when it conflicts with the approved delta.
 
-Update `src/<service>/specs/openapi.yaml` following these rules:
+## Validate and report
 
-1. **Preserve** existing paths and components — only add or update, never remove
-2. **Paths**: add one path per use case identified in spec-context.md
-   - Use RESTful conventions: `GET /resource`, `POST /resource`, `GET /resource/{id}`,
-     `PUT /resource/{id}`, `DELETE /resource/{id}`
-3. **Components/schemas**: add one schema per entity and DTO identified in spec-context.md
-   - Request bodies and response bodies should reference `$ref` schemas
-4. **info.version**: increment the patch version (e.g. 0.1.0 → 0.1.1) unless the
-   spec-context describes a new major feature, in which case increment minor
-5. **x-spec-id**: add or update `info.x-spec-id` with a kebab-case identifier
-   derived from the feature name in spec-context.md (e.g. `crud-users`, `add-payment-flow`)
+Run `pnpm run validate:openapi -- --service <service>`. Report the exact contract
+changes and validation result. If a requirement cannot be represented or conflicts
+with the existing API, stop and ask the user to revise the change artifacts before
+proceeding.
 
-## Output
-
-Show the user a concise diff summary: which paths were added, which schemas were added,
-what the new version is.
-
-## Checkpoint
-
-After updating `openapi.yaml`, ask:
-
-> "¿El OpenSpec generado refleja correctamente lo que necesitas? ¿Quieres ajustar
-> algo antes de continuar con `/ff` para generar los artefactos?"
-
-Wait for explicit confirmation before declaring this step done.
+Do not start implementation. Phase 1 still requires explicit user approval of
+the OpenSpec artifacts and synchronized OpenAPI contract.

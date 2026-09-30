@@ -1,60 +1,42 @@
-# sdd — Orchestrated SDD Workflow (Single Checkpoint)
+# sdd — Three-Phase OpenSpec Guide
 
-You are the SDD orchestrator. You drive the full spec-to-commit cycle with one
-human checkpoint after the DDD proposal. Do not ask for confirmation between
-internal phases — only pause at the designated checkpoint.
+Use this prompt as a workflow router. OpenSpec's generated `/opsx-*` workflows
+own the proposal, implementation, verification, and archive behavior. Do not
+reimplement those workflows or cross a phase gate without explicit user approval.
 
-## Arguments
+If the affected service is unclear, inspect `libs/` for `microservice.json` and
+ask the user to choose. A change may name more than one service.
 
-If the user provides `--service <name>`, use that service throughout.
-If not, discover available services by listing `src/` for directories containing
-`microservice.json`. If only one service exists, use it silently. If multiple
-exist, ask once at the very start.
+## Phase 1 — Draft and Validate
 
-## Phase 1 — Context enrichment and DDD proposal (automatic)
+1. If behavior or scope is unclear, use `/opsx-explore` in Copilot/OpenCode or
+   `/opsx:explore` in Claude Code.
+2. Create a change with the matching propose command. Review `proposal.md`, every
+   service-namespaced delta spec, `design.md` when present, and `tasks.md`.
+3. Wait for the user's explicit approval before synchronizing OpenAPI or starting
+   implementation.
+4. Use `/new` to synchronize each affected `libs/<service>/specs/openapi.yaml`
+   from the approved delta, then use `/ff` to run:
 
-Follow the instructions in [enrich-us](.agents/enrich-us.md) **except**:
-- Do NOT write the checkpoint question at the end of that file
-- Instead, after writing `spec-context.md`, continue directly to the checkpoint below
+   - `openspec validate <change>`
+   - `pnpm run validate:openapi -- --service <service>` for each affected service
 
-## CHECKPOINT — single human gate
+Stop at the Phase 1 gate until the user approves both OpenSpec artifacts and
+OpenAPI contracts.
 
-Present the proposed DDD model from `spec-context.md` as a structured summary and ask:
+## Phase 2 — Implement and Test
 
-> "**Checkpoint SDD** — ¿El modelo DDD y el scope OpenAPI propuesto son correctos?
-> Puedes ajustar cualquier punto antes de que empiece la generación.
-> Responde **sí** para continuar o indícame qué cambiar."
+Use `/opsx-apply` in Copilot/OpenCode or `/opsx:apply` in Claude Code. Complete
+tasks one at a time. Then use `/verify` to run the service-scoped contract and
+OpenAPI checks plus repo-wide architecture checks. Run OpenSpec's report-only
+verify workflow separately. Do not archive while a check or task is incomplete.
 
-Wait for explicit confirmation. If the user requests changes, update `spec-context.md`
-and show the revised model. Repeat until confirmed.
+## Phase 3 — Archive and Prepare Commit
 
-## Phase 2 — Spec generation (automatic after checkpoint)
+After Phase 2 passes, use `/opsx-archive` in Copilot/OpenCode or
+`/opsx:archive` in Claude Code. Review the merged service spec and archive path.
+Use `/code-review` to prepare the final summary and conventional commit message.
+Never run `git add`, `git commit`, tag, or push; those remain the user's actions.
 
-Run these steps in sequence without pausing for confirmation:
-
-1. **new**: Follow [new](.agents/new.md) — update `openapi.yaml`, skip its checkpoint
-2. **ff**: Follow [ff](.agents/ff.md) — run `pnpm generate:spec`, skip its checkpoint
-
-After ff, show a brief summary:
-- New `info.version` and `x-spec-id`
-- Paths added to `openapi.yaml`
-- OpenAPI source validated
-
-## Phase 3 — Validation and commit preparation (automatic)
-
-Run these steps in sequence without pausing for confirmation:
-
-1. **apply**: Follow [apply](.agents/apply.md)
-   - If apply fails: stop, show the error, ask the user how to proceed
-2. **verify**: Follow [verify](.agents/verify.md) with the full auto-fix loop
-   - If max attempts exhausted: stop, present the error summary, ask for guidance
-3. **code-review**: Follow [code-review](.agents/code-review.md)
-
-## Final output
-
-Present the commit message and the complete list of files changed.
-Tell the user the workflow is complete and they can run the git command when ready.
-
-## Configuration
-
-Read `.agents/config.json` for `VERIFY_MAX_ATTEMPTS` before starting Phase 3.
+See `docs/sdd-flow.md` for the exact commands, service extraction guidance, and
+phase exit criteria.

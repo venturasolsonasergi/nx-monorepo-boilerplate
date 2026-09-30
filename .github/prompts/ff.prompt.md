@@ -1,7 +1,7 @@
 ---
-description: "SDD ff: full flow spec — run pnpm generate:spec, show generated artifacts, confirm before apply"
-name: "ff"
-agent: "agent"
+description: 'Validate an OpenSpec change and the affected service OpenAPI contracts'
+name: 'ff'
+agent: 'agent'
 tools: [read, execute]
 ---
 

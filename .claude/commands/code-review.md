@@ -1,5 +1,5 @@
 ---
-description: "SDD code-review: run pnpm code_review and generate a conventional commit message"
+description: 'Run repository quality checks and prepare a commit summary; the user commits manually'
 allowed-tools: Read Bash
 ---
 

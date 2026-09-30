@@ -1,96 +1,110 @@
 # SDD Flow
 
-The project follows Spec Driven Development with OpenSpec as source of truth.
-Agent definitions live in `.agents/` (tool-agnostic). Tool-specific wrappers in
-`.github/prompts/`, `.claude/commands/`, and `.opencode/commands/` reference them.
+OpenSpec manages change proposals, behavior requirements, implementation tasks,
+and archival. OpenAPI remains the HTTP contract for each service under
+`libs/<service>/specs/openapi.yaml`. The repository's architecture validators and
+tests complement OpenSpec; they are not replaced by it.
 
----
+OpenSpec artifacts live at the monorepo root:
 
-## Option A — Manual flow (full human control)
-
-Each step is invoked explicitly. The agent asks for confirmation before suggesting
-the next command. Use this when you want fine-grained control over each transition.
-
-```
-/enrich-us
-  Reads: health report, openapi.yaml, existing DDD entities
-  Asks: feature intent, entities, invariants, use cases, domain events, dependencies
-  Writes: src/<service>/specs/context/spec-context.md
-  Checkpoint: "¿DDD correcto? ¿Continúo con /new?"
-
-/new
-  Reads: spec-context.md
-  Updates: src/<service>/specs/openapi.yaml (paths, schemas, version, x-spec-id)
-  Checkpoint: "¿OpenSpec correcto? ¿Continúo con /ff?"
-
-/ff
-  Runs: pnpm generate:spec
-  Validates: specs/openapi.yaml for every discovered service
-  Checkpoint: "¿Artefactos correctos? ¿Continúo con /apply?"
-
-  ── Human validation: review DDD model + OpenAPI before proceeding ──
-
-/apply
-  Runs: pnpm apply (generateFromSpec + checkDependencies)
-
-/verify
-  Runs: pnpm verify in a loop (up to VERIFY_MAX_ATTEMPTS from .agents/config.json)
-  Auto-fixes validation failures; escalates to user if limit reached
-
-/code-review
-  Runs: pnpm code_review (lint + verify)
-  Produces: conventional commit message from spec-context + git diff
+```text
+openspec/
+  config.yaml
+  specs/<service>/<capability>/spec.md
+  changes/<change>/
+  changes/archive/<date>-<change>/
 ```
 
----
+Each change delta uses the same `<service>/<capability>` path as its persistent
+spec. This keeps a service's requirements together for later extraction while
+allowing one change to cover several services.
 
-## Option B — Orchestrated flow (single checkpoint)
+## Setup
 
-One command drives the entire cycle. The only human checkpoint is after the
-DDD model is proposed and before any code generation starts.
+Use Node.js 20.19 or newer. Install the CLI globally and initialize/update the
+project workflows from the repository root:
 
-```
-/sdd [--service <name>]
-
-  Phase 1 — Context + DDD (automatic)
-    → reads health report, openapi.yaml, existing domain
-    → asks 7 DDD questions in one interaction
-    → writes spec-context.md
-
-  ── CHECKPOINT: "¿DDD y scope OpenAPI correctos? ¿Continúo?" ──
-
-  Phase 2 — Spec generation (automatic after confirmation)
-    → updates openapi.yaml (version, x-spec-id, paths, schemas)
-    → runs pnpm generate:spec
-    → shows artifact summary
-
-  Phase 3 — Implementation validation (automatic)
-    → runs pnpm apply
-    → runs pnpm verify with auto-fix loop (VERIFY_MAX_ATTEMPTS)
-    → runs pnpm code_review
-    → produces commit message
+```powershell
+npm install -g @fission-ai/openspec@latest
+openspec init --tools "github-copilot,claude,opencode" --profile custom --language Spanish --no-copilot-cloud
+openspec update
 ```
 
----
+The `verify` workflow is optional. Each developer's global OpenSpec profile must
+include the core workflows plus `verify`, with delivery set to `both`; the
+generated project skills/commands are committed in this repository. OpenSpec's
+global profile is machine-wide, so changing it also affects future OpenSpec
+projects on that machine.
 
-## Shared state
+## Phase 1: Draft and Validate
 
-| File | Written by | Read by |
-|---|---|---|
-| `src/<service>/specs/context/spec-context.md` | `/enrich-us` | `/new`, `/code-review` |
-| `src/<service>/specs/openapi.yaml` | `/new` | `/ff`, `/apply`, `/verify` |
-| `.agents/config.json` | static | `/verify` (loop limit) |
+1. Use `/opsx-explore` if scope or behavior is unclear.
+2. Use `/opsx-propose` to create `proposal.md`, capability delta specs,
+   `design.md` when needed, and `tasks.md`.
+3. Review the requirements and tasks with the user. Do not implement before they
+   explicitly approve the plan.
+4. Validate the change and each affected HTTP contract:
 
----
+```powershell
+openspec validate <change>
+pnpm run validate:openapi -- --service <service>
+```
 
-## Agent files reference
+GitHub Copilot and OpenCode invoke `/opsx-propose`; Claude Code invokes
+`/opsx:propose`. The same tool-specific spelling applies to explore, apply,
+verify, and archive.
 
-| Canonical (tool-agnostic) | VS Code Copilot | Claude Code | OpenCode |
-|---|---|---|---|
-| `.agents/enrich-us.md` | `.github/prompts/enrich-us.prompt.md` | `.claude/commands/enrich-us.md` | `.opencode/commands/enrich-us.md` |
-| `.agents/new.md` | `.github/prompts/new.prompt.md` | `.claude/commands/new.md` | `.opencode/commands/new.md` |
-| `.agents/ff.md` | `.github/prompts/ff.prompt.md` | `.claude/commands/ff.md` | `.opencode/commands/ff.md` |
-| `.agents/apply.md` | `.github/prompts/apply.prompt.md` | `.claude/commands/apply.md` | `.opencode/commands/apply.md` |
-| `.agents/verify.md` | `.github/prompts/verify.prompt.md` | `.claude/commands/verify.md` | `.opencode/commands/verify.md` |
-| `.agents/code-review.md` | `.github/prompts/code-review.prompt.md` | `.claude/commands/code-review.md` | `.opencode/commands/code-review.md` |
-| `.agents/sdd.md` | `.github/prompts/sdd.prompt.md` | `.claude/commands/sdd.md` | `.opencode/commands/sdd.md` |
+**Exit gate:** the proposal's service/capability scope is explicit, all behavior
+has testable scenarios, OpenSpec validation passes, affected OpenAPI validates,
+and the user approves the artifacts.
+
+## Phase 2: Implement and Test
+
+1. Start a fresh implementation session and use `/opsx-apply` (Claude:
+   `/opsx:apply`) for the approved change. Complete and verify each task before
+   checking it off.
+2. Run tests scoped to each changed service and keep repository architecture
+   checks global:
+
+```powershell
+pnpm run test:contract -- --service <service>
+pnpm run validate:openapi -- --service <service>
+pnpm run verify -- --service <service>
+```
+
+`verify` runs architecture, domain-purity, invariant, dependency, and contract
+checks. The optional `--service` scopes contract tests only; architecture and
+dependency validation still covers the monorepo. Include `pnpm web:build`,
+`pnpm web:test`, or API e2e tests only when the change touches those surfaces. 3. Run `/opsx-verify` (Claude: `/opsx:verify`) for a report-only comparison of
+implementation against the change artifacts. It does not replace executable
+tests. Resolve any behavior mismatch by updating/reviewing the artifacts
+before changing implementation.
+
+**Exit gate:** all tasks are checked, service tests and required repo-wide
+checks pass, OpenAPI validates, and OpenSpec verification has no unresolved
+critical mismatch.
+
+## Phase 3: Archive and Prepare Commit
+
+1. Use `/opsx-archive` (Claude: `/opsx:archive`) only after Phase 2 passes.
+   Review the merge into `openspec/specs/<service>/<capability>/spec.md` and
+   confirm the change is moved to `openspec/changes/archive/`.
+2. Run `openspec validate --all` and `git diff --check`; review the code and
+   archived artifacts together.
+3. Prepare a conventional commit summary that identifies the affected service
+   and change. Do not commit, tag, or push automatically; the user performs the
+   Git operation after reviewing the diff.
+
+## Service Extraction
+
+When extracting a service to another repository, take its `libs/<service>/`
+directory, including `specs/openapi.yaml`, `microservice.json`, Prisma schema
+and migrations, tests, and `project.json`. Also take
+`openspec/specs/<service>/`. Review imports and metadata for references to
+`libs/shared/`, Nx aliases, root scripts, and dependencies; bring those along or
+replace them with standalone equivalents. OpenSpec proposals and archived
+changes are repository history, not part of an individual service export.
+
+The OpenSpec CLI and tool integrations are installed/configured separately on
+each developer machine. Project configuration and generated tool workflow files
+are committed with the monorepo.

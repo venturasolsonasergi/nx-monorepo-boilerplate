@@ -1,5 +1,5 @@
 ---
-description: "SDD enrich-us: gather context, ask DDD questions, propose tactical model and write spec-context.md"
+description: 'Legacy alias for read-only OpenSpec exploration; does not write spec-context.md'
 allowed-tools: Read Write Bash
 ---
 

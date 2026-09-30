@@ -1,0 +1,7 @@
+{
+  "name": "users",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/users",
+  "tags": ["scope:users", "platform:server"]
+}

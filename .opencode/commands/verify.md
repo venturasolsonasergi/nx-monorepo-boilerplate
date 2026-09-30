@@ -1,5 +1,5 @@
 ---
-description: "SDD verify: run full validation suite with auto-fix loop, retry up to VERIFY_MAX_ATTEMPTS from .agents/config.json"
+description: 'Run service-scoped tests and repo-wide checks; OpenSpec verify is a separate report-only workflow'
 permission:
   edit: allow
   bash: allow
