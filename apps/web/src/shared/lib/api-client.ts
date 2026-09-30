@@ -1,0 +1,52 @@
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+interface ZodLikeSchema<T> {
+  parse: (data: unknown) => T;
+}
+
+type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
+
+async function request<T>(
+  path: string,
+  schema: ZodLikeSchema<T>,
+  options: RequestOptions = {},
+): Promise<T> {
+  const { body, headers, ...rest } = options;
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...rest,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      `Request to ${path} failed with status ${response.status}`,
+    );
+  }
+
+  const data: unknown = await response.json();
+  // Every response is validated before it reaches any feature/UI code.
+  return schema.parse(data);
+}
+
+export const apiClient = {
+  get: <T>(path: string, schema: ZodLikeSchema<T>) =>
+    request(path, schema, { method: 'GET' }),
+  post: <T>(path: string, schema: ZodLikeSchema<T>, body: unknown) =>
+    request(path, schema, { method: 'POST', body }),
+};

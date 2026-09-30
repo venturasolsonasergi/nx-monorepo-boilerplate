@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "ignoreDeprecations": "5.0",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@app/api/*": ["apps/api/src/*"],
+      "@app/users/*": ["libs/users/*"],
+      "@app/orders/*": ["libs/orders/*"],
+      "@app/shared/domain": ["libs/shared/domain"],
+      "@app/shared/domain/*": ["libs/shared/domain/*"],
+      "@app/shared/validation": ["libs/shared/validation"],
+      "@app/shared/validation/*": ["libs/shared/validation/*"],
+      "@app/shared/api-contracts": ["libs/shared/api-contracts"],
+      "@app/shared/api-contracts/*": ["libs/shared/api-contracts/*"],
+      "@/*": ["apps/web/src/*"]
+    }
+  }
+}

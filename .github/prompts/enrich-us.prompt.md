@@ -1,7 +1,7 @@
 ---
-description: "SDD enrich-us: gather context, ask DDD questions, propose tactical model and write spec-context.md before any code changes"
-name: "enrich-us"
-agent: "agent"
+description: 'Legacy alias for read-only OpenSpec exploration; does not write spec-context.md'
+name: 'enrich-us'
+agent: 'agent'
 tools: [read, edit, search]
 ---
 

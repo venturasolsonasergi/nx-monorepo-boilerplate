@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const domainRoots = ['src/users/domain', 'src/orders/domain'];
-const forbidden = ['@nestjs/', '@prisma/client', 'zod', 'src/shared/validation'];
+const domainRoots = ['libs/users/domain', 'libs/orders/domain'];
+const forbidden = ['@nestjs/', '@prisma/client', 'zod', 'libs/shared/validation'];
 const violations = [];
 
 function walk(dir, all = []) {

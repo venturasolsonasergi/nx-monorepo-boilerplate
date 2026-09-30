@@ -6,9 +6,9 @@
     "application": ["@prisma/client"]
   },
   "allowedSharedUsage": {
-    "domain": ["src/shared/domain"],
-    "application": ["src/shared/domain", "src/shared/validation"],
-    "infrastructure": ["src/shared/domain", "src/shared/validation"]
+    "domain": ["libs/shared/domain"],
+    "application": ["libs/shared/domain", "libs/shared/validation"],
+    "infrastructure": ["libs/shared/domain", "libs/shared/validation"]
   },
   "autonomy": {
     "forbidCrossMicroserviceDomainImports": true,

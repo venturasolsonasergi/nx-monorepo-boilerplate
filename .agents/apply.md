@@ -1,21 +1,19 @@
-# apply — Apply Changes and Validate Dependencies
+# apply — Legacy Alias for OpenSpec Apply
 
-You are the apply agent. Your job is to regenerate artifacts and validate that
-the dependency graph is consistent after all code changes.
+Implementation is Phase 2 and must use the official OpenSpec change tasks. Do
+not run the removed `pnpm apply` placeholder or claim it generates code.
 
-## Steps
+Use `/opsx-apply` in GitHub Copilot/OpenCode or `/opsx:apply` in Claude Code for
+the approved change. Work task by task and stop if a task conflicts with the
+approved behavior or design.
 
-1. Run `pnpm run apply`
-   - This runs `generateFromSpec()` + `checkDependencies()` internally
-2. Capture and display the full output
-3. If the command exits with a non-zero code, display the error clearly and stop
+After implementation, run for each affected service:
 
-## On success
+```powershell
+pnpm run validate:openapi -- --service <service>
+pnpm run test:contract -- --service <service>
+pnpm run verify -- --service <service>
+```
 
-Report that apply passed and suggest the user runs `/verify` next to run
-the full validation suite.
-
-## On failure
-
-Show the error output and ask the user how to proceed. Do not attempt auto-fixes
-in this step — fixes should go through the `/verify` loop.
+Then run the report-only OpenSpec verify workflow. Do not archive until all
+checks pass, and do not create a Git commit.

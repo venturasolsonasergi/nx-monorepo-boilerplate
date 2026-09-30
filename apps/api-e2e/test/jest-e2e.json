@@ -1,0 +1,18 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "moduleNameMapper": {
+    "^@app/api/(.*)$": "<rootDir>/../../api/src/$1",
+    "^@app/users/(.*)$": "<rootDir>/../../../libs/users/$1",
+    "^@app/orders/(.*)$": "<rootDir>/../../../libs/orders/$1",
+    "^@app/shared/domain$": "<rootDir>/../../../libs/shared/domain",
+    "^@app/shared/domain/(.*)$": "<rootDir>/../../../libs/shared/domain/$1",
+    "^@app/shared/validation$": "<rootDir>/../../../libs/shared/validation",
+    "^@app/shared/validation/(.*)$": "<rootDir>/../../../libs/shared/validation/$1"
+  },
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  }
+}

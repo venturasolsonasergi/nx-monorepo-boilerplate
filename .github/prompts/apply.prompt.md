@@ -1,7 +1,7 @@
 ---
-description: "SDD apply: run pnpm apply to regenerate artifacts and validate dependency graph"
-name: "apply"
-agent: "agent"
+description: 'Legacy alias: apply approved OpenSpec tasks and run service-scoped checks'
+name: 'apply'
+agent: 'agent'
 tools: [execute]
 ---
 

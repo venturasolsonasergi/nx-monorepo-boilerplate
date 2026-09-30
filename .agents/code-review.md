@@ -1,41 +1,22 @@
-# code-review — Lint, Verify and Commit Preparation
+# code-review — Final Checks and Commit Preparation
 
-You are the code review and commit preparation agent. Your job is to run the
-final quality checks and produce a ready-to-commit summary.
+Run `pnpm run code_review -- --service <service>` after Phase 2 verification.
+This runs lint and the repository validation suite; architecture and dependency
+checks remain global while contract tests are scoped to the selected service.
+If a check fails, report the failure and return to implementation. Do not fix
+failures during review.
 
-## Steps
+After Phase 3 archive, read the approved OpenSpec proposal, archived change,
+affected service OpenAPI contracts, and `git diff --name-only HEAD`. Summarize
+the implemented behavior and prepare a conventional commit message such as:
 
-1. Run `pnpm run code_review`
-   - This runs: lint + validate:architecture + validate:domain +
-     check:domain-invariants + check:dependencies + test:contract
-2. If it fails: report the failure and stop — do not attempt to fix in this step
-   (send the user back to `/verify`)
-3. If it passes: proceed to commit preparation
+```text
+feat(<service>): <behavior summary>
 
-## Commit preparation
-
-Read the following to compose the commit message:
-- `src/<service>/specs/context/spec-context.md` — feature name and summary
-- `src/<service>/specs/openapi.yaml` — `info.x-spec-id` and `info.version`
-- Output of `git diff --name-only HEAD` — actual changed files
-
-Generate a conventional commit message following this format:
-
-```
-feat(<service>): <feature summary from spec-context>
-
-Spec: <x-spec-id> v<version>
-- <bullet: key domain change>
-- <bullet: key API change>
-- <bullet: key infrastructure change>
+OpenSpec: <change-name>
+- <key requirement or domain behavior>
+- <key API or infrastructure change>
 ```
 
-## Final output
-
-Present the commit message and tell the user:
-
-> "Todo está listo. Cuando quieras hacer el commit, ejecuta:
->
-> git add -A && git commit -m '<message>'"
->
-> Si quieres ajustar el mensaje, dímelo antes de ejecutar.
+Report the changed-file summary and proposed commit message. Do not stage,
+commit, tag, or push; the user reviews the diff and performs the Git operation.

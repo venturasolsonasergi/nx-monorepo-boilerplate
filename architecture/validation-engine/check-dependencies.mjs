@@ -4,12 +4,12 @@ import path from 'node:path';
 
 const root = process.cwd();
 const targets = [
-  'src/users/domain',
-  'src/users/application',
-  'src/users/infrastructure',
-  'src/orders/domain',
-  'src/orders/application',
-  'src/orders/infrastructure',
+  'libs/users/domain',
+  'libs/users/application',
+  'libs/users/infrastructure',
+  'libs/orders/domain',
+  'libs/orders/application',
+  'libs/orders/infrastructure',
 ];
 
 const forbiddenByLayer = {
@@ -48,10 +48,10 @@ for (const rel of targets) {
           violations.push({ file: path.relative(root, file), import: imp, rule: `${layer} forbids ${token}` });
         }
       }
-      if (layer === 'domain' && imp.includes('/orders/domain') && file.includes('src/users/domain')) {
+      if (layer === 'domain' && imp.includes('/orders/domain') && file.includes('libs/users/domain')) {
         violations.push({ file: path.relative(root, file), import: imp, rule: 'cross microservice domain import forbidden' });
       }
-      if (layer === 'domain' && imp.includes('/users/domain') && file.includes('src/orders/domain')) {
+      if (layer === 'domain' && imp.includes('/users/domain') && file.includes('libs/orders/domain')) {
         violations.push({ file: path.relative(root, file), import: imp, rule: 'cross microservice domain import forbidden' });
       }
     }

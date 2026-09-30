@@ -1,7 +1,7 @@
 ---
-description: "SDD new: generate or update openapi.yaml from spec-context.md, increment version, add x-spec-id"
-name: "new"
-agent: "agent"
+description: 'Synchronize an approved OpenSpec delta into its service OpenAPI contract'
+name: 'new'
+agent: 'agent'
 tools: [read, edit]
 ---
 

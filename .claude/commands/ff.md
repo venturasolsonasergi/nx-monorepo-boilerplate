@@ -1,5 +1,5 @@
 ---
-description: "SDD ff: run pnpm generate:spec and show generated artifacts"
+description: 'Validate an OpenSpec change and the affected service OpenAPI contracts'
 allowed-tools: Read Bash
 ---
 

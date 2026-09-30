@@ -1,5 +1,0 @@
-{
-  "VERIFY_MAX_ATTEMPTS": 5,
-  "SPEC_CONTEXT_FILENAME": "spec-context.md",
-  "SPEC_CONTEXT_DIR": "specs/context"
-}

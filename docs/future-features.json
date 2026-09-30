@@ -19,7 +19,7 @@
             "runtime.ts: gitBranchExists(branch: string): boolean",
             "runtime.ts: gitCheckoutBranch(branch: string): void"
           ],
-          "specIdResolution": "Read info.x-spec-id (or info.version fallback) from src/<service>/specs/openapi.yaml",
+          "specIdResolution": "Read info.x-spec-id (or info.version fallback) from libs/<service>/specs/openapi.yaml",
           "changeDetection": "Compare openapi.yaml info.version against microservice.json specVersion field"
         }
       },
@@ -27,7 +27,7 @@
         "scripts/utils/runtime.ts",
         "scripts/commands/index.ts",
         "scripts/workflows/index.ts",
-        "src/<service>/specs/openapi.yaml"
+        "libs/<service>/specs/openapi.yaml"
       ]
     },
     {
@@ -35,21 +35,21 @@
       "title": "Spec scope guard — prevent modifications outside service boundary",
       "status": "proposed",
       "priority": "high",
-      "description": "A new check:spec-scope command validates that all modified files (git diff --name-only HEAD) are within src/<service>/ when working on a feature branch for that service.",
+      "description": "A new check:spec-scope command validates that all modified files (git diff --name-only HEAD) are within libs/<service>/ when working on a feature branch for that service.",
       "motivation": "Enforce the SDD contract: a spec change should only affect the files it declares it generates or modifies.",
       "design": {
         "allowedPaths": [
-          "src/<service>/specs/",
-          "src/<service>/application/",
-          "src/<service>/domain/",
-          "src/<service>/infrastructure/"
+          "libs/<service>/specs/",
+          "libs/<service>/application/",
+          "libs/<service>/domain/",
+          "libs/<service>/infrastructure/"
         ],
         "conditionallyAllowed": [
-          "src/shared/ — allowed if the service explicitly declares a shared dependency"
+          "libs/shared/ — allowed if the service explicitly declares a shared dependency"
         ],
         "forbidden": [
-          "src/<other-service>/",
-          "src/app.module.ts (unless it is a new service registration)",
+          "libs/<other-service>/",
+          "apps/api/src/app.module.ts (unless it is a new service registration)",
           "Root config files"
         ],
         "triggerPoint": "scripts/workflows/index.ts verify() — after existing validation gates",
@@ -74,7 +74,7 @@
   },
   "openQuestions": [
     "Use x-spec-id extension field in openapi.yaml (optionB) or derive branch name from semver (optionA)?",
-    "Should src/shared/ changes be allowed within a spec scope without explicit declaration?",
+    "Should libs/shared/ changes be allowed within a spec scope without explicit declaration?",
     "Should commit_flow hard-fail if not on a feature/* branch, or just warn?"
   ],
   "discussedOn": "2026-08-06"

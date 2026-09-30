@@ -1,5 +1,5 @@
 ---
-description: "SDD new: generate or update openapi.yaml from spec-context.md"
+description: 'Synchronize an approved OpenSpec delta into its service OpenAPI contract'
 permission:
   edit: allow
   bash: deny

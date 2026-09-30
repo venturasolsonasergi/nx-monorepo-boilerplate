@@ -1,5 +1,5 @@
 ---
-description: "SDD orchestrator: full spec-to-commit cycle with a single DDD checkpoint"
+description: 'Guide the user through three gated OpenSpec phases: draft, implement and test, archive and prepare commit'
 permission:
   edit: allow
   bash: allow
