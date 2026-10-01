@@ -1,10 +1,10 @@
 schema: spec-driven
 
 context: |
-  Language: Spanish
-  All artifacts must be written in Spanish.
+  Language: English
+  All artifacts must be written in English.
   This is an Nx monorepo with NestJS services under libs/<service>, a host API in apps/api,
-  and a React frontend in apps/web. Write planning prose in Spanish; retain OpenSpec's
+  and a React frontend in apps/web. Write planning prose in English; retain OpenSpec's
   structural headings and normative SHALL/MUST keywords in English.
   OpenSpec requirements describe observable behavior. Each service's
   libs/<service>/specs/openapi.yaml remains its authoritative HTTP contract; keep both

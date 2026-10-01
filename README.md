@@ -66,7 +66,7 @@ workflows from the repository root:
 
 ```powershell
 npm install -g @fission-ai/openspec@latest
-openspec init --tools "github-copilot,claude,opencode" --profile custom --language Spanish --no-copilot-cloud
+openspec init --tools "github-copilot,claude,opencode" --profile custom --language English --no-copilot-cloud
 openspec update
 ```
 
