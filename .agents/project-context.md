@@ -103,6 +103,19 @@ uses `/opsx:propose`; see `docs/sdd-flow.md` for all phase commands.
 
 Related skill: `.agents/skills/nestjs-sdd-api-practices/SKILL.md`
 
+## Prisma commands
+
+There are no per-service Prisma scripts. A single root command discovers every
+service with a `microservice.json` and resolves its config at
+`libs/<service>/infrastructure/prisma/prisma.config.ts`.
+
+- `pnpm prisma:generate` — generate clients for all discovered services (services without a `prisma.config.ts` are skipped)
+- `pnpm prisma:generate -- --service users` — generate a single service's client
+- `pnpm prisma:migrate -- --service users -- --name add_status` — run `migrate dev` for one service; `--service` is required and everything after the second `--` is forwarded verbatim to the Prisma CLI
+
+`prisma:generate` runs automatically as a `pre*` hook before the build, start,
+test, `verify` and `test:contract` scripts, so a manual call is rarely needed.
+
 ## Key conventions
 
 - `microservice.json` — metadata per service (name, version, specVersion, dependencies)
@@ -120,3 +133,4 @@ Related skill: `.agents/skills/nestjs-sdd-api-practices/SKILL.md`
 - Do NOT treat OpenAPI validation as code generation; use `pnpm run validate:openapi`
 - Do NOT modify `architecture/rules.json` to silence a validation failure
 - Do NOT skip the spec step — always define the OpenAPI before implementing
+- Do NOT add per-service Prisma scripts to `package.json`; use `pnpm prisma:generate -- --service <name>`

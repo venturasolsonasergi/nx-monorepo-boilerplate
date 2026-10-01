@@ -32,11 +32,11 @@ export function formatZodValidationErrors(
 }
 
 function getStableValidationCode(issue: z.ZodIssue): string {
-  if (issue.code === 'invalid_type' && issue.received === 'undefined') {
+  if (issue.code === 'invalid_type' && issue.input === undefined) {
     return 'required';
   }
 
-  if (issue.code === 'invalid_string' && issue.validation === 'email') {
+  if (issue.code === 'invalid_format' && issue.format === 'email') {
     return 'invalid_format';
   }
 

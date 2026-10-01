@@ -3,6 +3,7 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "extensionsToTreatAsEsm": [".ts"],
   "moduleNameMapper": {
     "^@app/api/(.*)$": "<rootDir>/../../api/src/$1",
     "^@app/users/(.*)$": "<rootDir>/../../../libs/users/$1",
@@ -13,6 +14,15 @@
     "^@app/shared/validation/(.*)$": "<rootDir>/../../../libs/shared/validation/$1"
   },
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": {
+          "module": "ESNext",
+          "moduleResolution": "Bundler"
+        }
+      }
+    ]
   }
 }

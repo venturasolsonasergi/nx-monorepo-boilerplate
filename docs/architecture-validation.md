@@ -14,4 +14,3 @@ This project includes an architecture validation harness under `architecture/val
 - `pnpm run check:dependencies`
 - `pnpm run validate:domain`
 - `pnpm run check:domain-invariants`
-- `pnpm run report:microservice-health`

@@ -5,3 +5,6 @@ allowBuilds:
   nx: true
   prisma: true
   unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - '@tanstack/*'

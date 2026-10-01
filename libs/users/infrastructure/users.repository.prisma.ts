@@ -29,11 +29,10 @@ export class UsersPrismaRepository implements UserRepository {
       });
       return new UserEntity(record);
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new EmailAlreadyExistsError();
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if ((error as { code?: string }).code === 'P2002') {
+          throw new EmailAlreadyExistsError();
+        }
       }
 
       throw error;

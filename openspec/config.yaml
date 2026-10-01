@@ -1,0 +1,57 @@
+schema: spec-driven
+
+context: |
+  Language: Spanish
+  All artifacts must be written in Spanish.
+  This is an Nx monorepo with NestJS services under libs/<service>, a host API in apps/api,
+  and a React frontend in apps/web. Write planning prose in Spanish; retain OpenSpec's
+  structural headings and normative SHALL/MUST keywords in English.
+  OpenSpec requirements describe observable behavior. Each service's
+  libs/<service>/specs/openapi.yaml remains its authoritative HTTP contract; keep both
+  aligned, but do not duplicate an entire OpenAPI document as prose in OpenSpec.
+  Organize persistent capabilities under openspec/specs/<service>/<capability>/spec.md.
+  A change may affect one or more services; name every affected service and capability
+  explicitly. Keep requirements portable with the service: do not make a service's
+  capability depend on another service's internal domain or spec. Shared behavior must
+  be stated as an external contract.
+  Respect the dependency direction infrastructure -> application -> domain. Domain
+  code must remain free of NestJS, Prisma, and Zod; application code must not import
+  Prisma. Controllers stay thin and repository ports belong in application.
+  Treat existing behavior as observed only when supported by implementation, tests, or
+  current OpenAPI. Record gaps as open decisions; do not infer requirements from empty
+  specs or placeholder tests.
+  Do not commit, tag, or push as part of apply or archive.
+
+rules:
+  proposal:
+    - Name every affected service and capability using the path <service>/<capability>.
+    - State why the change is needed, what externally observable behavior changes, compatibility impact, and explicit non-goals.
+    - Reuse existing capability paths; do not create near-duplicate specs for one behavior.
+  specs:
+    - Write normative, testable behavior with at least one WHEN/THEN scenario per requirement.
+    - Cover success, validation, error, persistence, and compatibility cases where they apply; do not require irrelevant categories.
+    - Keep implementation details such as NestJS classes and Prisma query design out of behavioral requirements.
+    - Keep each service capability self-contained for extraction; cross-service behavior must reference a public contract, never another service's domain internals.
+  design:
+    - Explain affected service boundaries, layer placement, persistence/migration impact, risks, and rollback when applicable.
+    - Keep API contract changes in the affected libs/<service>/specs/openapi.yaml and align response/error shapes with the delta spec.
+  tasks:
+    - Use tracked checkboxes in dependency order; every task states its service scope and a concrete verification command or observable result.
+    - Include the service's relevant unit/contract tests and OpenAPI validation in the tasks that introduce the behavior.
+    - Include repo-wide architecture/dependency checks for changes that can affect shared boundaries; do not replace those with service-only tests.
+
+operations:
+  apply:
+    guidance:
+      - Read the full change artifacts and inspect the named service before implementing.
+      - For NestJS API changes, follow .agents/skills/nestjs-sdd-api-practices/SKILL.md.
+      - Implement one task at a time and mark it complete only after its stated verification succeeds.
+      - Stop and update the change artifacts if implementation reveals a material requirement or design mismatch.
+  archive:
+    guidance:
+      - Archive only after all tasks, service tests, required repo-wide checks, OpenAPI validation, and implementation verification pass.
+      - Review the proposed merge into openspec/specs/<service>/<capability>/spec.md before confirming archive.
+      - Do not create a Git commit, tag, or push; report the archived change and a suggested commit summary.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.

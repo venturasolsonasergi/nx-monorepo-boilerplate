@@ -41,7 +41,23 @@ Backend boilerplate for microservices with:
 - `pnpm run check:dependencies`
 - `pnpm run test:contract -- --service orders` — run one service's contract tests
 - `pnpm run test:contract` — run contract tests for all discovered services
-- `pnpm run report:microservice-health`
+
+## Database Commands (Prisma)
+
+Prisma commands are service-agnostic: they discover every service with a
+`microservice.json` and use its
+`libs/<service>/infrastructure/prisma/prisma.config.ts`. There are no per-service
+scripts to maintain.
+
+- `pnpm prisma:generate` — generate the Prisma client for all discovered services (services without a `prisma.config.ts` are skipped)
+- `pnpm prisma:generate -- --service users` — generate one service's client
+- `pnpm prisma:migrate -- --service users -- --name add_status` — run `prisma migrate dev` for one service
+
+For `prisma:migrate`, `--service` is mandatory and any argument after the second
+`--` is forwarded verbatim to the Prisma CLI.
+
+`prisma:generate` already runs as a `pre*` hook of the build, start, test,
+`verify` and `test:contract` scripts, so you rarely need to invoke it by hand.
 
 ## OpenSpec Workflow
 
@@ -76,4 +92,4 @@ summary; neither command creates the commit.
 3. Add its HTTP contract at `libs/<new-service>/specs/openapi.yaml` and its persistent behavioral capabilities under `openspec/specs/<new-service>/<capability>/`.
 4. Reuse global scripts under `scripts/` (no custom per-service scripts required).
 5. Register the module in `apps/api/src/app.module.ts`.
-6. Discovered services are included automatically by OpenAPI validation and contract test commands.
+6. Discovered services are included automatically by OpenAPI validation, Prisma and contract test commands.

@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { jest } from '@jest/globals';
 import request from 'supertest';
 import { CreateUserUseCase } from '../application/create-user.use-case';
 import { EmailAlreadyExistsError } from '../application/user.repository';
@@ -7,7 +8,16 @@ import { UsersController } from '../infrastructure/users.controller';
 
 describe('users contract', () => {
   let app: INestApplication;
-  const execute = jest.fn();
+  const execute =
+    jest.fn<
+      (input: {
+        name: string;
+        surname: string;
+        email: string;
+        address: string;
+        phone: string;
+      }) => Promise<unknown>
+    >();
 
   beforeEach(async () => {
     execute.mockReset();
