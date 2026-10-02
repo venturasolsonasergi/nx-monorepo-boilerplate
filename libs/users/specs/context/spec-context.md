@@ -1,3 +1,5 @@
+> SUPERSEDED: This legacy DDD context describes the former email-based user creation flow. Use `openspec/specs/users/user-registration/spec.md` and `libs/users/specs/openapi.yaml` for the current profile contract. This file is retained only as historical migration context.
+
 # Spec Context: create-user
 
 ## Service

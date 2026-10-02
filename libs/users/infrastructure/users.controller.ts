@@ -2,29 +2,36 @@ import {
   BadRequestException,
   ConflictException,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   Post,
   Body,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { z } from 'zod';
-import { CreateUserUseCase } from '../application/create-user.use-case';
-import { EmailAlreadyExistsError } from '../application/user.repository';
+import { CreateProfileUseCase } from '../application/create-profile.use-case';
+import { ProfileAlreadyExistsError } from '../application/profile.repository';
 import { formatZodValidationErrors } from '@app/shared/validation/zod-validation-error';
 
-const createUserSchema = z
+const createProfileSchema = z
   .object({
     name: z.string().trim().min(1),
     surname: z.string().trim().min(1),
-    email: z.string().trim().min(1).email(),
     address: z.string().trim().min(1),
     phone: z.string().trim().min(1),
   })
   .strict();
 
+interface SessionRequest {
+  authUserId?: string;
+  authEmailVerified?: boolean;
+}
+
 @Controller('users')
 export class UsersController {
-  constructor(private readonly createUserUseCase: CreateUserUseCase) {}
+  constructor(private readonly createProfileUseCase: CreateProfileUseCase) {}
 
   @Get('health')
   health(): { status: string } {
@@ -33,8 +40,8 @@ export class UsersController {
 
   @Post()
   @HttpCode(201)
-  async create(@Body() body: unknown) {
-    const parsedBody = createUserSchema.safeParse(body);
+  async create(@Body() body: unknown, @Req() request: SessionRequest) {
+    const parsedBody = createProfileSchema.safeParse(body);
     if (!parsedBody.success) {
       throw new BadRequestException({
         statusCode: 400,
@@ -44,11 +51,22 @@ export class UsersController {
       });
     }
 
+    if (!request.authUserId) {
+      throw new UnauthorizedException('Invalid session');
+    }
+
+    if (!request.authEmailVerified) {
+      throw new ForbiddenException('Email not verified');
+    }
+
     try {
-      return await this.createUserUseCase.execute(parsedBody.data);
+      return await this.createProfileUseCase.execute({
+        ...parsedBody.data,
+        authUserId: request.authUserId,
+      });
     } catch (error) {
-      if (error instanceof EmailAlreadyExistsError) {
-        throw new ConflictException('Email already exists');
+      if (error instanceof ProfileAlreadyExistsError) {
+        throw new ConflictException('Profile already exists');
       }
 
       throw error;

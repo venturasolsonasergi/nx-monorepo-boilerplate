@@ -28,6 +28,7 @@
       "@app/api/*": ["apps/api/src/*"],
       "@app/users/*": ["libs/users/*"],
       "@app/orders/*": ["libs/orders/*"],
+      "@app/auth/*": ["libs/auth/*"],
       "@app/shared/domain": ["libs/shared/domain"],
       "@app/shared/domain/*": ["libs/shared/domain/*"],
       "@app/shared/validation": ["libs/shared/validation"],

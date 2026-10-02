@@ -1,18 +1,23 @@
 import { z } from 'zod';
 
-export const userSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
+// Mirrors the users OpenAPI ProfileResponse: the profile is keyed by an
+// integer id and linked to the auth-owned authUserId. Identity fields such as
+// email are intentionally absent.
+export const profileSchema = z.object({
+  id: z.number().int().positive(),
+  authUserId: z.string().min(1),
   name: z.string().min(1),
-  createdAt: z.string(),
+  surname: z.string().min(1),
+  address: z.string().min(1),
+  phone: z.string().min(1),
 });
 
-export const usersListSchema = z.array(userSchema);
-
-export const createUserInputSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1, 'El nombre es obligatorio'),
+export const createProfileInputSchema = z.object({
+  name: z.string().trim().min(1, 'El nombre es obligatorio'),
+  surname: z.string().trim().min(1, 'Los apellidos son obligatorios'),
+  address: z.string().trim().min(1, 'La dirección es obligatoria'),
+  phone: z.string().trim().min(1, 'El teléfono es obligatorio'),
 });
 
-export type User = z.infer<typeof userSchema>;
-export type CreateUserInput = z.infer<typeof createUserInputSchema>;
+export type Profile = z.infer<typeof profileSchema>;
+export type CreateProfileInput = z.infer<typeof createProfileInputSchema>;

@@ -41,7 +41,12 @@ projects on that machine.
 1. Use `/opsx-explore` if scope or behavior is unclear.
 2. Use `/opsx-propose` to create `proposal.md`, capability delta specs,
    `design.md` when needed, and `tasks.md`.
-3. Review the requirements and tasks with the user. Do not implement before they
+3. For browser, email, or external-provider flows, review the complete
+   observable path: start, return URL, cookies/state, redirect destination,
+   failure behavior, and any client route needed. Give each cross-boundary
+   task a host-level test that follows the return path; a mocked callback or
+   authorization URL alone does not demonstrate completion. Review the
+   requirements and tasks with the user. Do not implement before they
    explicitly approve the plan.
 4. Validate the change and each affected HTTP contract:
 
@@ -74,15 +79,29 @@ pnpm run verify -- --service <service>
 
 `verify` runs architecture, domain-purity, invariant, dependency, and contract
 checks. The optional `--service` scopes contract tests only; architecture and
-dependency validation still covers the monorepo. Include `pnpm web:build`,
-`pnpm web:test`, or API e2e tests only when the change touches those surfaces. 3. Run `/opsx-verify` (Claude: `/opsx:verify`) for a report-only comparison of
-implementation against the change artifacts. It does not replace executable
-tests. Resolve any behavior mismatch by updating/reviewing the artifacts
-before changing implementation.
+dependency validation still covers the monorepo. Run API e2e tests whenever a
+change crosses an HTTP host, browser, email-link, cookie, or provider callback
+boundary. A local provider/mail substitute can complete these flows without
+production credentials:
+
+```powershell
+pnpm run api:test:e2e -- --runInBand
+```
+
+Run `pnpm web:build` and `pnpm web:test` when the client changes. If a redirect
+targets an unimplemented client route outside the approved scope, record it as
+a release dependency, not as a working end-to-end user journey.
+
+3. Run `/opsx-verify` (Claude: `/opsx:verify`) for a report-only comparison of
+   implementation against the change artifacts. It does not replace executable
+   tests. Resolve any behavior mismatch by updating/reviewing the artifacts
+   before changing implementation.
 
 **Exit gate:** all tasks are checked, service tests and required repo-wide
 checks pass, OpenAPI validates, and OpenSpec verification has no unresolved
-critical mismatch.
+critical mismatch. For cross-boundary flows, record which scenario is covered
+by which executable host-level test and whether any external or client
+dependency remains unverified; do not mark a flow complete on green mocks alone.
 
 ## Phase 3: Archive and Prepare Commit
 

@@ -2,8 +2,8 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import request from 'supertest';
-import { CreateUserUseCase } from '../application/create-user.use-case';
-import { EmailAlreadyExistsError } from '../application/user.repository';
+import { CreateProfileUseCase } from '../application/create-profile.use-case';
+import { ProfileAlreadyExistsError } from '../application/profile.repository';
 import { UsersController } from '../infrastructure/users.controller';
 
 describe('users contract', () => {
@@ -11,9 +11,9 @@ describe('users contract', () => {
   const execute =
     jest.fn<
       (input: {
+        authUserId: string;
         name: string;
         surname: string;
-        email: string;
         address: string;
         phone: string;
       }) => Promise<unknown>
@@ -23,10 +23,28 @@ describe('users contract', () => {
     execute.mockReset();
     const module = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [{ provide: CreateUserUseCase, useValue: { execute } }],
+      providers: [{ provide: CreateProfileUseCase, useValue: { execute } }],
     }).compile();
 
     app = module.createNestApplication();
+    app.use(
+      (
+        req: {
+          headers: Record<string, unknown>;
+          authUserId?: string;
+          authEmailVerified?: boolean;
+        },
+        _res: unknown,
+        next: () => void,
+      ) => {
+        const authUserId = req.headers['x-auth-user-id'];
+        if (typeof authUserId === 'string') {
+          req.authUserId = authUserId;
+        }
+        req.authEmailVerified = req.headers['x-email-verified'] === 'true';
+        next();
+      },
+    );
     await app.init();
   });
 
@@ -34,43 +52,90 @@ describe('users contract', () => {
     await app.close();
   });
 
-  it('creates a user with the persisted id', async () => {
-    const user = {
-      id: 1,
-      name: ' Ada ',
-      surname: ' Lovelace ',
-      email: 'ada@example.com',
-      address: ' 1 Main Street ',
-      phone: '555-0100',
-    };
+  it('creates a profile for the server-derived authenticated identity', async () => {
     execute.mockResolvedValue({
-      ...user,
+      id: 1,
+      authUserId: 'auth-user-1',
       name: 'Ada',
       surname: 'Lovelace',
       address: '1 Main Street',
+      phone: '555-0100',
     });
 
     await request(app.getHttpServer())
       .post('/users')
+      .set('x-auth-user-id', 'auth-user-1')
+      .set('x-email-verified', 'true')
       .send({
-        name: user.name,
-        surname: user.surname,
-        email: user.email,
-        address: user.address,
-        phone: user.phone,
+        name: ' Ada ',
+        surname: ' Lovelace ',
+        address: ' 1 Main Street ',
+        phone: '555-0100',
       })
       .expect(201)
       .expect({
-        ...user,
+        id: 1,
+        authUserId: 'auth-user-1',
         name: 'Ada',
         surname: 'Lovelace',
         address: '1 Main Street',
+        phone: '555-0100',
       });
+
+    expect(execute).toHaveBeenCalledWith({
+      authUserId: 'auth-user-1',
+      name: 'Ada',
+      surname: 'Lovelace',
+      address: '1 Main Street',
+      phone: '555-0100',
+    });
+  });
+
+  it('rejects profile creation without an active session', async () => {
+    await request(app.getHttpServer())
+      .post('/users')
+      .send({
+        name: 'Ada',
+        surname: 'Lovelace',
+        address: 'Street',
+        phone: '555',
+      })
+      .expect(401)
+      .expect({
+        statusCode: 401,
+        message: 'Invalid session',
+        error: 'Unauthorized',
+      });
+
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('rejects profile creation for an unverified identity', async () => {
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('x-auth-user-id', 'auth-user-1')
+      .set('x-email-verified', 'false')
+      .send({
+        name: 'Ada',
+        surname: 'Lovelace',
+        address: 'Street',
+        phone: '555',
+      })
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message: 'Email not verified',
+        error: 'Forbidden',
+      });
+
+    expect(execute).not.toHaveBeenCalled();
   });
 
   it('returns descriptive details for missing fields', async () => {
     await request(app.getHttpServer())
       .post('/users')
+      .set('x-auth-user-id', 'auth-user-1')
+      .set('x-email-verified', 'true')
       .send({ name: 'Sergi', surname: 'Ventura Solsona' })
       .expect(400)
       .expect({
@@ -78,7 +143,6 @@ describe('users contract', () => {
         message: 'Validation failed',
         error: 'Bad Request',
         details: [
-          { field: 'email', code: 'required', message: 'email is required' },
           {
             field: 'address',
             code: 'required',
@@ -91,15 +155,18 @@ describe('users contract', () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
-  it('rejects invalid and unknown fields with details', async () => {
+  it('rejects empty fields and identity-related or unknown fields', async () => {
     await request(app.getHttpServer())
       .post('/users')
+      .set('x-auth-user-id', 'auth-user-1')
+      .set('x-email-verified', 'true')
       .send({
         name: '',
         surname: 'Lovelace',
-        email: 'invalid',
         address: 'Street',
         phone: '555',
+        email: 'ada@example.com',
+        authUserId: 'forged',
         id: 9,
       })
       .expect(400)
@@ -119,8 +186,13 @@ describe('users contract', () => {
             },
             {
               field: 'email',
-              code: 'invalid_format',
-              message: 'email has an invalid format',
+              code: 'unrecognized_keys',
+              message: 'email is not allowed',
+            },
+            {
+              field: 'authUserId',
+              code: 'unrecognized_keys',
+              message: 'authUserId is not allowed',
             },
             {
               field: 'id',
@@ -134,22 +206,23 @@ describe('users contract', () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
-  it('maps duplicate email errors to conflict', async () => {
-    execute.mockRejectedValue(new EmailAlreadyExistsError());
+  it('maps duplicate profile errors to conflict', async () => {
+    execute.mockRejectedValue(new ProfileAlreadyExistsError());
 
     await request(app.getHttpServer())
       .post('/users')
+      .set('x-auth-user-id', 'auth-user-1')
+      .set('x-email-verified', 'true')
       .send({
         name: 'Ada',
         surname: 'Lovelace',
-        email: 'ada@example.com',
         address: 'Street',
         phone: '555',
       })
       .expect(409)
       .expect({
         statusCode: 409,
-        message: 'Email already exists',
+        message: 'Profile already exists',
         error: 'Conflict',
       });
   });

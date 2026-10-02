@@ -3,7 +3,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const services = ['users', 'orders'];
+const libsDir = path.join(root, 'libs');
+const services = fs.readdirSync(libsDir, { withFileTypes: true })
+  .filter(
+    (entry) =>
+      entry.isDirectory() &&
+      fs.existsSync(path.join(libsDir, entry.name, 'microservice.json')),
+  )
+  .map((entry) => entry.name)
+  .sort();
 const report = [];
 let failed = false;
 

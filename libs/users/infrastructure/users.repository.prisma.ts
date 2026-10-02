@@ -1,37 +1,37 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from './prisma/generated/client';
-import { UserEntity } from '../domain/user.entity';
+import { ProfileEntity } from '../domain/profile.entity';
 import {
-  EmailAlreadyExistsError,
-  type UserRepository,
-} from '../application/user.repository';
+  ProfileAlreadyExistsError,
+  type ProfileRepository,
+} from '../application/profile.repository';
 import { PrismaService } from './prisma/prisma.service';
 
 @Injectable()
-export class UsersPrismaRepository implements UserRepository {
+export class UsersPrismaRepository implements ProfileRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findById(id: number): Promise<UserEntity | null> {
+  async findById(id: number): Promise<ProfileEntity | null> {
     const record = await this.prisma.userRecord.findUnique({ where: { id } });
-    return record ? new UserEntity(record) : null;
+    return record ? new ProfileEntity(record) : null;
   }
 
-  async save(entity: UserEntity): Promise<UserEntity> {
+  async save(entity: ProfileEntity): Promise<ProfileEntity> {
     try {
       const record = await this.prisma.userRecord.create({
         data: {
+          authUserId: entity.props.authUserId,
           name: entity.props.name,
           surname: entity.props.surname,
-          email: entity.props.email,
           address: entity.props.address,
           phone: entity.props.phone,
         },
       });
-      return new UserEntity(record);
+      return new ProfileEntity(record);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if ((error as { code?: string }).code === 'P2002') {
-          throw new EmailAlreadyExistsError();
+          throw new ProfileAlreadyExistsError();
         }
       }
 

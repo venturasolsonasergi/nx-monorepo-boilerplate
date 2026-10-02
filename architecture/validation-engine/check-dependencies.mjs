@@ -3,14 +3,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const targets = [
-  'libs/users/domain',
-  'libs/users/application',
-  'libs/users/infrastructure',
-  'libs/orders/domain',
-  'libs/orders/application',
-  'libs/orders/infrastructure',
-];
+const libsDir = path.join(root, 'libs');
+const services = fs
+  .readdirSync(libsDir, { withFileTypes: true })
+  .filter(
+    (entry) =>
+      entry.isDirectory() &&
+      fs.existsSync(path.join(libsDir, entry.name, 'microservice.json')),
+  )
+  .map((entry) => entry.name)
+  .sort();
+
+const targets = services.flatMap((service) => [
+  `libs/${service}/domain`,
+  `libs/${service}/application`,
+  `libs/${service}/infrastructure`,
+]);
 
 const forbiddenByLayer = {
   domain: ['@nestjs/', '@prisma/client', 'zod', 'src/shared/validation'],
@@ -35,10 +43,20 @@ function walk(dir, all = []) {
   return all;
 }
 
+function referencesForeignDomain(imp, currentService) {
+  return services.some(
+    (service) =>
+      service !== currentService &&
+      (imp.includes(`/libs/${service}/domain`) ||
+        imp.includes(`/${service}/domain/`)),
+  );
+}
+
 const violations = [];
 for (const rel of targets) {
   const abs = path.join(root, rel);
   if (!fs.existsSync(abs)) continue;
+  const currentService = rel.split('/')[1];
   const layer = rel.includes('/domain') ? 'domain' : rel.includes('/application') ? 'application' : 'infrastructure';
   for (const file of walk(abs)) {
     const imports = scanFile(file);
@@ -48,10 +66,7 @@ for (const rel of targets) {
           violations.push({ file: path.relative(root, file), import: imp, rule: `${layer} forbids ${token}` });
         }
       }
-      if (layer === 'domain' && imp.includes('/orders/domain') && file.includes('libs/users/domain')) {
-        violations.push({ file: path.relative(root, file), import: imp, rule: 'cross microservice domain import forbidden' });
-      }
-      if (layer === 'domain' && imp.includes('/users/domain') && file.includes('libs/orders/domain')) {
+      if (layer === 'domain' && referencesForeignDomain(imp, currentService)) {
         violations.push({ file: path.relative(root, file), import: imp, rule: 'cross microservice domain import forbidden' });
       }
     }

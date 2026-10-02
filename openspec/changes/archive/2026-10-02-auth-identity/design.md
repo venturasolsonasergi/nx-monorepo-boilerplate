@@ -1,0 +1,50 @@
+# Design
+
+## Context
+
+See proposal.md for motivation and the auth/identity-sessions and users/user-registration delta specs for observable behavior. Today `POST /users` creates a combined email/profile record with an integer id; `apps/api/src/app.module.ts` mounts users and orders explicitly. Each service has its own Prisma config, generated client, and PostgreSQL database. The existing users contract tests assert the old request/response and email conflict. The web client is the only initial consumer.
+
+## Goals / Non-Goals
+
+**Goals:** Keep authentication state and credential handling in auth, enforce session and verified-email checks at the API boundary, and give users a stable opaque authUserId with a one-profile-per-identity constraint. Keep service-local OpenAPI and migration ownership.
+
+**Non-Goals:** Implement JWT/bearer auth for third-party clients, automatically create profiles, protect orders in this release, or silently infer links between legacy profile rows and new identities.
+
+## Decisions
+
+### Auth integration and transport
+
+Create `libs/auth` as a discovered service with its own OpenAPI contract, application ports/use cases, thin Nest controller/module, and infrastructure adapter around self-hosted Better Auth. Wire it through the API host. Better Auth owns credential hashing, account linking, verification and session lifecycle; wrappers only translate the agreed REST paths, response shapes and errors. Use an HTTP-only session cookie with Secure enabled on HTTPS, appropriate SameSite/path settings, trusted web origins, and CSRF/origin protection for cookie-authenticated state changes. The login and refresh responses do not expose a reusable session token in JSON. Logout revokes the server-side session rather than merely clearing the cookie. OAuth initiation is exposed as POST with a provider allowlist; the provider callback has a separate GET handler and only redirects to approved origins. Prefer Better Auth's session rotation/extension and verification APIs over implementing a separate browser refresh-token grant. Alternative: bespoke tokens in controllers; rejected because it would duplicate security-critical lifecycle rules.
+
+### Identity and profile boundary
+
+Auth is authoritative for email, credentials, accounts, verification state and sessions. Users owns name, surname, address and phone only. `POST /users` derives authUserId and verified-email status from server-validated session context (not request JSON), keeps its integer profile id for profile addressing, and enforces a unique authUserId. Root-host middleware or a shared auth adapter validates the cookie and sets request authUserId/verification context only on protected endpoints; users health stays public. No import of auth domain internals into users. An optional signup event remains out of the critical path: explicit profile creation after verification is the only behavior in this change. Alternative: auth creates profiles synchronously; rejected to avoid cross-service availability and transaction coupling.
+
+### Data and migrations
+
+Use `libs/auth/infrastructure/prisma/schema.prisma` (the requested dedicated auth Prisma repository/schema, rather than a root-level `auth.prisma` file) with `auth.prisma`-equivalent ownership, `AUTH_DATABASE_URL`, its own generated client and migrations targeting `auth_db`. Map Better Auth's user, account, session and verification models to `auth_users`, `auth_accounts`, `auth_sessions`, and `auth_verification_tokens`. Do not create a dedicated `auth_password_reset_tokens` table: Better Auth 1.7.7 has no password-reset table and issues/consumes reset tokens in the verification store under the `reset-password:<token>` identifier, so a separate table would create a second token authority. Verified against the pinned version with `getAuthTables` (see task 1.1). Never store raw reset/verification secrets in application-owned records. Prisma for users migrates away from email to a unique string authUserId. Separate databases cannot enforce a SQL FK across auth and users; session validation and uniqueness provide the boundary guarantee. Alternative: one shared database/Prisma client; rejected because service-local migrations and identity isolation are requirements.
+
+### HTTP contracts and failure modes
+
+Define auth operations and cookie-based security/error shapes in `libs/auth/specs/openapi.yaml` and replace the old users registration request/response and email-conflict semantics in `libs/users/specs/openapi.yaml`. Signup and email verification do not establish a session; email/password login requires verification. OAuth is allowed to establish a session only when provider email verification can be trusted; otherwise use the verification flow. Unknown providers and untrusted redirects fail closed. Password reset request gives a uniform non-enumerating response; confirmation consumes its token and revokes existing sessions. Tests cover token expiry, idempotent reuse of a valid email-verification token, and reset-token reuse. Other coverage includes duplicate identities/profiles, protected endpoints, cookie renewal and revocation, unverified state, and OAuth callbacks. Mail delivery and OAuth credentials must be configured by deployment; do not treat mock-only delivery as production-ready. The OAuth callback path is aligned with the auth service base path (`basePath=/auth`, callback `GET /auth/callback/:provider`) so the provider redirect URI matches an exposed route, and the post-callback destination is the web origin (`AUTH_WEB_URL`), never the API origin. Verification and reset emails carry service-hosted links that the service exposes directly (`GET /auth/verify-email`, `GET /auth/reset-password/confirm`) and that redirect to approved web destinations; reset confirmation still requires the web app to POST the new password. Cross-origin browser access uses credentialed CORS plus a dev proxy, and origin/CSRF checks reject state-changing requests from untrusted origins on both auth and users routes.
+
+## Risks / Trade-offs
+
+- [Better Auth schema/adapter versions may not expose a separate reset-token table or the desired REST routes] -> Prove compatibility with a version-pinned integration test before generating migrations; update the planned schema/contract for review if unsupported, never invent a parallel credential authority.
+- [Cross-database authUserId has no referential FK and deletion can orphan profiles] -> Validate session identity on creation; defer deletion/cleanup to a separately specified lifecycle contract.
+- [Cookie authentication across browser/API origins can fail or admit CSRF] -> Configure credentials, trusted origins, SameSite, HTTPS and origin/CSRF checks together; test the real browser-facing host boundary.
+- [Users old records lack authUserId and `POST /users` is incompatible] -> Require an explicit user mapping/cutover decision before dropping legacy columns; do not fabricate identities or silently lose profiles.
+- [OAuth account linking can merge unrelated identities] -> Link only when provider-verified email and Better Auth's linking policy permit it; cover conflicting accounts in contract tests.
+
+## Migration Plan
+
+1. Review the HTTP contracts and delta specs, pin and verify the Better Auth adapter/Prisma schema mapping, then configure `auth_db`, `AUTH_DATABASE_URL`, session secret, email delivery and provider settings. Create the auth database in deployment initialization alongside existing service databases; existing Docker volumes may need a one-off database creation step because initialization scripts run only on a fresh volume.
+2. Apply auth migrations independently and deploy auth wiring before enabling the new profile endpoint. Test signup, verification, login, refresh, logout, reset and configured OAuth flows with credentials and cookies.
+3. For environments with existing users rows, establish an explicit verified identity-to-profile mapping and backfill authUserId with uniqueness checks before migrating away from email; block the breaking switch if a safe mapping is unavailable. For empty/dev databases, the new profile schema may be deployed directly.
+4. Coordinate the external web client's switch to signup -> verify -> login -> authenticated `POST /users` with the breaking API rollout; replace the users API contract and deploy profile changes together. Preserve users health. Web client implementation is outside this change.
+5. Roll back the API and web contract together if needed, retaining auth data and database backups; do not reverse destructive users migrations until old columns and their data can be safely restored.
+
+## Follow-Up Coverage
+
+- Expiry and reuse are exercised end to end in the API-host e2e suite: an expired verification token is rejected (the email link redirects with `error=INVALID_TOKEN`), a still-valid verification token succeeds when reused after verification, an expired reset token is rejected with `400`, and an expired session is rejected with `401` on protected routes and on `POST /auth/refresh` with no replacement cookie. Verification and reset tokens are handled by Better Auth; its stateless verification JWT makes a valid replay idempotent for an already-verified identity. The repeated request does not create a session or change the verified state. Expiry tests manipulate token/session expiry only at the test boundary (expired verification JWT signed with the test secret, and expired `auth_verification_tokens`/`auth_sessions` rows) and change no runtime behavior.
+- The web client's users feature has been aligned with the new profile contract: the response schema expects an integer `id` and a string `authUserId` with `name`/`surname`/`address`/`phone` (no `email`), the creation form submits profile fields only, the stale email-based list path was removed, and profile creation is gated behind an active verified session using the existing `POST /auth/refresh` probe before `POST /users` is offered. Email/password login UI remains an external release dependency.

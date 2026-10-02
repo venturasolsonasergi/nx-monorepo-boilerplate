@@ -1,0 +1,583 @@
+openapi: 3.0.3
+info:
+  title: Auth Service API
+  version: 0.1.0
+  x-spec-id: auth-identity
+  description: >
+    Identity and browser-session contract for registering, verifying,
+    authenticating, and recovering accounts. The service owns identity,
+    credentials, and sessions only; it never owns business profile data.
+    Access to protected endpoints is carried by an HTTP-only session cookie
+    set on login or OAuth callback, not by a bearer token in the response body.
+paths:
+  /auth/signup:
+    post:
+      operationId: authSignup
+      summary: Register an identity pending email verification
+      description: >
+        Creates an identity with a unique email and password and returns a
+        pending-verification status. No session cookie is issued until the
+        email is verified.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: Identity registered pending verification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+        '400':
+          description: Invalid signup data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+        '403':
+          description: Request from an untrusted origin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/verify-email:
+    get:
+      operationId: authVerifyEmailLink
+      summary: Verify an email from the emailed link and redirect to the web app
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirectTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        '302':
+          description: Redirect to an approved web destination
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+    post:
+      operationId: authVerifyEmail
+      summary: Verify an email address with a verification token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Email verified; repeated verification succeeds idempotently
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyEmailResponse'
+        '400':
+          description: Invalid or expired verification token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Request from an untrusted origin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/login:
+    post:
+      operationId: authLogin
+      summary: Log in with verified credentials
+      description: >
+        Issues a browser session only when the identity is email verified.
+        Sets an HTTP-only session cookie and never returns the session token
+        in the response body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated; session cookie set
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SessionCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials or unverified identity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Request from an untrusted origin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/logout:
+    post:
+      operationId: authLogout
+      summary: Revoke the active session and clear its cookie
+      responses:
+        '200':
+          description: Session revoked and cookie cleared
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/ClearedSessionCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '403':
+          description: Request from an untrusted origin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/refresh:
+    post:
+      operationId: authRefresh
+      summary: Renew an active session
+      description: >
+        Renews an active session without requiring a browser-visible refresh
+        token. Any replacement cookie is delivered in the response.
+      responses:
+        '200':
+          description: Session renewed
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SessionCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '401':
+          description: Expired, revoked, or absent session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Request from an untrusted origin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/reset-password/request:
+    post:
+      operationId: authRequestPasswordReset
+      summary: Request a password reset without disclosing account existence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '200':
+          description: Uniform non-disclosing response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetRequestResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Request from an untrusted origin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/reset-password/confirm:
+    get:
+      operationId: authResetPasswordLink
+      summary: Redirect an emailed reset link to the web app
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirectTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        '302':
+          description: Redirect to an approved web destination with the token
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+    post:
+      operationId: authConfirmPasswordReset
+      summary: Change a password with a single-use reset token
+      description: >
+        Consumes the reset token, changes the password, and revokes previously
+        active sessions for the identity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+      responses:
+        '200':
+          description: Password changed and previous sessions revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: Invalid, expired, or reused reset token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Request from an untrusted origin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/oauth/{provider}:
+    post:
+      operationId: authOauthStart
+      summary: Start an OAuth flow for a configured provider
+      parameters:
+        - $ref: '#/components/parameters/OAuthProvider'
+      responses:
+        '200':
+          description: Authorization URL for the configured provider
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/OAuthStateCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthStartResponse'
+        '400':
+          description: Unsupported or unconfigured provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Request from an untrusted origin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/callback/{provider}:
+    get:
+      operationId: authOauthCallback
+      summary: Complete an OAuth flow and redirect to an approved origin
+      parameters:
+        - $ref: '#/components/parameters/OAuthProvider'
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: better-auth.state
+          in: cookie
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to an approved web destination
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+            Set-Cookie:
+              $ref: '#/components/headers/SessionCookie'
+        '400':
+          description: Failed callback or untrusted redirect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+components:
+  parameters:
+    OAuthProvider:
+      name: provider
+      in: path
+      required: true
+      schema:
+        type: string
+  headers:
+    SessionCookie:
+      description: >
+        HTTP-only authenticated session cookie. Secure is enabled on HTTPS and
+        SameSite/path are set by deployment policy.
+      schema:
+        type: string
+    ClearedSessionCookie:
+      description: Expired session cookie that clears the browser session.
+      schema:
+        type: string
+    OAuthStateCookie:
+      description: >
+        Short-lived, signed state cookie emitted when starting an OAuth flow.
+        The browser must return it on the callback so the provider redirect is
+        validated against the original request.
+      schema:
+        type: string
+  schemas:
+    SignupRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          minLength: 8
+    SignupResponse:
+      type: object
+      required:
+        - userId
+        - status
+      properties:
+        userId:
+          type: string
+        status:
+          type: string
+          enum: [pending-verification]
+    VerifyEmailRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          minLength: 1
+    VerifyEmailResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [verified]
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+    LoginResponse:
+      type: object
+      required:
+        - userId
+        - status
+      properties:
+        userId:
+          type: string
+        status:
+          type: string
+          enum: [authenticated]
+    RefreshResponse:
+      type: object
+      required:
+        - userId
+        - status
+      properties:
+        userId:
+          type: string
+        status:
+          type: string
+          enum: [authenticated]
+    PasswordResetRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+    PasswordResetRequestResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum: [accepted]
+        message:
+          type: string
+    PasswordResetConfirmRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - token
+        - password
+      properties:
+        token:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 8
+    OAuthStartResponse:
+      type: object
+      required:
+        - provider
+        - authorizationUrl
+      properties:
+        provider:
+          type: string
+        authorizationUrl:
+          type: string
+          format: uri
+    StatusResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [ok]
+    BadRequestError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+        - details
+      properties:
+        statusCode:
+          type: integer
+          enum: [400]
+        message:
+          type: string
+          enum: [Validation failed]
+        error:
+          type: string
+          enum: [Bad Request]
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationErrorDetail'
+    ValidationErrorDetail:
+      type: object
+      required:
+        - field
+        - code
+        - message
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+          enum:
+            - required
+            - invalid_type
+            - too_small
+            - invalid_format
+            - unrecognized_keys
+        message:
+          type: string
+    UnauthorizedError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [401]
+        message:
+          type: string
+          enum: [Invalid credentials]
+        error:
+          type: string
+          enum: [Unauthorized]
+    ForbiddenError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [403]
+        message:
+          type: string
+          enum: [Untrusted origin]
+        error:
+          type: string
+          enum: [Forbidden]
+    ConflictError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [409]
+        message:
+          type: string
+          enum: [Email already exists]
+        error:
+          type: string
+          enum: [Conflict]

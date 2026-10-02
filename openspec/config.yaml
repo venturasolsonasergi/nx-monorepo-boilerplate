@@ -30,14 +30,17 @@ rules:
   specs:
     - Write normative, testable behavior with at least one WHEN/THEN scenario per requirement.
     - Cover success, validation, error, persistence, and compatibility cases where they apply; do not require irrelevant categories.
+    - For flows crossing browser, email, or external-provider boundaries, describe the observable entry point, return path, destination, session or state continuity, and failure outcome where applicable.
     - Keep implementation details such as NestJS classes and Prisma query design out of behavioral requirements.
     - Keep each service capability self-contained for extraction; cross-service behavior must reference a public contract, never another service's domain internals.
   design:
     - Explain affected service boundaries, layer placement, persistence/migration impact, risks, and rollback when applicable.
+    - For external SDK or redirect integrations, verify the chosen version's actual URLs, cookies or state handling, and callback behavior before committing to an adapter design.
     - Keep API contract changes in the affected libs/<service>/specs/openapi.yaml and align response/error shapes with the delta spec.
   tasks:
     - Use tracked checkboxes in dependency order; every task states its service scope and a concrete verification command or observable result.
     - Include the service's relevant unit/contract tests and OpenAPI validation in the tasks that introduce the behavior.
+    - For flows crossing an external boundary, require a host-level test that follows the return path and preserves required cookies or state; initiating the flow or mocking its callback alone does not complete the task.
     - Include repo-wide architecture/dependency checks for changes that can affect shared boundaries; do not replace those with service-only tests.
 
 operations:
@@ -46,6 +49,7 @@ operations:
       - Read the full change artifacts and inspect the named service before implementing.
       - For NestJS API changes, follow .agents/skills/nestjs-sdd-api-practices/SKILL.md.
       - Implement one task at a time and mark it complete only after its stated verification succeeds.
+      - When a task covers a browser, email, or external-provider flow, run its end-to-end return-path test before marking it complete; record unverified external dependencies explicitly.
       - Stop and update the change artifacts if implementation reveals a material requirement or design mismatch.
   archive:
     guidance:

@@ -1,12 +1,18 @@
 openapi: 3.0.3
 info:
   title: Users Service API
-  version: 0.2.0
-  x-spec-id: create-user
+  version: 0.3.0
+  x-spec-id: create-profile
+  description: >
+    Creates a business profile for the authenticated, email-verified identity.
+    Identity fields (email) and the identity identifier are owned by the auth
+    service; the profile is linked to the caller's server-derived authUserId
+    and never to a caller-supplied identifier.
 paths:
   /users/health:
     get:
       operationId: usersHealth
+      security: []
       responses:
         '200':
           description: Service health status
@@ -16,41 +22,60 @@ paths:
                 $ref: '#/components/schemas/HealthResponse'
   /users:
     post:
-      operationId: createUser
+      operationId: createProfile
+      summary: Create a profile for the authenticated identity
+      security:
+        - sessionCookie: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserRequest'
+              $ref: '#/components/schemas/CreateProfileRequest'
       responses:
         '201':
-          description: User created
+          description: Profile created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: '#/components/schemas/ProfileResponse'
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Missing or invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Authenticated identity is not email verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '409':
-          description: Email already exists
+          description: Profile already exists for this identity
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictError'
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
   schemas:
-    CreateUserRequest:
+    CreateProfileRequest:
       type: object
       additionalProperties: false
       required:
         - name
         - surname
-        - email
         - address
         - phone
       properties:
@@ -59,10 +84,6 @@ components:
           minLength: 1
         surname:
           type: string
-          minLength: 1
-        email:
-          type: string
-          format: email
           minLength: 1
         address:
           type: string
@@ -70,26 +91,25 @@ components:
         phone:
           type: string
           minLength: 1
-    UserResponse:
+    ProfileResponse:
       type: object
       required:
         - id
+        - authUserId
         - name
         - surname
-        - email
         - address
         - phone
       properties:
         id:
           type: integer
           format: int32
+        authUserId:
+          type: string
         name:
           type: string
         surname:
           type: string
-        email:
-          type: string
-          format: email
         address:
           type: string
         phone:
@@ -142,6 +162,38 @@ components:
             - unrecognized_keys
         message:
           type: string
+    UnauthorizedError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [401]
+        message:
+          type: string
+          enum: [Invalid session]
+        error:
+          type: string
+          enum: [Unauthorized]
+    ForbiddenError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [403]
+        message:
+          type: string
+          enum: [Email not verified]
+        error:
+          type: string
+          enum: [Forbidden]
     ConflictError:
       type: object
       required:
@@ -154,7 +206,7 @@ components:
           enum: [409]
         message:
           type: string
-          enum: [Email already exists]
+          enum: [Profile already exists]
         error:
           type: string
           enum: [Conflict]

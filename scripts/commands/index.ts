@@ -1,10 +1,7 @@
 import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import {
-  discoverServices,
-  requireServiceArg,
-} from '../utils/services';
+import { discoverServices, requireServiceArg } from '../utils/services';
 import {
   ROOT_DIR,
   runCommand,
@@ -30,10 +27,13 @@ export function checkDependencies(): void {
   runNodeScript('architecture/validation-engine/check-dependencies.mjs');
 }
 
+const JEST_BIN = join(ROOT_DIR, 'node_modules', 'jest', 'bin', 'jest.js');
+
 export function runContractTests(service?: string): void {
   const services = resolveTargetServices(service);
-  runCommand('pnpm', [
-    'jest',
+  runCommand(process.execPath, [
+    '--experimental-vm-modules',
+    JEST_BIN,
     ...services.map((name) => `libs/${name}/tests`),
     '--runInBand',
   ]);
@@ -54,7 +54,13 @@ function prismaConfigPath(service: string): string {
   return `libs/${service}/infrastructure/prisma/prisma.config.ts`;
 }
 
-const PRISMA_BIN = join(ROOT_DIR, 'node_modules', 'prisma', 'build', 'index.js');
+const PRISMA_BIN = join(
+  ROOT_DIR,
+  'node_modules',
+  'prisma',
+  'build',
+  'index.js',
+);
 
 export function prismaGenerate(service?: string): void {
   for (const name of resolveTargetServices(service)) {
@@ -71,7 +77,10 @@ export function prismaGenerate(service?: string): void {
   }
 }
 
-export function prismaMigrate(service?: string, extraArgs: string[] = []): void {
+export function prismaMigrate(
+  service?: string,
+  extraArgs: string[] = [],
+): void {
   const [name] = resolveTargetServices(requireServiceArg(service));
   runCommand('node', [
     PRISMA_BIN,

@@ -1,18 +1,18 @@
-export interface UserEntityProps {
+export interface ProfileEntityProps {
   id?: number;
+  authUserId: string;
   name: string;
   surname: string;
-  email: string;
   address: string;
   phone: string;
 }
 
-export class UserEntity {
-  constructor(public readonly props: UserEntityProps) {
-    const requiredFields: Array<keyof Omit<UserEntityProps, 'id'>> = [
+export class ProfileEntity {
+  constructor(public readonly props: ProfileEntityProps) {
+    const requiredFields: Array<keyof Omit<ProfileEntityProps, 'id'>> = [
+      'authUserId',
       'name',
       'surname',
-      'email',
       'address',
       'phone',
     ];
@@ -27,7 +27,7 @@ export class UserEntity {
       props.id !== undefined &&
       (!Number.isInteger(props.id) || props.id <= 0)
     ) {
-      throw new Error('User id must be a positive integer');
+      throw new Error('Profile id must be a positive integer');
     }
   }
 }

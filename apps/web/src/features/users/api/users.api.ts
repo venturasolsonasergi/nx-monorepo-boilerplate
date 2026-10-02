@@ -1,16 +1,20 @@
 import { apiClient } from '../../../shared/lib/api-client';
 import {
-  createUserInputSchema,
-  userSchema,
-  usersListSchema,
-  type CreateUserInput,
+  createProfileInputSchema,
+  profileSchema,
+  type CreateProfileInput,
 } from './users.schema';
 
 const USERS_PATH = '/users';
 
 // The only place in the feature that knows the actual HTTP contract with apps/api.
+// POST /users creates the caller's profile from the verified session; there is
+// no list endpoint in the users contract.
 export const usersApi = {
-  list: () => apiClient.get(USERS_PATH, usersListSchema),
-  create: (input: CreateUserInput) =>
-    apiClient.post(USERS_PATH, userSchema, createUserInputSchema.parse(input)),
+  create: (input: CreateProfileInput) =>
+    apiClient.post(
+      USERS_PATH,
+      profileSchema,
+      createProfileInputSchema.parse(input),
+    ),
 };

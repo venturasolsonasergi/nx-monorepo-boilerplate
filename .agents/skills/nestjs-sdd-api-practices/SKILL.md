@@ -127,6 +127,8 @@ Before considering a change done, verify:
 5. No forbidden cross-service domain imports were introduced.
 6. OpenSpec-generated workflow files were not edited manually.
 7. Service contract tests, OpenAPI validation, repo-wide architecture checks, and OpenSpec verification pass.
+8. For cookie, email-link, or OAuth flows, a host-level test follows the actual link or provider return with the required cookies/state and checks both success and rejection. A mocked controller callback or authorization URL check alone is not enough; use a local provider/mail substitute when live credentials are unavailable.
+9. Browser redirects land on an implemented client route, or the missing client work is recorded as a release dependency rather than claimed as a completed user journey.
 
 ## Anti-Patterns
 

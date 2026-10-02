@@ -17,6 +17,11 @@ export default defineConfig({
   },
   server: {
     port: 4200,
+    proxy: {
+      '/auth': { target: 'http://localhost:3000', changeOrigin: false },
+      '/users': { target: 'http://localhost:3000', changeOrigin: false },
+      '/orders': { target: 'http://localhost:3000', changeOrigin: false },
+    },
   },
   build: {
     outDir: '../../dist/apps/web',

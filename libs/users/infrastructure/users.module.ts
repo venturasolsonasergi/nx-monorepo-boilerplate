@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersPrismaRepository } from './users.repository.prisma';
-import { CreateUserUseCase } from '../application/create-user.use-case';
+import { CreateProfileUseCase } from '../application/create-profile.use-case';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
@@ -10,9 +10,9 @@ import { PrismaService } from './prisma/prisma.service';
     PrismaService,
     UsersPrismaRepository,
     {
-      provide: CreateUserUseCase,
+      provide: CreateProfileUseCase,
       useFactory: (repository: UsersPrismaRepository) =>
-        new CreateUserUseCase(repository),
+        new CreateProfileUseCase(repository),
       inject: [UsersPrismaRepository],
     },
   ],

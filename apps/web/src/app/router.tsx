@@ -5,6 +5,7 @@ import {
   createRouter,
   Outlet,
 } from '@tanstack/react-router';
+import { createAuthRoutes } from '../features/auth/routes/auth.routes';
 import { createUsersRoutes } from '../features/users/routes/users.routes';
 
 function RootLayout() {
@@ -32,6 +33,7 @@ const indexRoute = createRoute({
 // Each feature owns and exports its own routes; the router only composes them.
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  ...createAuthRoutes(rootRoute),
   ...createUsersRoutes(rootRoute),
 ]);
 

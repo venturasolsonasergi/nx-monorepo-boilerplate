@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+// Empty by default so requests stay same-origin and use the Vite dev proxy
+// (`/auth`, `/users`, `/orders` -> the API). Set VITE_API_URL for other hosts.
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 export class ApiError extends Error {
   constructor(
@@ -25,6 +27,7 @@ async function request<T>(
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...headers,
