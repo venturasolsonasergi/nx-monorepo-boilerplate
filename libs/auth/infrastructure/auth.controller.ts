@@ -77,14 +77,20 @@ const confirmResetSchema = z
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly signUpUseCase: SignUpUseCase,
+    @Inject(SignUpUseCase) private readonly signUpUseCase: SignUpUseCase,
+    @Inject(VerifyEmailUseCase)
     private readonly verifyEmailUseCase: VerifyEmailUseCase,
-    private readonly loginUseCase: LoginUseCase,
-    private readonly logoutUseCase: LogoutUseCase,
+    @Inject(LoginUseCase) private readonly loginUseCase: LoginUseCase,
+    @Inject(LogoutUseCase) private readonly logoutUseCase: LogoutUseCase,
+    @Inject(RefreshSessionUseCase)
     private readonly refreshSessionUseCase: RefreshSessionUseCase,
+    @Inject(RequestPasswordResetUseCase)
     private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
+    @Inject(ConfirmPasswordResetUseCase)
     private readonly confirmPasswordResetUseCase: ConfirmPasswordResetUseCase,
+    @Inject(BeginOAuthUseCase)
     private readonly beginOAuthUseCase: BeginOAuthUseCase,
+    @Inject(CompleteOAuthUseCase)
     private readonly completeOAuthUseCase: CompleteOAuthUseCase,
     @Inject(AUTH_CONFIG) private readonly config: AuthConfig,
   ) {}

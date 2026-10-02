@@ -5,7 +5,6 @@ Backend boilerplate for microservices with:
 - Spec Driven Development (SDD)
 - OpenSpec for behavioral requirements and change history
 - OpenAPI as the HTTP contract for each service
-- legacy lidr-specboot metadata placeholders
 - Tactical DDD and clean architecture lite
 - Prisma repositories in infrastructure
 - Architecture validation harness
@@ -15,7 +14,7 @@ Backend boilerplate for microservices with:
 - `apps/api/` NestJS API application and `apps/web/` React application
 - `apps/api-e2e/` end-to-end tests for the API
 - `libs/users/` and `libs/orders/` service modules:
-  - `specs/openapi.yaml`, `specs/context/`, `domain/`, `application/`, `infrastructure/`, `tests/`
+  - `specs/openapi.yaml`, `domain/`, `application/`, `infrastructure/`, `tests/`
 - `openspec/specs/<service>/<capability>/spec.md` — persistent behavioral specs, namespaced for service extraction
 - `openspec/changes/` — proposed changes and archive history
 - `libs/shared/domain/`, `libs/shared/validation/`, and `libs/shared/api-contracts/`

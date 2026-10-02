@@ -29,7 +29,6 @@ libs/
   <service>/            one lib per microservice (discovered via microservice.json)
     specs/
       openapi.yaml             HTTP contract for this service
-      context/spec-context.md legacy DDD notes retained during migration
     domain/             pure business logic — no framework, no Prisma, no Zod
       *.entity.ts
       *.vo.ts
@@ -119,7 +118,6 @@ test, `verify` and `test:contract` scripts, so a manual call is rarely needed.
 ## Key conventions
 
 - `microservice.json` — metadata per service (name, version, specVersion, dependencies)
-- `sdd-evolution.md` per service — changelog of spec iterations
 - OpenSpec capabilities use `openspec/specs/<service>/<capability>/spec.md`
 - `libs/<service>/specs/openapi.yaml` remains the HTTP contract for that service
 

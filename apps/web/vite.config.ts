@@ -6,6 +6,8 @@ import { defineConfig } from 'vitest/config';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const apiTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
+
 export default defineConfig({
   root: dirname,
   cacheDir: '../../node_modules/.vite/apps/web',
@@ -18,9 +20,9 @@ export default defineConfig({
   server: {
     port: 4200,
     proxy: {
-      '/auth': { target: 'http://localhost:3000', changeOrigin: false },
-      '/users': { target: 'http://localhost:3000', changeOrigin: false },
-      '/orders': { target: 'http://localhost:3000', changeOrigin: false },
+      '/auth': { target: apiTarget, changeOrigin: false },
+      '/users': { target: apiTarget, changeOrigin: false },
+      '/orders': { target: apiTarget, changeOrigin: false },
     },
   },
   build: {

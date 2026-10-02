@@ -58,7 +58,9 @@ services:
     restart: unless-stopped
     depends_on:
       - app
-    command: pnpm run web:dev -- --host 0.0.0.0
+    command: pnpm run web:dev --host 0.0.0.0
+    environment:
+      API_PROXY_TARGET: http://app:3000
     ports:
       - '${WEB_PORT:-4200}:4200'
     volumes:

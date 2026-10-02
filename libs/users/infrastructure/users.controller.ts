@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
+  Inject,
   Post,
   Body,
   Req,
@@ -31,7 +32,10 @@ interface SessionRequest {
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly createProfileUseCase: CreateProfileUseCase) {}
+  constructor(
+    @Inject(CreateProfileUseCase)
+    private readonly createProfileUseCase: CreateProfileUseCase,
+  ) {}
 
   @Get('health')
   health(): { status: string } {

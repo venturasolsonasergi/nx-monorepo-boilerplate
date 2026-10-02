@@ -14,7 +14,8 @@ OpenSpec change and does not implement application code.
 Update only the affected service's OpenAPI contract so its paths, request and
 response schemas, status codes, and error shapes match the approved requirements.
 Preserve unrelated operations and components. Do not invent behavior or derive
-the API contract from `spec-context.md` when it conflicts with the approved delta.
+the API contract from undocumented implementation behavior; use the approved delta
+to determine the contract changes.
 
 ## Validate and report
 

@@ -46,7 +46,7 @@ export class BetterAuthAdapter implements AuthProvider {
   private readonly auth: AuthHandler;
 
   constructor(
-    private readonly prisma: AuthPrismaService,
+    @Inject(AuthPrismaService) private readonly prisma: AuthPrismaService,
     @Inject(AUTH_CONFIG) private readonly config: AuthConfig,
     @Inject(MAIL_PORT) private readonly mail: MailPort,
   ) {

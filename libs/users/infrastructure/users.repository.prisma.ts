@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Prisma } from './prisma/generated/client';
 import { ProfileEntity } from '../domain/profile.entity';
 import {
@@ -9,7 +9,7 @@ import { PrismaService } from './prisma/prisma.service';
 
 @Injectable()
 export class UsersPrismaRepository implements ProfileRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async findById(id: number): Promise<ProfileEntity | null> {
     const record = await this.prisma.userRecord.findUnique({ where: { id } });
