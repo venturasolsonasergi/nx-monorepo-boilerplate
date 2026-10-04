@@ -7,12 +7,20 @@ Use `/opsx-apply` in GitHub Copilot/OpenCode or `/opsx:apply` in Claude Code for
 the approved change. Work task by task and stop if a task conflicts with the
 approved behavior or design.
 
-After implementation, run for each affected service:
+After implementation, run for each affected backend service:
 
 ```powershell
 pnpm run validate:openapi -- --service <service>
 pnpm run test:contract -- --service <service>
 pnpm run verify -- --service <service>
+```
+
+For `web` changes run the browser checks instead of the OpenAPI/contract checks:
+
+```powershell
+pnpm web:test
+pnpm web:build
+pnpm web:e2e
 ```
 
 Then run the report-only OpenSpec verify workflow. Do not archive until all

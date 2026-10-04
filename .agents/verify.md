@@ -3,12 +3,21 @@
 This legacy `/verify` prompt runs executable repository checks. It is distinct
 from the report-only OpenSpec `/opsx-verify` workflow.
 
-For every affected service, run:
+For every affected backend service, run:
 
 ```powershell
 pnpm run validate:openapi -- --service <service>
 pnpm run test:contract -- --service <service>
 pnpm run verify -- --service <service>
+```
+
+For `web` changes, run the browser checks instead; they are distinct from the
+report-only OpenSpec verify:
+
+```powershell
+pnpm web:test
+pnpm web:build
+pnpm web:e2e
 ```
 
 The package `verify` command keeps architecture, domain purity, invariant, and

@@ -11,7 +11,7 @@ export default function VerifiedPage() {
       <h1 className="text-lg font-semibold">Verificación de correo</h1>
       {verified ? (
         <p className="text-sm text-green-700">
-          Tu correo se ha verificado correctamente. Ya puedes iniciar sesión.
+          Tu correo se ha verificado correctamente.
         </p>
       ) : null}
       {error ? (

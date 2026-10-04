@@ -6,6 +6,7 @@ Claude Code to investigate an uncertain feature. Exploration is read-only unless
 the user asks to capture the result in a change proposal.
 
 When the behavior is clear, use the corresponding propose workflow. Before
-creating artifacts, identify the affected service(s), inspect their existing
-OpenSpec capabilities, OpenAPI contracts, implementation, and tests. Ask only
+creating artifacts, identify the affected namespace(s) — backend services or the
+browser client `web` — and inspect their existing OpenSpec capabilities, any
+OpenAPI contracts (backend services only), implementation, and tests. Ask only
 for material decisions not already settled by the user.

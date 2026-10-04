@@ -5,7 +5,9 @@
 Backend boilerplate for building microservices with Spec Driven Development (SDD).
 OpenSpec records behavior requirements and change proposals. Each service's
 `libs/<service>/specs/openapi.yaml` is its HTTP contract. No behavior-changing code
-is written before the OpenSpec change and affected API contract are reviewed.
+is written before the OpenSpec change and affected API contract are reviewed. The
+React browser client in `apps/web` is a product surface reviewed through the same
+OpenSpec workflow under the `web` namespace, not a microservice.
 
 ## Tech stack
 
@@ -13,7 +15,9 @@ is written before the OpenSpec change and affected API contract are reviewed.
 - Prisma (infrastructure repositories only)
 - Zod (application/infrastructure validation only)
 - pnpm workspaces
-- Jest (contract tests)
+- Jest (contract and API e2e tests)
+- React + Vite browser client (`apps/web`) with TanStack Router/Query, Vitest
+  (jsdom) for unit/component tests, and Playwright for browser e2e
 
 ## Project structure
 
@@ -24,6 +28,9 @@ apps/
   api/                  the NestJS host app (main.ts, app.module.ts) — wires all services together
     src/
   api-e2e/              end-to-end tests for apps/api
+  web/                  the React browser client (Vite, TanStack Router/Query); a product
+                        surface tagged platform:browser with no microservice.json
+  web-e2e/              Playwright browser smoke tests for apps/web
 
 libs/
   <service>/            one lib per microservice (discovered via microservice.json)
@@ -51,12 +58,15 @@ architecture/           validation engine and rules
 scripts/                workflow CLI (not per-service)
 .agents/                canonical agent instruction files (tool-agnostic)
 docs/                   architecture and workflow documentation
-openspec/               shared OpenSpec root; requirements are namespaced per service
-  specs/<service>/<capability>/spec.md
+openspec/               shared OpenSpec root; requirements are namespaced per capability owner
+  specs/<namespace>/<capability>/spec.md
   changes/               proposals in progress and archived changes
 ```
 
-A service is discovered automatically if it has a `microservice.json` file.
+A service is discovered automatically if it has a `microservice.json` file. The
+`web` namespace is the exception: it identifies the browser client, not a
+discovered service, and `apps/web` must stay out of service discovery, Prisma,
+contract-test, and OpenAPI validation flows.
 
 ## Architecture rules (enforced by validation scripts)
 
@@ -87,15 +97,17 @@ Use the official OpenSpec workflows in three gated phases. A proposal is not
 implementation authorization; wait for explicit review before applying it.
 
 1. **Draft and validate:** optionally explore, propose the change, review every
-   requirement and task, then run `openspec validate <change>` and
-   `pnpm run validate:openapi -- --service <name>`.
-2. **Implement and verify:** apply the approved tasks, run
-   `pnpm run test:contract -- --service <name>` and
-   `pnpm run verify -- --service <name>`, then use the report-only OpenSpec verify.
+   requirement and task, then run `openspec validate <change>`. For each affected
+   backend service, also run `pnpm run validate:openapi -- --service <name>`; a
+   `web`-only change has no OpenAPI contract to validate.
+2. **Implement and verify:** apply the approved tasks. For each affected backend
+   service run `pnpm run test:contract -- --service <name>` and
+   `pnpm run verify -- --service <name>`. For web changes run `pnpm web:test`,
+   `pnpm web:build`, and `pnpm web:e2e`. Then use the report-only OpenSpec verify.
    Architecture and dependency checks remain repo-wide.
 3. **Archive and prepare commit:** archive only after all checks pass, review the
-   merged service capability specs, then prepare a commit summary. Git commit is
-   manual and remains the user's action.
+   merged `<namespace>/<capability>` specs, then prepare a commit summary. Git
+   commit is manual and remains the user's action.
 
 Invocation varies by tool: GitHub Copilot/OpenCode use `/opsx-propose`, Claude
 uses `/opsx:propose`; see `docs/sdd-flow.md` for all phase commands.
@@ -118,8 +130,11 @@ test, `verify` and `test:contract` scripts, so a manual call is rarely needed.
 ## Key conventions
 
 - `microservice.json` — metadata per service (name, version, specVersion, dependencies)
-- OpenSpec capabilities use `openspec/specs/<service>/<capability>/spec.md`
-- `libs/<service>/specs/openapi.yaml` remains the HTTP contract for that service
+- OpenSpec capabilities use `openspec/specs/<namespace>/<capability>/spec.md`, where
+  the namespace is a discovered service or the browser client `web`
+- `libs/<service>/specs/openapi.yaml` remains the HTTP contract for that service;
+  the `web` namespace has no OpenAPI contract
+- Web behavior is verified with `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e`
 
 ## What NOT to do
 
@@ -128,7 +143,8 @@ test, `verify` and `test:contract` scripts, so a manual call is rarely needed.
 - Do NOT import across microservice domain boundaries
 - Do NOT treat OpenAPI as a replacement for behavioral requirements or vice versa
 - Do NOT place a service's persistent requirements under another service's namespace
+- Do NOT treat `apps/web` as a microservice: no `microservice.json`, no Prisma, no OpenAPI, and no service discovery, contract-test, or OpenAPI validation for it
 - Do NOT treat OpenAPI validation as code generation; use `pnpm run validate:openapi`
 - Do NOT modify `architecture/rules.json` to silence a validation failure
-- Do NOT skip the spec step — always define the OpenAPI before implementing
+- Do NOT skip the spec step — for changes that alter a backend HTTP contract, define or update its OpenAPI before implementing
 - Do NOT add per-service Prisma scripts to `package.json`; use `pnpm prisma:generate -- --service <name>`

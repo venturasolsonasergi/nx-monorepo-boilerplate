@@ -1,10 +1,10 @@
 ---
-description: 'Run service-scoped tests and repo-wide checks; OpenSpec verify is a separate report-only workflow'
+description: 'Run service or web checks and repo-wide checks; OpenSpec verify is a separate report-only workflow'
 name: 'verify'
 agent: 'agent'
 tools: [read, edit, execute, search]
 ---
 
-[.agents/config.json](.agents/config.json)
+[.agents/project-context.md](.agents/project-context.md)
 
 [.agents/verify.md](.agents/verify.md)

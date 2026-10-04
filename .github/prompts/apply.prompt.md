@@ -1,5 +1,5 @@
 ---
-description: 'Legacy alias: apply approved OpenSpec tasks and run service-scoped checks'
+description: 'Legacy alias: apply approved OpenSpec tasks and run service or web checks'
 name: 'apply'
 agent: 'agent'
 tools: [execute]

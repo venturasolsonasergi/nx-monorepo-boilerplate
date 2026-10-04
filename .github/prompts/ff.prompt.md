@@ -1,5 +1,5 @@
 ---
-description: 'Validate an OpenSpec change and the affected service OpenAPI contracts'
+description: 'Validate an OpenSpec change and any affected backend service OpenAPI contracts'
 name: 'ff'
 agent: 'agent'
 tools: [read, execute]

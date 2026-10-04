@@ -12,10 +12,10 @@ Backend boilerplate for microservices with:
 ## Project Structure
 
 - `apps/api/` NestJS API application and `apps/web/` React application
-- `apps/api-e2e/` end-to-end tests for the API
+- `apps/api-e2e/` end-to-end tests for the API and `apps/web-e2e/` Playwright browser tests for the web app
 - `libs/users/` and `libs/orders/` service modules:
   - `specs/openapi.yaml`, `domain/`, `application/`, `infrastructure/`, `tests/`
-- `openspec/specs/<service>/<capability>/spec.md` — persistent behavioral specs, namespaced for service extraction
+- `openspec/specs/<namespace>/<capability>/spec.md` — persistent behavioral specs namespaced per service, plus the browser client under `openspec/specs/web/`
 - `openspec/changes/` — proposed changes and archive history
 - `libs/shared/domain/`, `libs/shared/validation/`, and `libs/shared/api-contracts/`
 - `architecture/` rules, graph and validation engine
@@ -29,6 +29,8 @@ Backend boilerplate for microservices with:
 - `pnpm api:test:e2e` — run API end-to-end tests
 - `pnpm web:dev` — start the React app in Vite
 - `pnpm web:build` — build the React app
+- `pnpm web:test` — run the web unit and component tests (Vitest)
+- `pnpm web:e2e` — run the Playwright browser smoke suite for the web app
 
 ## Core Commands
 
@@ -73,8 +75,14 @@ The machine-wide OpenSpec profile must include the core workflows plus optional
 `verify`, with delivery set to `both`. The workflow is split into three gated
 phases; see [docs/sdd-flow.md](docs/sdd-flow.md) for commands and exit criteria.
 
-1. Draft and validate: `/opsx-explore` when needed, `/opsx-propose`, review, sync the affected OpenAPI contract, then validate.
-2. Implement and test: `/opsx-apply`, service-scoped tests and repo-wide checks, then `/opsx-verify`.
+A namespace is either a discovered backend microservice or the browser client
+`web`. Changes that scope `web/<capability>` describe browser-observable behavior
+and have no OpenAPI contract; only affected backend services require OpenAPI and
+contract validation. Web changes require `pnpm web:test`, `pnpm web:build`, and
+`pnpm web:e2e` before archive.
+
+1. Draft and validate: `/opsx-explore` when needed, `/opsx-propose`, review, sync the affected OpenAPI contract for backend services, then validate.
+2. Implement and test: `/opsx-apply`, service-scoped tests and repo-wide checks (plus the web checks for web changes), then `/opsx-verify`.
 3. Archive and prepare commit: `/opsx-archive`, review the synced specs and diff; the user commits manually.
 
 GitHub Copilot and OpenCode use `/opsx-propose`; Claude Code uses `/opsx:propose`.

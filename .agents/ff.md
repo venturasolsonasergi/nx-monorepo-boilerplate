@@ -11,7 +11,7 @@ OpenAPI contracts for its affected services. It generates no application code.
 ## Steps
 
 1. Run `openspec validate <change>`.
-2. For each affected service, run `pnpm run validate:openapi -- --service <service>`.
+2. For each affected backend service, run `pnpm run validate:openapi -- --service <service>`. A `web`-only change has no OpenAPI contract, so this step is skipped.
 3. Report failures without modifying the artifacts. Resolve contract/spec mismatches in Phase 1, then rerun both validators.
 
 The Phase 1 gate is explicit user approval of the validated artifacts. Do not

@@ -14,3 +14,9 @@ This project includes an architecture validation harness under `architecture/val
 - `pnpm run check:dependencies`
 - `pnpm run validate:domain`
 - `pnpm run check:domain-invariants`
+
+## Frontend scope
+The browser client (`apps/web`) and its Playwright suite (`apps/web-e2e`) are a
+product surface, not microservices. Service discovery and the layer/microservice
+rules here do not apply to them. Frontend checks are `pnpm web:test`,
+`pnpm web:build`, and `pnpm web:e2e`; `architecture/rules.json` is unchanged.

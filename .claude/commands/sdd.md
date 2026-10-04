@@ -4,7 +4,7 @@ allowed-tools: Read Write Bash
 argument-hint: '--service <name> (optional)'
 ---
 
-@.agents/config.json
+@.agents/project-context.md
 @.agents/sdd.md
 @.agents/enrich-us.md
 @.agents/new.md

@@ -2,22 +2,26 @@
 
 OpenSpec manages change proposals, behavior requirements, implementation tasks,
 and archival. OpenAPI remains the HTTP contract for each service under
-`libs/<service>/specs/openapi.yaml`. The repository's architecture validators and
-tests complement OpenSpec; they are not replaced by it.
+`libs/<service>/specs/openapi.yaml`. The React browser client (`apps/web`) is a
+product surface recorded under the `web` namespace; it is not a microservice and
+has no OpenAPI contract. The repository's architecture validators and tests
+complement OpenSpec; they are not replaced by it.
 
 OpenSpec artifacts live at the monorepo root:
 
 ```text
 openspec/
   config.yaml
-  specs/<service>/<capability>/spec.md
+  specs/<namespace>/<capability>/spec.md
   changes/<change>/
   changes/archive/<date>-<change>/
 ```
 
-Each change delta uses the same `<service>/<capability>` path as its persistent
-spec. This keeps a service's requirements together for later extraction while
-allowing one change to cover several services.
+A namespace is either a discovered microservice (`libs/<service>/microservice.json`)
+or the browser client `web`. Each change delta uses the same
+`<namespace>/<capability>` path as its persistent spec. This keeps a namespace's
+requirements together for later extraction while allowing one change to cover
+several namespaces.
 
 ## Setup
 
@@ -48,20 +52,21 @@ projects on that machine.
    authorization URL alone does not demonstrate completion. Review the
    requirements and tasks with the user. Do not implement before they
    explicitly approve the plan.
-4. Validate the change and each affected HTTP contract:
+4. Validate the change and each affected backend HTTP contract. A change that only
+   touches the `web` namespace has no OpenAPI contract to validate:
 
 ```powershell
 openspec validate <change>
-pnpm run validate:openapi -- --service <service>
+pnpm run validate:openapi -- --service <service>   # only for affected backend services
 ```
 
 GitHub Copilot and OpenCode invoke `/opsx-propose`; Claude Code invokes
 `/opsx:propose`. The same tool-specific spelling applies to explore, apply,
 verify, and archive.
 
-**Exit gate:** the proposal's service/capability scope is explicit, all behavior
-has testable scenarios, OpenSpec validation passes, affected OpenAPI validates,
-and the user approves the artifacts.
+**Exit gate:** the proposal's namespace/capability scope is explicit, all behavior
+has testable scenarios, OpenSpec validation passes, any affected backend OpenAPI
+validates, and the user approves the artifacts.
 
 ## Phase 2: Implement and Test
 
@@ -88,31 +93,35 @@ production credentials:
 pnpm run api:test:e2e -- --runInBand
 ```
 
-Run `pnpm web:build` and `pnpm web:test` when the client changes. If a redirect
-targets an unimplemented client route outside the approved scope, record it as
-a release dependency, not as a working end-to-end user journey.
+Run `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e` when the client
+changes, and keep them out of `.husky/pre-commit` so browser e2e does not run on
+every commit. `web:e2e` is Playwright smoke coverage of the implemented routes
+and states; it needs no database, email, or live API. If a redirect targets an
+unimplemented client route outside the approved scope, record it as a release
+dependency, not as a working end-to-end user journey.
 
 3. Run `/opsx-verify` (Claude: `/opsx:verify`) for a report-only comparison of
    implementation against the change artifacts. It does not replace executable
    tests. Resolve any behavior mismatch by updating/reviewing the artifacts
    before changing implementation.
 
-**Exit gate:** all tasks are checked, service tests and required repo-wide
-checks pass, OpenAPI validates, and OpenSpec verification has no unresolved
-critical mismatch. For cross-boundary flows, record which scenario is covered
+**Exit gate:** all tasks are checked, service tests (plus `web:test`,
+`web:build`, and `web:e2e` for web changes) and required repo-wide checks pass,
+any affected backend OpenAPI validates, and OpenSpec verification has no
+unresolved critical mismatch. For cross-boundary flows, record which scenario is covered
 by which executable host-level test and whether any external or client
 dependency remains unverified; do not mark a flow complete on green mocks alone.
 
 ## Phase 3: Archive and Prepare Commit
 
 1. Use `/opsx-archive` (Claude: `/opsx:archive`) only after Phase 2 passes.
-   Review the merge into `openspec/specs/<service>/<capability>/spec.md` and
+   Review the merge into `openspec/specs/<namespace>/<capability>/spec.md` and
    confirm the change is moved to `openspec/changes/archive/`.
 2. Run `openspec validate --all` and `git diff --check`; review the code and
    archived artifacts together.
-3. Prepare a conventional commit summary that identifies the affected service
-   and change. Do not commit, tag, or push automatically; the user performs the
-   Git operation after reviewing the diff.
+3. Prepare a conventional commit summary that identifies the affected
+   namespace(s) and change. Do not commit, tag, or push automatically; the user
+   performs the Git operation after reviewing the diff.
 
 ## Service Extraction
 
@@ -122,7 +131,9 @@ and migrations, tests, and `project.json`. Also take
 `openspec/specs/<service>/`. Review imports and metadata for references to
 `libs/shared/`, Nx aliases, root scripts, and dependencies; bring those along or
 replace them with standalone equivalents. OpenSpec proposals and archived
-changes are repository history, not part of an individual service export.
+changes are repository history, not part of an individual service export. The
+`web` namespace and `apps/web` are the product surface and are not extracted as
+a service.
 
 The OpenSpec CLI and tool integrations are installed/configured separately on
 each developer machine. Project configuration and generated tool workflow files

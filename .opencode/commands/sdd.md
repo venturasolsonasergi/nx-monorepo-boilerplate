@@ -5,7 +5,7 @@ permission:
   bash: allow
 ---
 
-@.agents/config.json
+@.agents/project-context.md
 @.agents/sdd.md
 @.agents/enrich-us.md
 @.agents/new.md

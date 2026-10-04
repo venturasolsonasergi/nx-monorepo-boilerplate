@@ -3,6 +3,8 @@
 Run `pnpm run code_review -- --service <service>` after Phase 2 verification.
 This runs lint and the repository validation suite; architecture and dependency
 checks remain global while contract tests are scoped to the selected service.
+For a `web` change, `pnpm run code_review` still runs the repo-wide checks, and
+`pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e` are the behavior checks.
 If a check fails, report the failure and return to implementation. Do not fix
 failures during review.
 

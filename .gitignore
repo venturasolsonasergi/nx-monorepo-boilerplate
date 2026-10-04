@@ -4,3 +4,5 @@ dist-scripts
 .env
 .nx
 libs/*/infrastructure/prisma/generated
+playwright-report
+test-results
