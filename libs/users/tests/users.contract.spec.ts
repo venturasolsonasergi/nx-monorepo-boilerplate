@@ -2,12 +2,13 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import request from 'supertest';
+import type { App } from 'supertest/types';
 import { CreateProfileUseCase } from '../application/create-profile.use-case';
 import { ProfileAlreadyExistsError } from '../application/profile.repository';
 import { UsersController } from '../infrastructure/users.controller';
 
 describe('users contract', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
   const execute =
     jest.fn<
       (input: {

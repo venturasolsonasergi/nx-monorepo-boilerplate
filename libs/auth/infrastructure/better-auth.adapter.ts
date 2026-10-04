@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { genericOAuth } from 'better-auth/plugins';
@@ -109,6 +110,9 @@ export class BetterAuthAdapter implements AuthProvider {
         : [],
       advanced: {
         useSecureCookies: process.env.NODE_ENV === 'production',
+        database: {
+          generateId: () => randomUUID(),
+        },
       },
     });
   }

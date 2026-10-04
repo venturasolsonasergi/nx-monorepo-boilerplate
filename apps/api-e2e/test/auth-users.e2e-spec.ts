@@ -5,6 +5,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import type { Response } from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '@app/api/app.module';
 import { configureApp } from '@app/api/configure-app';
 import {
@@ -152,7 +153,7 @@ async function waitForMail(
 }
 
 describe('Auth and users (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let providerServer: Server;
   let authConfig: AuthConfig;
   const mail = new RecordingMailSender();
@@ -336,6 +337,129 @@ describe('Auth and users (e2e)', () => {
         phone: '555-0100',
       })
       .expect(401);
+  });
+
+  it('issues UUID-format ids for new identities while legacy ids still resolve', async () => {
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const email = `e2e-uuid-${Date.now()}@example.com`;
+    const prisma = app.get(AuthPrismaService);
+
+    const signupResponse = await request(app.getHttpServer())
+      .post('/auth/signup')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email, password: 'password123' })
+      .expect(201);
+    const { userId } = responseBody<{ userId: string }>(signupResponse);
+    expect(userId).toMatch(uuidPattern);
+
+    const storedUser = await prisma.user.findUnique({ where: { email } });
+    expect(storedUser?.id).toBe(userId);
+
+    const account = await prisma.account.findFirst({ where: { userId } });
+    expect(account?.id).toMatch(uuidPattern);
+
+    const legacyId = 'legacy-e2e-noneuuid0000000000000001';
+    await prisma.user.upsert({
+      where: { id: legacyId },
+      update: {},
+      create: {
+        id: legacyId,
+        name: 'Legacy User',
+        email: `legacy-uuid-${Date.now()}@example.com`,
+        emailVerified: true,
+      },
+    });
+    const legacyUser = await prisma.user.findUnique({
+      where: { id: legacyId },
+    });
+    expect(legacyUser?.id).toBe(legacyId);
+    expect(legacyUser?.id).not.toMatch(uuidPattern);
+
+    const verificationMail = await waitForMail(mail, (m) => m.to === email);
+    await request(app.getHttpServer())
+      .get(requestPathFrom(linkFrom(verificationMail)))
+      .expect(302);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email, password: 'password123' })
+      .expect(200);
+    expect(responseBody<{ userId: string }>(loginResponse).userId).toBe(userId);
+
+    const session = await prisma.session.findFirst({ where: { userId } });
+    expect(session?.id).toMatch(uuidPattern);
+
+    await request(app.getHttpServer())
+      .post('/auth/reset-password/request')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email })
+      .expect(200);
+
+    const verification = await prisma.verification.findFirst({
+      where: { identifier: { startsWith: 'reset-password:' } },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(verification?.id).toMatch(uuidPattern);
+  });
+
+  it('keeps a pre-existing session valid for a legacy-id identity across the standardization', async () => {
+    const email = `e2e-legacy-session-${Date.now()}@example.com`;
+    const prisma = app.get(AuthPrismaService);
+
+    await signUpAndVerify(email);
+
+    // A session issued for the identity, as it would exist before the physical
+    // naming/identifier standardization.
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email, password: 'password123' })
+      .expect(200);
+    const { userId } = responseBody<{ userId: string }>(loginResponse);
+    const session = cookieHeader(loginResponse);
+    expect(session).toContain('better-auth.session_token');
+
+    // Simulate an identity and its session persisted before the standardization:
+    // rewrite the id to a non-UUID legacy string. The FK is ON UPDATE CASCADE, so
+    // the session and account rows follow the identity.
+    const legacyId = `legacy-session-${Date.now()}`;
+    await prisma.user.update({ where: { id: userId }, data: { id: legacyId } });
+
+    const migratedUser = await prisma.user.findUnique({ where: { email } });
+    expect(migratedUser?.id).toBe(legacyId);
+    const migratedSession = await prisma.session.findFirst({
+      where: { userId: legacyId },
+    });
+    expect(migratedSession).not.toBeNull();
+
+    // The pre-existing session still authenticates a protected route and reports
+    // the legacy identifier.
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', session)
+      .send({
+        name: 'Ada',
+        surname: 'Lovelace',
+        address: '1 Main Street',
+        phone: '555-0100',
+      })
+      .expect(201)
+      .expect((response) => {
+        const body = responseBody<{ authUserId: string }>(response);
+        expect(body.authUserId).toBe(legacyId);
+      });
+
+    // The pre-existing session can still be refreshed and resolves the same
+    // legacy identity.
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', session)
+      .expect(200)
+      .expect({ userId: legacyId, status: 'authenticated' });
   });
 
   it('rejects missing, invalid, cross-origin and CSRF-unsafe requests', async () => {

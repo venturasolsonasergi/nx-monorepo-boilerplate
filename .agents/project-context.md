@@ -137,6 +137,48 @@ test, `verify` and `test:contract` scripts, so a manual call is rarely needed.
   the `web` namespace has no OpenAPI contract
 - Web behavior is verified with `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e`
 
+## Database naming and identifier conventions
+
+Physical PostgreSQL identifiers are lowercase snake_case in every service. Rename
+migrations must use `ALTER ... RENAME` (never drop/add) so existing rows and
+identifiers are preserved; Prisma does not infer renames.
+
+| Object | Convention | Example |
+| --- | --- | --- |
+| Table | plural lowercase snake_case; service-owned tables may keep a stable prefix | `auth_users`, `user_profiles` |
+| Column | lowercase snake_case | `email_verified`, `auth_user_id` |
+| Primary key | named `id` | `id` |
+| Foreign key column | `<entity>_id` | `user_id`, `auth_user_id` |
+| Primary key constraint | `<table>_pkey` | `auth_users_pkey` |
+| Unique index | `<table>_<column>_key` | `auth_users_email_key` |
+| Non-unique index | `<table>_<column>_idx` | `auth_sessions_user_id_idx` |
+| Foreign key constraint | `<table>_<column>_fkey` | `auth_sessions_user_id_fkey` |
+
+The `auth_*` table prefix is an intentional, preserved exception. Casing scope:
+
+- Persistence TypeScript this repo owns (users Prisma fields, hand-written
+  persistence row types) uses snake_case.
+- Auth Prisma model and field names stay camelCase because they are the Better
+  Auth `prismaAdapter` binding; map the physical columns with `@map` instead.
+- Public HTTP/OpenAPI DTOs, domain/application code, and Better Auth canonical API
+  object names stay camelCase.
+
+Identifier strategy for identifiers shared across service boundaries:
+
+- All environments keep `TEXT` id columns; do not declare a native PostgreSQL
+  `uuid` column type without a separate, data-verified migration.
+- Newly created auth identities receive UUID-format ids from Better Auth
+  (`advanced.database.generateId` returning `crypto.randomUUID()`), stored in the
+  existing TEXT columns; no `@default` is added to id fields.
+- Existing ids are preserved byte-for-byte and stay valid opaque strings; a
+  cross-service reference such as `users.auth_user_id` accepts both legacy random
+  strings and new UUID-format strings.
+- Converting to the native `uuid` type (cast after verifying every value is
+  UUID-shaped, or an explicit old-string to new-uuid remap across auth and users)
+  is deferred to a separate change once a data-bearing environment is available.
+- Service-local surrogate keys (for example the users profile `id`) stay
+  sequential integers.
+
 ## What NOT to do
 
 - Do NOT write business logic in controllers

@@ -7,11 +7,13 @@ datasource db {
   provider = "postgresql"
 }
 
-model UserRecord {
-  id         Int    @id @default(autoincrement())
-  authUserId String @unique
-  name       String
-  surname    String
-  address    String
-  phone      String
+model UserProfile {
+  id           Int    @id(map: "user_profiles_pkey") @default(autoincrement())
+  auth_user_id String @unique(map: "user_profiles_auth_user_id_key")
+  name         String
+  surname      String
+  address      String
+  phone        String
+
+  @@map("user_profiles")
 }

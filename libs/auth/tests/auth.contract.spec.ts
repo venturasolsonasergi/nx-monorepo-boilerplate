@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import request from 'supertest';
+import type { App } from 'supertest/types';
 import { SignUpUseCase } from '../application/use-cases/sign-up.use-case';
 import { VerifyEmailUseCase } from '../application/use-cases/verify-email.use-case';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
@@ -26,7 +27,7 @@ import { AUTH_CONFIG } from '../infrastructure/auth.config';
 type AsyncMock = jest.Mock<(...args: never[]) => Promise<unknown>>;
 
 describe('auth contract', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
   const signUp: AsyncMock = jest.fn();
   const verifyEmail: AsyncMock = jest.fn();
   const login: AsyncMock = jest.fn();
