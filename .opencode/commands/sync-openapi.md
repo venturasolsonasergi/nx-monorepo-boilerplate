@@ -5,4 +5,4 @@ permission:
   bash: deny
 ---
 
-@.agents/new.md
+@.agents/sync-openapi.md

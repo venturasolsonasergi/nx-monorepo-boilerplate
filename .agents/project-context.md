@@ -101,10 +101,11 @@ implementation authorization; wait for explicit review before applying it.
    backend service, also run `pnpm run validate:openapi -- --service <name>`; a
    `web`-only change has no OpenAPI contract to validate.
 2. **Implement and verify:** apply the approved tasks. For each affected backend
-   service run `pnpm run test:contract -- --service <name>` and
-   `pnpm run verify -- --service <name>`. For web changes run `pnpm web:test`,
-   `pnpm web:build`, and `pnpm web:e2e`. Then use the report-only OpenSpec verify.
-   Architecture and dependency checks remain repo-wide.
+   service run `pnpm run verify -- --service <name>`, which includes the
+   service-scoped contract tests and the repo-wide architecture, domain purity,
+   invariant, and dependency checks. For web changes run `pnpm run verify` plus
+   `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e`. Then use the report-only
+   OpenSpec verify.
 3. **Archive and prepare commit:** archive only after all checks pass, review the
    merged `<namespace>/<capability>` specs, then prepare a commit summary. Git
    commit is manual and remains the user's action.

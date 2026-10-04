@@ -40,6 +40,16 @@ generated project skills/commands are committed in this repository. OpenSpec's
 global profile is machine-wide, so changing it also affects future OpenSpec
 projects on that machine.
 
+Beyond the generated `/opsx-*` workflows, the repository keeps a small set of
+helper prompts for actions those workflows do not cover. They are documented
+here and referenced by `/sdd`:
+
+- `/sync-openapi` — synchronize an approved backend delta into its
+  `libs/<service>/specs/openapi.yaml` (Phase 1).
+- `/repo-checks` — run the executable service/OpenAPI and repo-wide checks
+  (Phase 2); distinct from the report-only `/opsx-verify`.
+- `/code-review` — run final checks and prepare the commit summary (Phase 3).
+
 ## Phase 1: Draft and Validate
 
 1. Use `/opsx-explore` if scope or behavior is unclear.
@@ -52,8 +62,10 @@ projects on that machine.
    authorization URL alone does not demonstrate completion. Review the
    requirements and tasks with the user. Do not implement before they
    explicitly approve the plan.
-4. Validate the change and each affected backend HTTP contract. A change that only
-   touches the `web` namespace has no OpenAPI contract to validate:
+4. Use `/sync-openapi` to synchronize each affected backend service's
+   `libs/<service>/specs/openapi.yaml` from the approved delta, then validate the
+   change and each affected backend HTTP contract. A change that only touches the
+   `web` namespace has no OpenAPI contract to validate:
 
 ```powershell
 openspec validate <change>
@@ -74,17 +86,18 @@ validates, and the user approves the artifacts.
    `/opsx:apply`) for the approved change. Complete and verify each task before
    checking it off.
 2. Run tests scoped to each changed service and keep repository architecture
-   checks global:
+   checks global. Use `/repo-checks` to run the executable checks for the
+   affected services:
 
 ```powershell
-pnpm run test:contract -- --service <service>
 pnpm run validate:openapi -- --service <service>
 pnpm run verify -- --service <service>
 ```
 
-`verify` runs architecture, domain-purity, invariant, dependency, and contract
-checks. The optional `--service` scopes contract tests only; architecture and
-dependency validation still covers the monorepo. Run API e2e tests whenever a
+`verify` runs architecture, domain-purity, invariant, dependency, and the
+service-scoped contract checks. The optional `--service` scopes contract tests
+only; architecture and dependency validation still covers the monorepo, so no
+separate `test:contract` call is needed. Run API e2e tests whenever a
 change crosses an HTTP host, browser, email-link, cookie, or provider callback
 boundary. A local provider/mail substitute can complete these flows without
 production credentials:
@@ -93,9 +106,12 @@ production credentials:
 pnpm run api:test:e2e -- --runInBand
 ```
 
-Run `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e` when the client
-changes, and keep them out of `.husky/pre-commit` so browser e2e does not run on
-every commit. `web:e2e` is Playwright smoke coverage of the implemented routes
+Run `pnpm run verify` plus `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e`
+when the client changes; `verify` keeps the architecture, domain purity,
+invariant, and dependency checks repo-wide for the `web` namespace too, and the
+`web` namespace has no OpenAPI or service-scoped contract checks. Keep the
+browser checks out of `.husky/pre-commit` so browser e2e does not run on every
+commit. `web:e2e` is Playwright smoke coverage of the implemented routes
 and states; it needs no database, email, or live API. If a redirect targets an
 unimplemented client route outside the approved scope, record it as a release
 dependency, not as a working end-to-end user journey.

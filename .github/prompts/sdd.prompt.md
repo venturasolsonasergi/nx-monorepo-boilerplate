@@ -7,9 +7,6 @@ tools: [read, edit, execute, search]
 ---
 
 [.agents/sdd.md](.agents/sdd.md)
-[.agents/enrich-us.md](.agents/enrich-us.md)
-[.agents/new.md](.agents/new.md)
-[.agents/ff.md](.agents/ff.md)
-[.agents/apply.md](.agents/apply.md)
-[.agents/verify.md](.agents/verify.md)
+[.agents/sync-openapi.md](.agents/sync-openapi.md)
+[.agents/repo-checks.md](.agents/repo-checks.md)
 [.agents/code-review.md](.agents/code-review.md)

@@ -8,7 +8,7 @@ import {
   validateArchitecture,
   validateDomainPurity,
 } from './commands';
-import { codeReview, publish, verify } from './workflows';
+import { codeReview, verify } from './workflows';
 import { parsePassThroughArgs, parseServiceArg } from './utils/services';
 
 const command = process.argv[2];
@@ -26,7 +26,6 @@ const handlers: Record<string, () => void> = {
   verify: () => verify(parseServiceArg(args)),
   code_review: () => codeReview(parseServiceArg(args)),
   'archive:architecture': archiveArchitecture,
-  publish,
 };
 
 function main(): void {

@@ -1,9 +1,9 @@
-# new — Synchronize the OpenAPI Contract
+# sync-openapi — Synchronize the OpenAPI Contract
 
-This legacy prompt handles the OpenAPI half of Phase 1. It does not create an
-OpenSpec change and does not implement application code. It applies only to
-backend services: the browser client `web` has no OpenAPI contract, so a
-`web`-only change skips this prompt.
+This prompt handles the OpenAPI half of Phase 1. It does not create an OpenSpec
+change and does not implement application code. It applies only to backend
+services: the browser client `web` has no OpenAPI contract, so a `web`-only
+change skips this prompt.
 
 ## Preconditions
 

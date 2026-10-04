@@ -17,7 +17,3 @@ export function codeReview(service?: string): void {
   runCommand('pnpm', ['lint']);
   verify(service);
 }
-
-export function publish(): void {
-  console.log('publish: placeholder for CI/CD publication');
-}

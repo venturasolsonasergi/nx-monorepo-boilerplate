@@ -81,8 +81,8 @@ and have no OpenAPI contract; only affected backend services require OpenAPI and
 contract validation. Web changes require `pnpm web:test`, `pnpm web:build`, and
 `pnpm web:e2e` before archive.
 
-1. Draft and validate: `/opsx-explore` when needed, `/opsx-propose`, review, sync the affected OpenAPI contract for backend services, then validate.
-2. Implement and test: `/opsx-apply`, service-scoped tests and repo-wide checks (plus the web checks for web changes), then `/opsx-verify`.
+1. Draft and validate: `/opsx-explore` when needed, `/opsx-propose`, review, sync the affected OpenAPI contract for backend services with `/sync-openapi`, then validate.
+2. Implement and test: `/opsx-apply`, service-scoped tests and repo-wide checks (plus the web checks for web changes) via `/repo-checks`, then `/opsx-verify`.
 3. Archive and prepare commit: `/opsx-archive`, review the synced specs and diff; the user commits manually.
 
 GitHub Copilot and OpenCode use `/opsx-propose`; Claude Code uses `/opsx:propose`.

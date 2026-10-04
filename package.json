@@ -6,7 +6,6 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build:scripts": "tsc -p tsconfig.scripts.json",
     "format": "prettier --write \"apps/**/*.{ts,tsx}\" \"libs/**/*.ts\"",
     "lint": "eslint \"{apps,libs,scripts}/**/*.{ts,tsx}\"",
     "validate:openapi": "node scripts/validate-openapi.mjs",
@@ -21,7 +20,6 @@
     "precode_review": "pnpm prisma:generate",
     "code_review": "tsx ./scripts/cli.ts code_review",
     "archive:architecture": "tsx ./scripts/cli.ts archive:architecture",
-    "publish": "tsx ./scripts/cli.ts publish",
     "preapi:build": "pnpm prisma:generate",
     "api:build": "nest build && tsc-alias -p tsconfig.build.json && node scripts/copy-prisma-clients.mjs",
     "preapi:start": "pnpm prisma:generate",

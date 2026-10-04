@@ -6,9 +6,6 @@ argument-hint: '--service <name> (optional)'
 
 @.agents/project-context.md
 @.agents/sdd.md
-@.agents/enrich-us.md
-@.agents/new.md
-@.agents/ff.md
-@.agents/apply.md
-@.agents/verify.md
+@.agents/sync-openapi.md
+@.agents/repo-checks.md
 @.agents/code-review.md

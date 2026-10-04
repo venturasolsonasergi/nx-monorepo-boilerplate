@@ -1,6 +1,5 @@
 node_modules
 dist
-dist-scripts
 .env
 .nx
 libs/*/infrastructure/prisma/generated
