@@ -10,10 +10,15 @@ context: |
   libs/<service>/specs/openapi.yaml remains its authoritative HTTP contract; keep both
   aligned, but do not duplicate an entire OpenAPI document as prose in OpenSpec.
   Organize persistent capabilities under openspec/specs/<namespace>/<capability>/spec.md.
-  A namespace is either a microservice (discovered via libs/<service>/microservice.json) or
-  the browser client `web` (the Nx application apps/web tagged platform:browser). `web` is a
-  product surface, not a microservice: it has no microservice.json and no OpenAPI contract,
-  and it stays out of service discovery, Prisma, contract-test, and OpenAPI validation flows.
+  A namespace is a microservice (discovered via libs/<service>/microservice.json), the
+  browser client `web` (the Nx application apps/web tagged platform:browser), or the
+  cross-cutting runtime namespace `platform`. `web` is a product surface, not a
+  microservice: it has no microservice.json and no OpenAPI contract, and it stays out of
+  service discovery, Prisma, contract-test, and OpenAPI validation flows. `platform` is a
+  cross-cutting runtime namespace for capabilities owned by the API host apps/api that span
+  its modules: it also has no microservice.json and no OpenAPI contract, and it stays out of
+  service discovery, Prisma, contract-test, and service-scoped OpenAPI validation; never run
+  `--service platform` checks.
   Express web capabilities as browser-observable behavior and reference backend public
   contracts (HTTP endpoints) rather than another namespace's internal domain or spec.
   A change may affect one or more namespaces; name every affected namespace and capability
@@ -30,10 +35,11 @@ context: |
 
 rules:
   proposal:
-    - Name every affected namespace and capability using the path <namespace>/<capability>; a namespace is a microservice or the browser client `web`.
+    - Name every affected namespace and capability using the path <namespace>/<capability>; a namespace is a microservice, the browser client `web`, or the cross-cutting runtime namespace `platform`.
     - State why the change is needed, what externally observable behavior changes, compatibility impact, and explicit non-goals.
     - Reuse existing capability paths; do not create near-duplicate specs for one behavior.
     - For web changes, scope requirements to browser-observable behavior and reference backend public contracts instead of restating their HTTP schemas.
+    - For platform changes, scope requirements to cross-cutting runtime behavior of the apps/api host; do not invent a microservice.json, an OpenAPI contract, or a `--service platform` check.
   specs:
     - Write normative, testable behavior with at least one WHEN/THEN scenario per requirement.
     - Cover success, validation, error, persistence, and compatibility cases where they apply; do not require irrelevant categories.
@@ -64,7 +70,7 @@ operations:
       - Stop and update the change artifacts if implementation reveals a material requirement or design mismatch.
   archive:
     guidance:
-      - Archive only after all tasks are complete and the checks for the affected namespace(s) passed. Affected backend services need their contract and OpenAPI validation, the `web` namespace needs `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e`, and required repo-wide checks always pass.
+      - Archive only after all tasks are complete and the checks for the affected namespace(s) passed. Affected backend services need their contract and OpenAPI validation, the `web` namespace needs `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e`, the `platform` namespace needs the repo-wide checks (`pnpm run verify`, `pnpm lint`, and `openspec validate <change>`), and required repo-wide checks always pass. A `platform` change must not run service-scoped commands for `platform`.
       - Review the proposed merge into openspec/specs/<namespace>/<capability>/spec.md before confirming archive.
       - Do not create a Git commit, tag, or push; report the archived change and a suggested commit summary.
 

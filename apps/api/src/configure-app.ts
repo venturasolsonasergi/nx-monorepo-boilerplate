@@ -18,9 +18,12 @@ export function collectTrustedOrigins(
   );
 }
 
+export const EXPOSED_RESPONSE_HEADERS = ['x-request-id'];
+
 export function configureApp(app: INestApplication): void {
   app.enableCors({
     origin: collectTrustedOrigins(),
     credentials: true,
+    exposedHeaders: EXPOSED_RESPONSE_HEADERS,
   });
 }

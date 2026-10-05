@@ -27,24 +27,36 @@ paths:
       responses:
         '201':
           description: Identity registered pending verification
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignupResponse'
         '400':
           description: Invalid signup data
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
         '409':
           description: Email already registered
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictError'
         '403':
           description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -69,6 +81,8 @@ paths:
         '302':
           description: Redirect to an approved web destination
           headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
             Location:
               schema:
                 type: string
@@ -85,18 +99,27 @@ paths:
       responses:
         '200':
           description: Email verified; repeated verification succeeds idempotently
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/VerifyEmailResponse'
         '400':
           description: Invalid or expired verification token
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
         '403':
           description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -119,6 +142,8 @@ paths:
         '200':
           description: Authenticated; session cookie set
           headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
             Set-Cookie:
               $ref: '#/components/headers/SessionCookie'
           content:
@@ -127,12 +152,18 @@ paths:
                 $ref: '#/components/schemas/LoginResponse'
         '401':
           description: Invalid credentials or unverified identity
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
           description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -145,6 +176,8 @@ paths:
         '200':
           description: Session revoked and cookie cleared
           headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
             Set-Cookie:
               $ref: '#/components/headers/ClearedSessionCookie'
           content:
@@ -153,6 +186,9 @@ paths:
                 $ref: '#/components/schemas/StatusResponse'
         '403':
           description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -168,6 +204,8 @@ paths:
         '200':
           description: Session renewed
           headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
             Set-Cookie:
               $ref: '#/components/headers/SessionCookie'
           content:
@@ -176,12 +214,18 @@ paths:
                 $ref: '#/components/schemas/RefreshResponse'
         '401':
           description: Expired, revoked, or absent session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
           description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -199,18 +243,27 @@ paths:
       responses:
         '200':
           description: Uniform non-disclosing response
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PasswordResetRequestResponse'
         '400':
           description: Invalid request
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
         '403':
           description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -235,6 +288,8 @@ paths:
         '302':
           description: Redirect to an approved web destination with the token
           headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
             Location:
               schema:
                 type: string
@@ -254,18 +309,27 @@ paths:
       responses:
         '200':
           description: Password changed and previous sessions revoked
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
         '400':
           description: Invalid, expired, or reused reset token
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
         '403':
           description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -280,6 +344,8 @@ paths:
         '200':
           description: Authorization URL for the configured provider
           headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
             Set-Cookie:
               $ref: '#/components/headers/OAuthStateCookie'
           content:
@@ -288,12 +354,18 @@ paths:
                 $ref: '#/components/schemas/OAuthStartResponse'
         '400':
           description: Unsupported or unconfigured provider
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
         '403':
           description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -323,6 +395,8 @@ paths:
         '302':
           description: Redirect to an approved web destination
           headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
             Location:
               schema:
                 type: string
@@ -331,6 +405,9 @@ paths:
               $ref: '#/components/headers/SessionCookie'
         '400':
           description: Failed callback or untrusted redirect
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -344,6 +421,13 @@ components:
       schema:
         type: string
   headers:
+    RequestId:
+      description: Identifier used to correlate the request and its response.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._-]+$'
     SessionCookie:
       description: >
         HTTP-only authenticated session cookie. Secure is enabled on HTTPS and

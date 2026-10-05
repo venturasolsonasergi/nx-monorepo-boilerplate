@@ -9,11 +9,22 @@ paths:
       responses:
         '200':
           description: Service health status
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
 components:
+  headers:
+    RequestId:
+      description: Identifier used to correlate the request and its response.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._-]+$'
   schemas:
     HealthResponse:
       type: object

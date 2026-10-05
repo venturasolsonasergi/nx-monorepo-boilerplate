@@ -16,6 +16,9 @@ paths:
       responses:
         '200':
           description: Service health status
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -35,35 +38,58 @@ paths:
       responses:
         '201':
           description: Profile created
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileResponse'
         '400':
           description: Invalid request
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
         '401':
           description: Missing or invalid session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
           description: Authenticated identity is not email verified
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '409':
           description: Profile already exists for this identity
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictError'
 components:
+  headers:
+    RequestId:
+      description: Identifier used to correlate the request and its response.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._-]+$'
   securitySchemes:
     sessionCookie:
       type: apiKey

@@ -4,6 +4,8 @@ OpenSpec manages change proposals, behavior requirements, implementation tasks,
 and archival. OpenAPI remains the HTTP contract for each service under
 `libs/<service>/specs/openapi.yaml`. The React browser client (`apps/web`) is a
 product surface recorded under the `web` namespace; it is not a microservice and
+has no OpenAPI contract. Cross-cutting runtime capabilities of the `apps/api` host
+are recorded under the `platform` namespace, which is also not a microservice and
 has no OpenAPI contract. The repository's architecture validators and tests
 complement OpenSpec; they are not replaced by it.
 
@@ -17,11 +19,13 @@ openspec/
   changes/archive/<date>-<change>/
 ```
 
-A namespace is either a discovered microservice (`libs/<service>/microservice.json`)
-or the browser client `web`. Each change delta uses the same
-`<namespace>/<capability>` path as its persistent spec. This keeps a namespace's
-requirements together for later extraction while allowing one change to cover
-several namespaces.
+A namespace is a discovered microservice (`libs/<service>/microservice.json`), the
+browser client `web`, or the cross-cutting runtime namespace `platform`. Each
+change delta uses the same `<namespace>/<capability>` path as its persistent spec.
+This keeps a namespace's requirements together for later extraction while allowing
+one change to cover several namespaces. `web` and `platform` are not discoverable
+services: neither has a `microservice.json` or an OpenAPI contract, and neither is
+extracted as a service.
 
 ## Setup
 
@@ -65,7 +69,7 @@ here and referenced by `/sdd`:
 4. Use `/sync-openapi` to synchronize each affected backend service's
    `libs/<service>/specs/openapi.yaml` from the approved delta, then validate the
    change and each affected backend HTTP contract. A change that only touches the
-   `web` namespace has no OpenAPI contract to validate:
+   `web` or `platform` namespace has no OpenAPI contract to validate:
 
 ```powershell
 openspec validate <change>
@@ -116,6 +120,19 @@ and states; it needs no database, email, or live API. If a redirect targets an
 unimplemented client route outside the approved scope, record it as a release
 dependency, not as a working end-to-end user journey.
 
+When a change touches the cross-cutting `platform` namespace, scope its behavior
+to the `apps/api` host and verify it with the repo-wide checks only:
+
+```powershell
+pnpm run verify
+pnpm lint
+openspec validate <change>
+```
+
+Do not run service-scoped commands for `platform` (`--service platform` is not a
+valid discovery target); `platform` has no `microservice.json` and no OpenAPI
+contract.
+
 3. Run `/opsx-verify` (Claude: `/opsx:verify`) for a report-only comparison of
    implementation against the change artifacts. It does not replace executable
    tests. Resolve any behavior mismatch by updating/reviewing the artifacts
@@ -149,7 +166,8 @@ and migrations, tests, and `project.json`. Also take
 replace them with standalone equivalents. OpenSpec proposals and archived
 changes are repository history, not part of an individual service export. The
 `web` namespace and `apps/web` are the product surface and are not extracted as
-a service.
+a service, and the `platform` namespace and `apps/api` host wiring are repo-wide
+runtime concerns, not an extracted service.
 
 The OpenSpec CLI and tool integrations are installed/configured separately on
 each developer machine. Project configuration and generated tool workflow files

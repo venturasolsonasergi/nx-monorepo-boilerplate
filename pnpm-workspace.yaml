@@ -9,3 +9,4 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - '@tanstack/*'
+  - pino-pretty@13.2.0

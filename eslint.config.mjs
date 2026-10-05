@@ -59,7 +59,7 @@ export default tseslint.config(
           enforceBuildableLibDependency: true,
           // api-e2e boots the real AppModule in-process instead of hitting it over HTTP;
           // '@/*' is apps/web's own internal alias, never crosses a project boundary
-          allow: ['@app/api/*', '@/*'],
+          allow: ['@app/api/**', '@/*'],
           depConstraints: [
             {
               sourceTag: 'platform:browser',

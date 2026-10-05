@@ -7,7 +7,9 @@ OpenSpec records behavior requirements and change proposals. Each service's
 `libs/<service>/specs/openapi.yaml` is its HTTP contract. No behavior-changing code
 is written before the OpenSpec change and affected API contract are reviewed. The
 React browser client in `apps/web` is a product surface reviewed through the same
-OpenSpec workflow under the `web` namespace, not a microservice.
+OpenSpec workflow under the `web` namespace, not a microservice. Cross-cutting runtime
+capabilities owned by the `apps/api` host are reviewed under the `platform` namespace,
+which is also not a microservice.
 
 ## Tech stack
 
@@ -68,6 +70,15 @@ A service is discovered automatically if it has a `microservice.json` file. The
 discovered service, and `apps/web` must stay out of service discovery, Prisma,
 contract-test, and OpenAPI validation flows.
 
+The `platform` namespace is the cross-cutting runtime exception: it owns behavior
+of the `apps/api` host that spans its modules (for example request correlation and
+structured logging) and it is not a microservice. It has no
+`libs/platform/microservice.json` and no OpenAPI contract, so it stays out of
+service discovery, Prisma, contract-test, and service-scoped OpenAPI validation.
+Do not run `pnpm run verify -- --service platform` or
+`pnpm run validate:openapi -- --service platform`; a `platform` change is verified
+with the repo-wide checks instead.
+
 ## Architecture rules (enforced by validation scripts)
 
 Dependency direction — imports must only flow inward:
@@ -99,13 +110,15 @@ implementation authorization; wait for explicit review before applying it.
 1. **Draft and validate:** optionally explore, propose the change, review every
    requirement and task, then run `openspec validate <change>`. For each affected
    backend service, also run `pnpm run validate:openapi -- --service <name>`; a
-   `web`-only change has no OpenAPI contract to validate.
+   `web`-only or `platform`-only change has no OpenAPI contract to validate.
 2. **Implement and verify:** apply the approved tasks. For each affected backend
    service run `pnpm run verify -- --service <name>`, which includes the
    service-scoped contract tests and the repo-wide architecture, domain purity,
    invariant, and dependency checks. For web changes run `pnpm run verify` plus
-   `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e`. Then use the report-only
-   OpenSpec verify.
+   `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e`. For platform changes run
+   the repo-wide `pnpm run verify`, `pnpm lint`, and
+   `openspec validate <change>` (never a service-scoped command for `platform`).
+   Then use the report-only OpenSpec verify.
 3. **Archive and prepare commit:** archive only after all checks pass, review the
    merged `<namespace>/<capability>` specs, then prepare a commit summary. Git
    commit is manual and remains the user's action.
@@ -132,10 +145,13 @@ test, `verify` and `test:contract` scripts, so a manual call is rarely needed.
 
 - `microservice.json` — metadata per service (name, version, specVersion, dependencies)
 - OpenSpec capabilities use `openspec/specs/<namespace>/<capability>/spec.md`, where
-  the namespace is a discovered service or the browser client `web`
+  the namespace is a discovered service, the browser client `web`, or the
+  cross-cutting runtime namespace `platform`
 - `libs/<service>/specs/openapi.yaml` remains the HTTP contract for that service;
-  the `web` namespace has no OpenAPI contract
+  neither the `web` nor the `platform` namespace has an OpenAPI contract
 - Web behavior is verified with `pnpm web:test`, `pnpm web:build`, and `pnpm web:e2e`
+- Platform behavior is verified with the repo-wide `pnpm run verify`, `pnpm lint`,
+  and `openspec validate <change>`; never with `--service platform` checks
 
 ## Database naming and identifier conventions
 
@@ -187,6 +203,7 @@ Identifier strategy for identifiers shared across service boundaries:
 - Do NOT treat OpenAPI as a replacement for behavioral requirements or vice versa
 - Do NOT place a service's persistent requirements under another service's namespace
 - Do NOT treat `apps/web` as a microservice: no `microservice.json`, no Prisma, no OpenAPI, and no service discovery, contract-test, or OpenAPI validation for it
+- Do NOT treat `platform` as a discoverable service or OpenAPI target: no `microservice.json`, no OpenAPI contract, and no `--service platform` checks; verify it with repo-wide checks
 - Do NOT treat OpenAPI validation as code generation; use `pnpm run validate:openapi`
 - Do NOT modify `architecture/rules.json` to silence a validation failure
 - Do NOT skip the spec step — for changes that alter a backend HTTP contract, define or update its OpenAPI before implementing

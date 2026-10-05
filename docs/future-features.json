@@ -61,6 +61,85 @@
         "scripts/cli.ts",
         "package.json"
       ]
+    },
+    {
+      "id": "production-log-transports",
+      "title": "Production log shipping and transports",
+      "status": "proposed",
+      "priority": "medium",
+      "description": "Track the production logging readiness checklist and evaluate production destinations for Pino logs after the deployment and observability platform is selected. The structured-logging change keeps production output as JSON on stdout and uses pino-pretty only in development.",
+      "motivation": "Route operational logs to an appropriate collector or managed destination with deliberate retention, resilience, security, and cost controls instead of coupling the API to an unselected vendor.",
+      "design": {
+        "deferredFrom": "add-platform-structured-logging",
+        "considerations": [
+          "Select the production collector and destination based on the deployment platform.",
+          "Use Pino transports in worker threads for log processing that could block the API event loop.",
+          "Define delivery failure, buffering, backpressure, retry, and shutdown behavior.",
+          "Preserve redaction before logs leave the process and define retention and volume limits.",
+          "Keep stdout JSON available for local operation and platform-native collection."
+        ],
+        "productionReadinessChecklist": [
+          {
+            "item": "Control levels with LOG_LEVEL; default to warn in production and info outside production.",
+            "disposition": "in_scope",
+            "trackedBy": "add-platform-structured-logging"
+          },
+          {
+            "item": "Use pino-pretty only in development and raw JSON in production.",
+            "disposition": "in_scope",
+            "trackedBy": "add-platform-structured-logging"
+          },
+          {
+            "item": "Limit external destinations to warn/error and configure production transports.",
+            "disposition": "deferred",
+            "trackedBy": "production-log-transports"
+          },
+          {
+            "item": "Review high-volume paths to avoid per-item logging in loops and sample noisy health checks where appropriate.",
+            "disposition": "deferred",
+            "trackedBy": "production-log-transports"
+          },
+          {
+            "item": "Never log request or response bodies.",
+            "disposition": "in_scope",
+            "trackedBy": "add-platform-structured-logging"
+          },
+          {
+            "item": "Redact credentials, tokens, passwords, card numbers, security codes, and sensitive headers with serialized-output regression tests.",
+            "disposition": "in_scope",
+            "trackedBy": "add-platform-structured-logging"
+          },
+          {
+            "item": "Serialize exceptions under err rather than logging err.message alone.",
+            "disposition": "in_scope",
+            "trackedBy": "add-platform-structured-logging"
+          },
+          {
+            "item": "Use child loggers for API modules and requests; add job context when background jobs are introduced.",
+            "disposition": "in_scope_for_modules_and_requests_deferred_for_jobs",
+            "trackedBy": "add-platform-structured-logging"
+          },
+          {
+            "item": "Set service and environment base fields; add build/version metadata when its source is defined.",
+            "disposition": "in_scope_for_service_and_environment_deferred_for_version",
+            "trackedBy": "add-platform-structured-logging"
+          },
+          {
+            "item": "Configure multiple production destinations such as file and external monitoring only after deployment requirements are known.",
+            "disposition": "deferred",
+            "trackedBy": "production-log-transports"
+          },
+          {
+            "item": "Keep logger configuration in a dedicated host configuration file registered once by AppModule.",
+            "disposition": "in_scope",
+            "trackedBy": "add-platform-structured-logging"
+          }
+        ]
+      },
+      "affectedFiles": [
+        "apps/api/src/",
+        "deployment configuration (to be determined)"
+      ]
     }
   ],
   "workflowImpact": {
