@@ -7,7 +7,15 @@ export class ProfileAlreadyExistsError extends Error {
   }
 }
 
+export class ProfileNotFoundError extends Error {
+  constructor() {
+    super('Profile not found');
+    this.name = 'ProfileNotFoundError';
+  }
+}
+
 export interface ProfileRepository {
   findById(id: number): Promise<ProfileEntity | null>;
+  findByAuthUserId(authUserId: string): Promise<ProfileEntity | null>;
   save(entity: ProfileEntity): Promise<ProfileEntity>;
 }

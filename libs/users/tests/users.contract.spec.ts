@@ -4,7 +4,11 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { CreateProfileUseCase } from '../application/create-profile.use-case';
-import { ProfileAlreadyExistsError } from '../application/profile.repository';
+import { GetCurrentProfileUseCase } from '../application/get-current-profile.use-case';
+import {
+  ProfileAlreadyExistsError,
+  ProfileNotFoundError,
+} from '../application/profile.repository';
 import { UsersController } from '../infrastructure/users.controller';
 
 describe('users contract', () => {
@@ -20,11 +24,20 @@ describe('users contract', () => {
       }) => Promise<unknown>
     >();
 
+  const getCurrentExecute = jest.fn<(authUserId: string) => Promise<unknown>>();
+
   beforeEach(async () => {
     execute.mockReset();
+    getCurrentExecute.mockReset();
     const module = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [{ provide: CreateProfileUseCase, useValue: { execute } }],
+      providers: [
+        { provide: CreateProfileUseCase, useValue: { execute } },
+        {
+          provide: GetCurrentProfileUseCase,
+          useValue: { execute: getCurrentExecute },
+        },
+      ],
     }).compile();
 
     app = module.createNestApplication();
@@ -226,6 +239,91 @@ describe('users contract', () => {
         message: 'Profile already exists',
         error: 'Conflict',
       });
+  });
+
+  it('returns the authenticated caller profile from GET /users/me', async () => {
+    getCurrentExecute.mockResolvedValue({
+      id: 1,
+      authUserId: 'auth-user-1',
+      name: 'Ada',
+      surname: 'Lovelace',
+      address: '1 Main Street',
+      phone: '555-0100',
+    });
+
+    await request(app.getHttpServer())
+      .get('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .expect(200)
+      .expect({
+        id: 1,
+        authUserId: 'auth-user-1',
+        name: 'Ada',
+        surname: 'Lovelace',
+        address: '1 Main Street',
+        phone: '555-0100',
+      });
+
+    expect(getCurrentExecute).toHaveBeenCalledWith('auth-user-1');
+  });
+
+  it('rejects profile retrieval without an active session', async () => {
+    await request(app.getHttpServer()).get('/users/me').expect(401).expect({
+      statusCode: 401,
+      message: 'Invalid session',
+      error: 'Unauthorized',
+    });
+
+    expect(getCurrentExecute).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when the identity has no profile', async () => {
+    getCurrentExecute.mockRejectedValue(new ProfileNotFoundError());
+
+    await request(app.getHttpServer())
+      .get('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .expect(404)
+      .expect({
+        statusCode: 404,
+        message: 'Profile not found',
+        error: 'Not Found',
+      });
+  });
+
+  it('does not require email verification to read the profile', async () => {
+    getCurrentExecute.mockResolvedValue({
+      id: 1,
+      authUserId: 'auth-user-1',
+      name: 'Ada',
+      surname: 'Lovelace',
+      address: '1 Main Street',
+      phone: '555-0100',
+    });
+
+    await request(app.getHttpServer())
+      .get('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .set('x-email-verified', 'false')
+      .expect(200);
+  });
+
+  it('uses only the session identity when the request supplies another identifier', async () => {
+    getCurrentExecute.mockResolvedValue({
+      id: 1,
+      authUserId: 'auth-user-1',
+      name: 'Ada',
+      surname: 'Lovelace',
+      address: '1 Main Street',
+      phone: '555-0100',
+    });
+
+    await request(app.getHttpServer())
+      .get('/users/me?authUserId=forged')
+      .set('x-auth-user-id', 'auth-user-1')
+      .expect(200);
+
+    expect(getCurrentExecute).toHaveBeenCalledWith('auth-user-1');
   });
 
   it('preserves the health endpoint', async () => {

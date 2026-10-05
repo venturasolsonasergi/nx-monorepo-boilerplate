@@ -373,6 +373,87 @@ describe('Auth and users (e2e)', () => {
       .expect(401);
   });
 
+  it('retrieves the caller profile and isolates identities via GET /users/me', async () => {
+    await request(app.getHttpServer()).get('/users/me').expect(401).expect({
+      statusCode: 401,
+      message: 'Invalid session',
+      error: 'Unauthorized',
+    });
+
+    const emailA = testEmail('me-a');
+    await signUpAndVerify(emailA);
+
+    const loginA = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email: emailA, password: 'password123' })
+      .expect(200);
+    const sessionA = cookieHeader(loginA);
+    const { userId: userIdA } = responseBody<{ userId: string }>(loginA);
+
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionA)
+      .send({
+        name: 'Ada',
+        surname: 'Lovelace',
+        address: '1 Main Street',
+        phone: '555-0100',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionA)
+      .expect(200)
+      .expect((response) => {
+        const body = responseBody<{
+          id: unknown;
+          authUserId: unknown;
+          name: string;
+          surname: string;
+          address: string;
+          phone: string;
+        }>(response);
+
+        expect(body).toMatchObject({
+          name: 'Ada',
+          surname: 'Lovelace',
+          address: '1 Main Street',
+          phone: '555-0100',
+        });
+        expect(typeof body.id).toBe('number');
+        expect(body.authUserId).toBe(userIdA);
+      });
+
+    const emailB = testEmail('me-b');
+    await signUpAndVerify(emailB);
+
+    const loginB = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email: emailB, password: 'password123' })
+      .expect(200);
+    const sessionB = cookieHeader(loginB);
+
+    await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionB)
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .get(`/users/me?authUserId=${encodeURIComponent(userIdA)}`)
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionB)
+      .expect(404)
+      .expect((response) => {
+        expect(JSON.stringify(response.body)).not.toContain('Ada');
+      });
+  });
+
   it('issues UUID-format ids for new identities while legacy ids still resolve', async () => {
     const uuidPattern =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

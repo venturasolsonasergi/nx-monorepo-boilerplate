@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Users Service API
-  version: 0.3.0
+  version: 0.4.0
   x-spec-id: create-profile
   description: >
     Creates a business profile for the authenticated, email-verified identity.
@@ -81,6 +81,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictError'
+  /users/me:
+    get:
+      operationId: getCurrentProfile
+      summary: Retrieve the authenticated caller's own profile
+      description: >
+        Returns the profile linked to the caller's session-derived identity.
+        The identity is resolved exclusively from the session cookie; no
+        caller-supplied identifier is accepted. Email verification is not
+        required for this read.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The caller's profile
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          description: Missing or invalid session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: The authenticated identity has no profile
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
 components:
   headers:
     RequestId:
@@ -236,3 +275,19 @@ components:
         error:
           type: string
           enum: [Conflict]
+    NotFoundError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [404]
+        message:
+          type: string
+          enum: [Profile not found]
+        error:
+          type: string
+          enum: [Not Found]

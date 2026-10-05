@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-05T10:51:35.614Z",
+  "generatedAt": "2026-10-05T14:14:32.187Z",
   "nodes": [
     "apps\\api\\src\\app.controller.spec.ts",
     "apps\\api\\src\\app.controller.ts",
@@ -92,6 +92,7 @@
     "libs\\orders\\tests\\orders.contract.spec.ts",
     "libs\\shared\\validation\\zod-validation-error.ts",
     "libs\\users\\application\\create-profile.use-case.ts",
+    "libs\\users\\application\\get-current-profile.use-case.ts",
     "libs\\users\\application\\profile.repository.ts",
     "libs\\users\\domain\\auth-user-id.vo.ts",
     "libs\\users\\domain\\profile.domain-service.ts",
@@ -109,6 +110,7 @@
     "libs\\users\\infrastructure\\users.controller.ts",
     "libs\\users\\infrastructure\\users.module.ts",
     "libs\\users\\infrastructure\\users.repository.prisma.ts",
+    "libs\\users\\tests\\get-current-profile.use-case.spec.ts",
     "libs\\users\\tests\\users.contract.spec.ts"
   ],
   "edges": []

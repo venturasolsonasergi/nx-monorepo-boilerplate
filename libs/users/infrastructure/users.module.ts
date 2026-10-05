@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersPrismaRepository } from './users.repository.prisma';
 import { CreateProfileUseCase } from '../application/create-profile.use-case';
+import { GetCurrentProfileUseCase } from '../application/get-current-profile.use-case';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
@@ -13,6 +14,12 @@ import { PrismaService } from './prisma/prisma.service';
       provide: CreateProfileUseCase,
       useFactory: (repository: UsersPrismaRepository) =>
         new CreateProfileUseCase(repository),
+      inject: [UsersPrismaRepository],
+    },
+    {
+      provide: GetCurrentProfileUseCase,
+      useFactory: (repository: UsersPrismaRepository) =>
+        new GetCurrentProfileUseCase(repository),
       inject: [UsersPrismaRepository],
     },
   ],

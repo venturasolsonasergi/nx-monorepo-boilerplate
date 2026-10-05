@@ -41,6 +41,13 @@ export class UsersPrismaRepository implements ProfileRepository {
     return record ? toProfileEntity(record) : null;
   }
 
+  async findByAuthUserId(authUserId: string): Promise<ProfileEntity | null> {
+    const record = await this.prisma.userProfile.findUnique({
+      where: { auth_user_id: authUserId },
+    });
+    return record ? toProfileEntity(record) : null;
+  }
+
   async save(entity: ProfileEntity): Promise<ProfileEntity> {
     try {
       const record = await this.prisma.userProfile.create({
