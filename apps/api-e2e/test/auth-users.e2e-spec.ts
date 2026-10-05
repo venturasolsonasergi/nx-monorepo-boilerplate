@@ -15,6 +15,7 @@ import {
 } from '@app/auth/infrastructure/auth.config';
 import type { MailMessage, MailPort } from '@app/auth/application/mail.port';
 import { AuthPrismaService } from '@app/auth/infrastructure/prisma/prisma.service';
+import { PrismaService } from '@app/users/infrastructure/prisma/prisma.service';
 
 const WEB_ORIGIN = 'http://localhost:4200';
 
@@ -157,6 +158,13 @@ describe('Auth and users (e2e)', () => {
   let providerServer: Server;
   let authConfig: AuthConfig;
   const mail = new RecordingMailSender();
+  const testEmails = new Set<string>();
+
+  function testEmail(label: string): string {
+    const email = `e2e-${label}-${Date.now()}@example.com`;
+    testEmails.add(email);
+    return email;
+  }
 
   beforeAll(async () => {
     const provider = await startMockProvider();
@@ -200,11 +208,37 @@ describe('Auth and users (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
-    providerServer.closeAllConnections();
-    await new Promise<void>((resolve) => {
-      providerServer.close(() => resolve());
-    });
+    try {
+      const emails = [...testEmails];
+      if (emails.length > 0) {
+        const authPrisma = app.get(AuthPrismaService);
+        const usersPrisma = app.get(PrismaService);
+        const users = await authPrisma.user.findMany({
+          where: { email: { in: emails } },
+          select: { id: true },
+        });
+        const userIds = users.map((user) => user.id);
+
+        if (userIds.length > 0) {
+          await usersPrisma.userProfile.deleteMany({
+            where: { auth_user_id: { in: userIds } },
+          });
+        }
+
+        await authPrisma.verification.deleteMany({
+          where: {
+            OR: emails.map((email) => ({ identifier: { contains: email } })),
+          },
+        });
+        await authPrisma.user.deleteMany({ where: { id: { in: userIds } } });
+      }
+    } finally {
+      await app.close();
+      providerServer.closeAllConnections();
+      await new Promise<void>((resolve) => {
+        providerServer.close(() => resolve());
+      });
+    }
   });
 
   async function signUpAndVerify(email: string): Promise<void> {
@@ -258,7 +292,7 @@ describe('Auth and users (e2e)', () => {
   });
 
   it('runs signup -> verify link -> login -> profile creation, then revokes on logout', async () => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = testEmail('profile');
 
     await signUpAndVerify(email);
 
@@ -342,7 +376,7 @@ describe('Auth and users (e2e)', () => {
   it('issues UUID-format ids for new identities while legacy ids still resolve', async () => {
     const uuidPattern =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const email = `e2e-uuid-${Date.now()}@example.com`;
+    const email = testEmail('uuid');
     const prisma = app.get(AuthPrismaService);
 
     const signupResponse = await request(app.getHttpServer())
@@ -359,14 +393,14 @@ describe('Auth and users (e2e)', () => {
     const account = await prisma.account.findFirst({ where: { userId } });
     expect(account?.id).toMatch(uuidPattern);
 
-    const legacyId = 'legacy-e2e-noneuuid0000000000000001';
+    const legacyId = `legacy-e2e-${Date.now()}`;
     await prisma.user.upsert({
       where: { id: legacyId },
       update: {},
       create: {
         id: legacyId,
         name: 'Legacy User',
-        email: `legacy-uuid-${Date.now()}@example.com`,
+        email: testEmail('legacy-uuid'),
         emailVerified: true,
       },
     });
@@ -405,7 +439,7 @@ describe('Auth and users (e2e)', () => {
   });
 
   it('keeps a pre-existing session valid for a legacy-id identity across the standardization', async () => {
-    const email = `e2e-legacy-session-${Date.now()}@example.com`;
+    const email = testEmail('legacy-session');
     const prisma = app.get(AuthPrismaService);
 
     await signUpAndVerify(email);
@@ -463,7 +497,7 @@ describe('Auth and users (e2e)', () => {
   });
 
   it('rejects missing, invalid, cross-origin and CSRF-unsafe requests', async () => {
-    const email = `e2e-guard-${Date.now()}@example.com`;
+    const email = testEmail('guard');
 
     await signUpAndVerify(email);
 
@@ -525,7 +559,7 @@ describe('Auth and users (e2e)', () => {
   });
 
   it('recovers access with a password reset link and revokes old sessions', async () => {
-    const email = `e2e-reset-${Date.now()}@example.com`;
+    const email = testEmail('reset');
 
     await signUpAndVerify(email);
 
@@ -612,7 +646,7 @@ describe('Auth and users (e2e)', () => {
   });
 
   it('rejects an expired verification token', async () => {
-    const email = `e2e-expired-verify-${Date.now()}@example.com`;
+    const email = testEmail('expired-verify');
 
     await request(app.getHttpServer())
       .post('/auth/signup')
@@ -629,7 +663,7 @@ describe('Auth and users (e2e)', () => {
   });
 
   it('accepts a reused verification token idempotently without creating a session', async () => {
-    const email = `e2e-reused-verify-${Date.now()}@example.com`;
+    const email = testEmail('reused-verify');
 
     await request(app.getHttpServer())
       .post('/auth/signup')
@@ -677,7 +711,7 @@ describe('Auth and users (e2e)', () => {
   });
 
   it('rejects an expired password reset token', async () => {
-    const email = `e2e-expired-reset-${Date.now()}@example.com`;
+    const email = testEmail('expired-reset');
     await signUpAndVerify(email);
 
     await request(app.getHttpServer())
@@ -700,7 +734,7 @@ describe('Auth and users (e2e)', () => {
     const prisma = app.get(AuthPrismaService);
     await prisma.verification.updateMany({
       data: { expiresAt: new Date(Date.now() - 60_000) },
-      where: { expiresAt: { gt: new Date() } },
+      where: { identifier: `reset-password:${resetToken}` },
     });
 
     await request(app.getHttpServer())
@@ -711,7 +745,7 @@ describe('Auth and users (e2e)', () => {
   });
 
   it('rejects an expired session and does not renew it', async () => {
-    const email = `e2e-expired-session-${Date.now()}@example.com`;
+    const email = testEmail('expired-session');
     await signUpAndVerify(email);
 
     const loginResponse = await request(app.getHttpServer())
@@ -776,6 +810,7 @@ describe('Auth and users (e2e)', () => {
 
   it('completes a full OAuth callback with a simulated provider', async () => {
     const code = `verified-oauth-${Date.now()}`;
+    testEmails.add(`${code}@example.com`);
 
     const startResponse = await request(app.getHttpServer())
       .post('/auth/oauth/test-oauth')
@@ -819,6 +854,7 @@ describe('Auth and users (e2e)', () => {
 
   it('rejects an OAuth callback whose provider email is unverified', async () => {
     const code = `unverified-oauth-${Date.now()}`;
+    testEmails.add(`${code}@example.com`);
 
     const startResponse = await request(app.getHttpServer())
       .post('/auth/oauth/test-oauth')

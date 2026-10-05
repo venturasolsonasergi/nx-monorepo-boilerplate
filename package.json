@@ -151,6 +151,7 @@
     "testRegex": ".*\\.spec\\.ts$",
     "testPathIgnorePatterns": [
       "/node_modules/",
+      "/apps/api-e2e/",
       "/apps/web-e2e/"
     ],
     "extensionsToTreatAsEsm": [
