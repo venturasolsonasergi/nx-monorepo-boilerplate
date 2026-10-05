@@ -12,6 +12,16 @@ export class ApiError extends Error {
   }
 }
 
+// A definitive "not authenticated" answer is a 401. Any other failure
+// (network, 5xx, schema mismatch) is unknown and must not be read as signed out.
+export function isUnauthenticatedError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}
+
+export function isNotFoundError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404;
+}
+
 interface ZodLikeSchema<T> {
   parse: (data: unknown) => T;
 }

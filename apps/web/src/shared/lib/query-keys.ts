@@ -1,0 +1,8 @@
+// Central query keys shared by features and the layout so cache invalidation
+// targets the same entries everywhere.
+export const sessionQueryKey = ['auth', 'session'] as const;
+
+export const profileQueryPrefix = ['users', 'me'] as const;
+
+export const profileQueryKey = (userId: string) =>
+  [...profileQueryPrefix, userId] as const;

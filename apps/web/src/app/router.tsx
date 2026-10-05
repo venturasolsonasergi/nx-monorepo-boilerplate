@@ -1,16 +1,14 @@
 import { Suspense } from 'react';
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-} from '@tanstack/react-router';
+import { createRootRoute, createRouter, Outlet } from '@tanstack/react-router';
 import { createAuthRoutes } from '../features/auth/routes/auth.routes';
+import { createLandingRoutes } from '../features/landing';
 import { createUsersRoutes } from '../features/users/routes/users.routes';
+import { AppHeader } from '../shared/layout/app-header';
 
 function RootLayout() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <AppHeader />
       <Suspense
         fallback={
           <div className="p-6 text-sm text-muted-foreground">Cargando…</div>
@@ -24,15 +22,9 @@ function RootLayout() {
 
 export const rootRoute = createRootRoute({ component: RootLayout });
 
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/',
-  component: () => <div className="p-6 text-sm">Bienvenido. Ve a /users.</div>,
-});
-
 // Each feature owns and exports its own routes; the router only composes them.
 const routeTree = rootRoute.addChildren([
-  indexRoute,
+  ...createLandingRoutes(rootRoute),
   ...createAuthRoutes(rootRoute),
   ...createUsersRoutes(rootRoute),
 ]);

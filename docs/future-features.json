@@ -140,6 +140,26 @@
         "apps/api/src/",
         "deployment configuration (to be determined)"
       ]
+    },
+    {
+      "id": "playwright-isolated-dev-server",
+      "title": "Make local Playwright runs use an isolated Vite server",
+      "status": "proposed",
+      "priority": "low",
+      "description": "Prevent local browser E2E runs from silently reusing an unrelated or stale Vite server already listening on the configured port.",
+      "motivation": "A reused stale app can make the suite test code that is not the current workspace and produce misleading results, while CI already starts a fresh server.",
+      "design": {
+        "defaultBehavior": "Start a fresh Vite server with strictPort for local and CI E2E runs.",
+        "optionalReuse": "If reuse is retained for faster local iteration, make it an explicit opt-in and verify the server belongs to this workspace/build before reuse.",
+        "considerations": [
+          "Keep the dedicated E2E port independent of the normal web development port.",
+          "Ensure a port conflict fails clearly instead of falling back to or accepting an unknown server.",
+          "Document any opt-in reuse mode and its limitations."
+        ]
+      },
+      "affectedFiles": [
+        "apps/web-e2e/playwright.config.ts"
+      ]
     }
   ],
   "workflowImpact": {
