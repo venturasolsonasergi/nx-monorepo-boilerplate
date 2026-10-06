@@ -1,3 +1,4 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import pino from 'pino';
 import {
   DEFAULT_LOG_LEVEL,
@@ -33,6 +34,35 @@ function createCapture(): {
         .filter((line) => line.trim().length > 0)
         .map((line) => JSON.parse(line) as Record<string, unknown>),
   };
+}
+
+function makeRequest(method: string, route: string): IncomingMessage {
+  return {
+    method,
+    route: { path: route },
+    originalUrl: route,
+  } as unknown as IncomingMessage;
+}
+
+function makeResponse(statusCode: number): ServerResponse {
+  return { statusCode } as unknown as ServerResponse;
+}
+
+function emitLog(
+  logger: pino.Logger,
+  level: string,
+  message: string,
+  props: Record<string, unknown> = {},
+): void {
+  if (level === 'debug') {
+    logger.debug(props, message);
+  } else if (level === 'info') {
+    logger.info(props, message);
+  } else if (level === 'warn') {
+    logger.warn(props, message);
+  } else if (level === 'error') {
+    logger.error(props, message);
+  }
 }
 
 describe('logging configuration', () => {
@@ -176,6 +206,100 @@ describe('logging configuration', () => {
           msg: 'hello',
         });
       }
+    });
+  });
+
+  describe('request outcome logging', () => {
+    const sessionProbe = '/auth/refresh';
+
+    it('classifies the expected anonymous session probe as debug, not a warning', () => {
+      const http = buildPinoHttpOptions({ NODE_ENV: 'development' });
+      const request = makeRequest('POST', sessionProbe);
+
+      expect(http.customLogLevel?.(request, makeResponse(401))).toBe('debug');
+    });
+
+    it('treats the expected outcome message as a non-failure for both hooks', () => {
+      const http = buildPinoHttpOptions({ NODE_ENV: 'development' });
+      const request = makeRequest('POST', sessionProbe);
+      const response = makeResponse(401);
+
+      expect(http.customSuccessMessage?.(request, response, 1)).toBe(
+        'anonymous session probe',
+      );
+      expect(
+        http.customErrorMessage?.(request, response, new Error('x'), 1),
+      ).toBe('anonymous session probe');
+    });
+
+    it('keeps a genuine 4xx at warn with the failure message', () => {
+      const http = buildPinoHttpOptions({ NODE_ENV: 'development' });
+      const request = makeRequest('POST', '/auth/login');
+      const response = makeResponse(401);
+
+      expect(http.customLogLevel?.(request, response)).toBe('warn');
+      expect(http.customSuccessMessage?.(request, response, 1)).toBe(
+        'http request failed',
+      );
+    });
+
+    it('keeps 5xx at error and successful responses silent', () => {
+      const http = buildPinoHttpOptions({ NODE_ENV: 'development' });
+      const request = makeRequest('POST', sessionProbe);
+
+      expect(http.customLogLevel?.(request, makeResponse(500))).toBe('error');
+      expect(http.customLogLevel?.(request, makeResponse(204))).toBe('silent');
+    });
+
+    it('emits the probe as a debug record that does not describe a failure', () => {
+      const env = { NODE_ENV: 'development', LOG_LEVEL: 'debug' };
+      const capture = createCapture();
+      const logger = pino(buildPinoOptions(env), capture.stream);
+      const http = buildPinoHttpOptions(env);
+      const request = makeRequest('POST', sessionProbe);
+      const response = makeResponse(401);
+
+      const level = http.customLogLevel?.(request, response) ?? 'silent';
+      const message = http.customSuccessMessage?.(request, response, 1) ?? '';
+      const props = {
+        ...http.customProps?.(request, response),
+        ...http.customSuccessObject?.(request, response, undefined),
+      };
+      emitLog(logger, level, message, props);
+
+      const [record] = capture.records();
+      expect(record).toMatchObject({
+        level: 20,
+        module: 'auth',
+        msg: 'anonymous session probe',
+        http: { method: 'POST', route: sessionProbe, statusCode: 401 },
+      });
+    });
+
+    it('emits a genuine 4xx as a warn failure record', () => {
+      const env = { NODE_ENV: 'development', LOG_LEVEL: 'debug' };
+      const capture = createCapture();
+      const logger = pino(buildPinoOptions(env), capture.stream);
+      const http = buildPinoHttpOptions(env);
+      const request = makeRequest('POST', '/auth/login');
+      const response = makeResponse(401);
+
+      const level = http.customLogLevel?.(request, response) ?? 'silent';
+      const message =
+        http.customErrorMessage?.(request, response, new Error('x'), 1) ?? '';
+      const props = {
+        ...http.customProps?.(request, response),
+        ...http.customErrorObject?.(request, response, new Error('x')),
+      };
+      emitLog(logger, level, message, props);
+
+      const [record] = capture.records();
+      expect(record).toMatchObject({
+        level: 40,
+        module: 'auth',
+        msg: 'http request failed',
+        http: { method: 'POST', route: '/auth/login', statusCode: 401 },
+      });
     });
   });
 });

@@ -82,7 +82,7 @@ describe('Operational logging (e2e)', () => {
       .overrideProvider(PARAMS_PROVIDER_TOKEN)
       .useValue(
         createLoggerParams(
-          { NODE_ENV: 'production', LOG_LEVEL: 'info' },
+          { NODE_ENV: 'production', LOG_LEVEL: 'debug' },
           capture.stream,
         ),
       )
@@ -267,6 +267,31 @@ describe('Operational logging (e2e)', () => {
       const serialized = JSON.stringify(capture.records());
       expect(serialized).not.toContain('SENTINEL-BODY-NAME');
       expect(serialized).not.toContain('Lovelace');
+    });
+  });
+
+  describe('expected anonymous session probe', () => {
+    it('logs an anonymous POST /auth/refresh 401 at debug, not as a warn failure', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Origin', WEB_ORIGIN)
+        .set('x-request-id', 'probe-401')
+        .expect(401);
+
+      const records = capture.records();
+      expect(records).toHaveLength(1);
+      expect(records[0]).toMatchObject({
+        level: 20,
+        msg: 'anonymous session probe',
+        requestId: 'probe-401',
+        module: 'auth',
+        http: {
+          method: 'POST',
+          route: '/auth/refresh',
+          statusCode: 401,
+        },
+      });
+      expect(records[0].err).toBeUndefined();
     });
   });
 });

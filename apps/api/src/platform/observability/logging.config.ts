@@ -124,6 +124,26 @@ function httpFields(
   };
 }
 
+const SESSION_PROBE_ROUTE = '/auth/refresh';
+const FAILURE_MESSAGE = 'http request failed';
+const EXPECTED_OUTCOME_MESSAGE = 'anonymous session probe';
+
+/**
+ * The web client probes `POST /auth/refresh` to discover whether a session
+ * exists; a `401` is the normal answer for an anonymous visitor, not a failed
+ * request. Only that specific, stable outcome is treated as expected.
+ */
+function isExpectedAnonymousSessionProbe(
+  request: IncomingMessage,
+  response: ServerResponse,
+): boolean {
+  return (
+    request.method === 'POST' &&
+    response.statusCode === 401 &&
+    routeTemplate(request) === SESSION_PROBE_ROUTE
+  );
+}
+
 export function buildPinoHttpOptions(
   env: LoggerEnvironment = process.env,
   pretty = resolveEnvironment(env) !== 'production',
@@ -141,12 +161,14 @@ export function buildPinoHttpOptions(
       requestId: toRequestId(request.id),
       module: moduleForRequest(request),
     }),
-    customLogLevel: (_request, response) => {
+    customLogLevel: (request, response) => {
       if (response.statusCode >= 500) {
         return 'error';
       }
       if (response.statusCode >= 400) {
-        return 'warn';
+        return isExpectedAnonymousSessionProbe(request, response)
+          ? 'debug'
+          : 'warn';
       }
       return 'silent';
     },
@@ -157,8 +179,14 @@ export function buildPinoHttpOptions(
       http: httpFields(request, response),
       ...(error ? { err: error } : {}),
     }),
-    customSuccessMessage: () => 'http request failed',
-    customErrorMessage: () => 'http request failed',
+    customSuccessMessage: (request, response) =>
+      isExpectedAnonymousSessionProbe(request, response)
+        ? EXPECTED_OUTCOME_MESSAGE
+        : FAILURE_MESSAGE,
+    customErrorMessage: (request, response) =>
+      isExpectedAnonymousSessionProbe(request, response)
+        ? EXPECTED_OUTCOME_MESSAGE
+        : FAILURE_MESSAGE,
   };
 
   if (pretty) {

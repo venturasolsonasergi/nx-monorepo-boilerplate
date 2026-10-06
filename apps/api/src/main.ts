@@ -12,8 +12,13 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 
-  createModuleLogger(app.get(PinoLogger).logger, 'api', 'bootstrap').info(
+  createModuleLogger(PinoLogger.root, 'api', 'bootstrap').info(
     `API listening on port ${port}`,
   );
 }
-void bootstrap();
+bootstrap().catch((error: unknown) => {
+  const message =
+    error instanceof Error ? (error.stack ?? error.message) : String(error);
+  process.stderr.write(`Fatal error during API bootstrap: ${message}\n`);
+  process.exit(1);
+});
