@@ -2,6 +2,7 @@ import {
   archiveArchitecture,
   checkDependencies,
   checkDomainInvariants,
+  checkPackageVersions,
   prismaGenerate,
   prismaMigrate,
   runContractTests,
@@ -19,6 +20,7 @@ const handlers: Record<string, () => void> = {
   'validate:domain': validateDomainPurity,
   'check:domain-invariants': checkDomainInvariants,
   'check:dependencies': checkDependencies,
+  'check:package-versions': checkPackageVersions,
   'test:contract': () => runContractTests(parseServiceArg(args)),
   'prisma:generate': () => prismaGenerate(parseServiceArg(args)),
   'prisma:migrate': () =>

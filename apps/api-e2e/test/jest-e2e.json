@@ -5,7 +5,9 @@
   "testRegex": ".e2e-spec.ts$",
   "forceExit": true,
   "extensionsToTreatAsEsm": [".ts"],
-  "setupFiles": ["dotenv/config"],
+  "globalSetup": "<rootDir>/global-setup.mjs",
+  "globalTeardown": "<rootDir>/global-teardown.mjs",
+  "setupFiles": ["dotenv/config", "<rootDir>/setup-env.mjs"],
   "moduleNameMapper": {
     "^@app/api/(.*)$": "<rootDir>/../../api/src/$1",
     "^@app/users/(.*)$": "<rootDir>/../../../libs/users/$1",

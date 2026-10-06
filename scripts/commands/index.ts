@@ -27,6 +27,10 @@ export function checkDependencies(): void {
   runNodeScript('architecture/validation-engine/check-dependencies.mjs');
 }
 
+export function checkPackageVersions(): void {
+  runNodeScript('architecture/validation-engine/check-package-versions.mjs');
+}
+
 const JEST_BIN = join(ROOT_DIR, 'node_modules', 'jest', 'bin', 'jest.js');
 
 export function runContractTests(service?: string): void {

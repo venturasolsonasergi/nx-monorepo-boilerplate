@@ -3,6 +3,7 @@ import {
   validateArchitecture,
   validateDomainPurity,
   checkDomainInvariants,
+  checkPackageVersions,
 } from '../commands';
 import { runCommand } from '../utils/runtime';
 
@@ -10,6 +11,7 @@ export function verify(service?: string): void {
   validateArchitecture();
   validateDomainPurity();
   checkDomainInvariants();
+  checkPackageVersions();
   runContractTests(service);
 }
 

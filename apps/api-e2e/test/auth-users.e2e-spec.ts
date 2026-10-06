@@ -209,35 +209,30 @@ describe('Auth and users (e2e)', () => {
 
   afterAll(async () => {
     try {
-      const emails = [...testEmails];
-      if (emails.length > 0) {
+      if (app) {
         const authPrisma = app.get(AuthPrismaService);
         const usersPrisma = app.get(PrismaService);
-        const users = await authPrisma.user.findMany({
-          where: { email: { in: emails } },
-          select: { id: true },
-        });
-        const userIds = users.map((user) => user.id);
 
-        if (userIds.length > 0) {
-          await usersPrisma.userProfile.deleteMany({
-            where: { auth_user_id: { in: userIds } },
-          });
-        }
-
-        await authPrisma.verification.deleteMany({
-          where: {
-            OR: emails.map((email) => ({ identifier: { contains: email } })),
-          },
-        });
-        await authPrisma.user.deleteMany({ where: { id: { in: userIds } } });
+        // E2E runs against dedicated, disposable databases, so the whole
+        // fixture is reset instead of only the identities tracked by this
+        // suite. This also removes verification-token rows (reset-password:*,
+        // auth-state:*) whose identifiers are not derived from an email.
+        await usersPrisma.userProfile.deleteMany({});
+        await authPrisma.session.deleteMany({});
+        await authPrisma.account.deleteMany({});
+        await authPrisma.verification.deleteMany({});
+        await authPrisma.user.deleteMany({});
       }
     } finally {
-      await app.close();
-      providerServer.closeAllConnections();
-      await new Promise<void>((resolve) => {
-        providerServer.close(() => resolve());
-      });
+      if (app) {
+        await app.close();
+      }
+      if (providerServer) {
+        providerServer.closeAllConnections();
+        await new Promise<void>((resolve) => {
+          providerServer.close(() => resolve());
+        });
+      }
     }
   });
 
