@@ -91,6 +91,18 @@ describe('LoginPage', () => {
     expect(screen.queryByText('Correo o contraseña no válidos.')).toBeNull();
   });
 
+  it('shows a retry-waiting message, not invalid credentials, on 429', async () => {
+    login.mockRejectedValue(new ApiError(429, 'rate limited'));
+    renderPage();
+    submit();
+    expect(
+      await screen.findByText(
+        'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Correo o contraseña no válidos.')).toBeNull();
+  });
+
   it('updates the session and continues to /users on success', async () => {
     login.mockResolvedValue({ userId: 'user-1', status: 'authenticated' });
     const client = renderPage();

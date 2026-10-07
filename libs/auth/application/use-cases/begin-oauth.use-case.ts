@@ -1,4 +1,5 @@
 import type { AuthProvider, OAuthStartResult } from '../auth-provider.port';
+import type { RequestContext } from '../request-context';
 import { UnsupportedProviderError } from '../auth.errors';
 
 export interface BeginOAuthInput {
@@ -12,14 +13,20 @@ export class BeginOAuthUseCase {
     private readonly allowedProviders: string[],
   ) {}
 
-  execute(input: BeginOAuthInput): Promise<OAuthStartResult> {
+  execute(
+    input: BeginOAuthInput,
+    context: RequestContext,
+  ): Promise<OAuthStartResult> {
     if (!this.allowedProviders.includes(input.provider)) {
       throw new UnsupportedProviderError(input.provider);
     }
 
-    return this.provider.startOAuth({
-      provider: input.provider,
-      callbackURL: input.callbackURL,
-    });
+    return this.provider.startOAuth(
+      {
+        provider: input.provider,
+        callbackURL: input.callbackURL,
+      },
+      context,
+    );
   }
 }

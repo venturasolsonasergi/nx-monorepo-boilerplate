@@ -13,11 +13,13 @@ paths:
   /auth/signup:
     post:
       operationId: authSignup
-      summary: Register an identity pending email verification
+      summary: Register a pending email verification
       description: >
-        Creates an identity with a unique email and password and returns a
-        pending-verification status. No session cookie is issued until the
-        email is verified.
+        Accepts only an email and creates a pending registration without an
+        identity, credential, session, or profile. The registration expires 48
+        hours after initiation; repeating signup while it is pending reuses it
+        without extending the deadline. Returns the mail outcome for this
+        attempt. No session cookie is issued.
       requestBody:
         required: true
         content:
@@ -26,7 +28,9 @@ paths:
               $ref: '#/components/schemas/SignupRequest'
       responses:
         '201':
-          description: Identity registered pending verification
+          description: >
+            Pending registration returned with the fixed deadline and the
+            transport outcome of this attempt
           headers:
             x-request-id:
               $ref: '#/components/headers/RequestId'
@@ -43,15 +47,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
-        '409':
-          description: Email already registered
-          headers:
-            x-request-id:
-              $ref: '#/components/headers/RequestId'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConflictError'
         '403':
           description: Request from an untrusted origin
           headers:
@@ -61,25 +56,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
+        '409':
+          description: Email already belongs to a verified identity
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+        '429':
+          description: >
+            Source blocked by the shared signup limit. No pending registration
+            or per-address limit state is created.
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TooManyRequestsError'
   /auth/verify-email:
     get:
       operationId: authVerifyEmailLink
-      summary: Verify an email from the emailed link and redirect to the web app
+      summary: Redirect an activation link to the web password-entry route
+      description: >
+        Redirects to the fixed configured web destination
+        `/complete-signup?token=...`. It does not consume or verify the token
+        and does not create a session, so opening the link (including by a mail
+        scanner) cannot activate an account. No caller-selected redirect is
+        accepted.
       parameters:
         - name: token
           in: query
           required: true
           schema:
             type: string
-        - name: redirectTo
-          in: query
-          required: false
-          schema:
-            type: string
-            format: uri
       responses:
         '302':
-          description: Redirect to an approved web destination
+          description: Redirect to the fixed password-entry destination
           headers:
             x-request-id:
               $ref: '#/components/headers/RequestId'
@@ -89,25 +106,64 @@ paths:
                 format: uri
     post:
       operationId: authVerifyEmail
-      summary: Verify an email address with a verification token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VerifyEmailRequest'
+      deprecated: true
+      summary: Retired password-free email verification
+      description: >
+        The former password-free activation endpoint. It always returns 410 and
+        never verifies an identity, changes a credential, or issues a session.
+        Activation is completed through `POST /auth/signup/complete`.
       responses:
-        '200':
-          description: Email verified; repeated verification succeeds idempotently
+        '410':
+          description: Endpoint retired; no activation or session change
           headers:
             x-request-id:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VerifyEmailResponse'
+                $ref: '#/components/schemas/GoneError'
+        '403':
+          description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/signup/complete:
+    post:
+      operationId: authCompleteSignup
+      summary: Set the password and activate a pending registration
+      description: >
+        Accepts a registration token and the owner's password. With a valid,
+        unexpired, single-use token it atomically creates the verified identity
+        and credential, consumes the token, and issues the HTTP-only session
+        cookie. No business profile is created. An invalid or expired token and
+        an invalid password return 400 without changing state; a valid password
+        is required before the token is consumed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupCompleteRequest'
+      responses:
+        '200':
+          description: Identity and credential activated; session cookie set
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+            Set-Cookie:
+              $ref: '#/components/headers/SessionCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupCompleteResponse'
         '400':
-          description: Invalid or expired verification token
+          description: >
+            Invalid password, or an invalid, expired, superseded, or already
+            consumed token
           headers:
             x-request-id:
               $ref: '#/components/headers/RequestId'
@@ -124,6 +180,109 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
+        '409':
+          description: >
+            The email is already verified or linked to another identity, so the
+            registration cannot be activated
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationConflictError'
+        '429':
+          description: >
+            Rate limited while activating. When the identity and credential
+            were already committed, accountActivated is true and the owner can
+            log in with the established password.
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TooManyRequestsError'
+        '503':
+          description: >
+            Operational failure. When the identity and credential were already
+            committed, accountActivated is true and the owner can log in with
+            the established password.
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnavailableError'
+  /auth/verification/resend:
+    post:
+      operationId: authResendVerification
+      summary: Resend a registration activation email
+      description: >
+        Returns a uniform request-acceptance response for pending, unknown,
+        expired, and verified addresses, without disclosing account state or
+        claiming transport acceptance or delivery. A new link is sent only for
+        an unexpired pending registration within the shared limits; an allowed
+        send rotates the single-use token so earlier links are superseded. The
+        registration deadline is never extended and no registration is created
+        for an unknown or expired address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+      responses:
+        '200':
+          description: >
+            Uniform request acceptance. retryAfterSeconds is present when the
+            request was throttled.
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendVerificationResponse'
+        '400':
+          description: Invalid resend request
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+  /auth/public-config:
+    get:
+      operationId: authPublicConfig
+      summary: Read the public auth configuration
+      description: >
+        Returns only the configured public support email so clients can offer
+        help when registration mail is not received. It never contains SMTP
+        credentials, auth secrets, tokens, or private account data.
+      responses:
+        '200':
+          description: Public auth configuration
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicConfigResponse'
   /auth/login:
     post:
       operationId: authLogin
@@ -131,7 +290,8 @@ paths:
       description: >
         Issues a browser session only when the identity is email verified.
         Sets an HTTP-only session cookie and never returns the session token
-        in the response body.
+        in the response body. Rate limits and operational failures are not
+        reported as invalid credentials.
       requestBody:
         required: true
         content:
@@ -168,6 +328,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
+        '429':
+          description: Login rate limited
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TooManyRequestsError'
+        '503':
+          description: >
+            Operational failure while checking credentials or issuing a
+            session; not reported as invalid credentials
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnavailableError'
   /auth/logout:
     post:
       operationId: authLogout
@@ -198,8 +380,10 @@ paths:
       operationId: authRefresh
       summary: Renew an active session
       description: >
-        Renews an active session without requiring a browser-visible refresh
-        token. Any replacement cookie is delivered in the response.
+        Renews an active verified session without requiring a browser-visible
+        refresh token. Any replacement cookie is delivered in the response.
+        Only an absent, invalid, revoked, expired, or unverified session yields
+        401; rate limits and operational failures remain non-401.
       responses:
         '200':
           description: Session renewed
@@ -213,7 +397,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RefreshResponse'
         '401':
-          description: Expired, revoked, or absent session
+          description: Absent, invalid, revoked, expired, or unverified session
           headers:
             x-request-id:
               $ref: '#/components/headers/RequestId'
@@ -230,6 +414,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
+        '429':
+          description: Session provider rate limited the refresh
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TooManyRequestsError'
+        '503':
+          description: >
+            Operational failure while renewing the session; not interpreted as
+            an absent session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnavailableError'
   /auth/reset-password/request:
     post:
       operationId: authRequestPasswordReset
@@ -445,22 +651,57 @@ components:
         validated against the original request.
       schema:
         type: string
+    RetryAfter:
+      description: Number of seconds to wait before retrying the request.
+      schema:
+        type: integer
+        minimum: 1
   schemas:
     SignupRequest:
       type: object
       additionalProperties: false
       required:
         - email
-        - password
       properties:
         email:
           type: string
           format: email
           minLength: 1
+    SignupResponse:
+      type: object
+      required:
+        - status
+        - expiresAt
+        - emailStatus
+      properties:
+        status:
+          type: string
+          enum: [pending-verification]
+        expiresAt:
+          type: string
+          format: date-time
+          description: Fixed registration deadline, exactly 48 hours after initiation.
+        emailStatus:
+          type: string
+          enum: [accepted, failed, throttled]
+        retryAfterSeconds:
+          type: integer
+          minimum: 1
+          description: Present when emailStatus is throttled.
+    SignupCompleteRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - token
+        - password
+      properties:
+        token:
+          type: string
+          minLength: 1
         password:
           type: string
           minLength: 8
-    SignupResponse:
+    SignupCompleteResponse:
       type: object
       required:
         - userId
@@ -470,24 +711,40 @@ components:
           type: string
         status:
           type: string
-          enum: [pending-verification]
-    VerifyEmailRequest:
+          enum: [authenticated]
+    ResendVerificationRequest:
       type: object
       additionalProperties: false
       required:
-        - token
+        - email
       properties:
-        token:
+        email:
           type: string
+          format: email
           minLength: 1
-    VerifyEmailResponse:
+    ResendVerificationResponse:
       type: object
       required:
         - status
       properties:
         status:
           type: string
-          enum: [verified]
+          enum: [accepted]
+        retryAfterSeconds:
+          type: integer
+          minimum: 1
+          description: Present when the resend was throttled.
+    PublicConfigResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - supportEmail
+      properties:
+        supportEmail:
+          type: string
+          format: email
+          nullable: true
+          description: Public support contact; null outside production when unconfigured.
     LoginRequest:
       type: object
       additionalProperties: false
@@ -665,3 +922,81 @@ components:
         error:
           type: string
           enum: [Conflict]
+    RegistrationConflictError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [409]
+        message:
+          type: string
+          enum: [Registration conflict]
+        error:
+          type: string
+          enum: [Conflict]
+    GoneError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [410]
+        message:
+          type: string
+          enum: [Verification endpoint retired]
+        error:
+          type: string
+          enum: [Gone]
+    TooManyRequestsError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+        - retryAfterSeconds
+      properties:
+        statusCode:
+          type: integer
+          enum: [429]
+        message:
+          type: string
+          enum: [Too Many Requests]
+        error:
+          type: string
+          enum: [Too Many Requests]
+        retryAfterSeconds:
+          type: integer
+          minimum: 1
+        accountActivated:
+          type: boolean
+          description: >
+            Present only for `POST /auth/signup/complete`. True when the
+            identity and credential were committed before the rate limit.
+    ServiceUnavailableError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [503]
+        message:
+          type: string
+          enum: [Service Unavailable]
+        error:
+          type: string
+          enum: [Service Unavailable]
+        accountActivated:
+          type: boolean
+          description: >
+            Present only for `POST /auth/signup/complete`. True when the
+            identity and credential were committed before the failure.

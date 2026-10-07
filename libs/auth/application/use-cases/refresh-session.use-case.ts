@@ -1,4 +1,5 @@
 import type { AuthProvider } from '../auth-provider.port';
+import type { RequestContext } from '../request-context';
 
 export interface RefreshSessionOutput {
   userId: string;
@@ -11,8 +12,12 @@ export class RefreshSessionUseCase {
 
   async execute(
     cookieHeader: string | undefined,
+    context: RequestContext,
   ): Promise<RefreshSessionOutput> {
-    const { session, setCookie } = await this.provider.refresh(cookieHeader);
+    const { session, setCookie } = await this.provider.refresh(
+      cookieHeader,
+      context,
+    );
     return { userId: session.userId, status: 'authenticated', setCookie };
   }
 }

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { ApiError, apiClient } from './api-client';
+import { ApiError, apiClient, rateLimitRetryAfterSeconds } from './api-client';
 
 const schema = z.object({ id: z.number() });
 
@@ -10,10 +10,10 @@ const okResponse = (body: unknown) => ({
   json: () => body,
 });
 
-const errorResponse = (status: number) => ({
+const errorResponse = (status: number, body: unknown = {}) => ({
   ok: false,
   status,
-  json: () => ({}),
+  json: () => body,
 });
 
 describe('apiClient', () => {
@@ -41,6 +41,23 @@ describe('apiClient', () => {
     await expect(apiClient.get('/thing', schema)).rejects.toMatchObject({
       status: 401,
     });
+  });
+
+  it('carries the parsed error body so callers can read retry metadata', async () => {
+    fetchMock.mockResolvedValue(
+      errorResponse(429, { retryAfterSeconds: 12, statusCode: 429 }),
+    );
+
+    const error = await apiClient
+      .post('/thing', schema, {})
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).body).toEqual({
+      retryAfterSeconds: 12,
+      statusCode: 429,
+    });
+    expect(rateLimitRetryAfterSeconds(error)).toBe(12);
   });
 
   it('rejects a payload that does not match the schema', async () => {

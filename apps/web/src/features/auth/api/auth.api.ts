@@ -10,11 +10,26 @@ const sessionSchema = z.object({
   userId: z.string().min(1),
   status: z.literal('authenticated'),
 });
+const emailStatusSchema = z.enum(['accepted', 'failed', 'throttled']);
+const retryAfterSchema = z.number().int().positive().optional();
 
 // Public response shapes mirror libs/auth/specs/openapi.yaml.
 export const signupResponseSchema = z.object({
-  userId: z.string().min(1),
   status: z.literal('pending-verification'),
+  expiresAt: z.string().min(1),
+  emailStatus: emailStatusSchema,
+  retryAfterSeconds: retryAfterSchema,
+});
+export const resendVerificationResponseSchema = z.object({
+  status: z.literal('accepted'),
+  retryAfterSeconds: retryAfterSchema,
+});
+export const publicConfigResponseSchema = z.object({
+  supportEmail: z.string().email().nullable(),
+});
+export const completeSignupResponseSchema = z.object({
+  userId: z.string().min(1),
+  status: z.literal('authenticated'),
 });
 export const loginResponseSchema = z.object({
   userId: z.string().min(1),
@@ -25,6 +40,12 @@ export const passwordResetRequestResponseSchema = z.object({
   message: z.string(),
 });
 export const logoutResponseSchema = z.object({ status: z.literal('ok') });
+
+export type SignupResponse = z.infer<typeof signupResponseSchema>;
+export type ResendVerificationResponse = z.infer<
+  typeof resendVerificationResponseSchema
+>;
+export type PublicConfigResponse = z.infer<typeof publicConfigResponseSchema>;
 
 export interface Credentials {
   email: string;
@@ -38,8 +59,22 @@ export interface PasswordResetConfirmation {
 
 // The only place in the feature that knows the auth HTTP contract with apps/api.
 export const authApi = {
-  signup: (input: Credentials) =>
+  signup: (input: { email: string }) =>
     apiClient.post('/auth/signup', signupResponseSchema, input),
+  resendVerification: (input: { email: string }) =>
+    apiClient.post(
+      '/auth/verification/resend',
+      resendVerificationResponseSchema,
+      input,
+    ),
+  completeSignup: (input: { token: string; password: string }) =>
+    apiClient.post(
+      '/auth/signup/complete',
+      completeSignupResponseSchema,
+      input,
+    ),
+  getPublicConfig: () =>
+    apiClient.get('/auth/public-config', publicConfigResponseSchema),
   login: (input: Credentials) =>
     apiClient.post('/auth/login', loginResponseSchema, input),
   logout: () => apiClient.post('/auth/logout', logoutResponseSchema, undefined),

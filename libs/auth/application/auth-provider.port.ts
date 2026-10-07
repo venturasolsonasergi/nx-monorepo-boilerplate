@@ -1,11 +1,9 @@
+import type { RequestContext } from './request-context';
+
 export interface AuthenticatedSession {
   userId: string;
   email: string;
   emailVerified: boolean;
-}
-
-export interface SignUpResult {
-  userId: string;
 }
 
 export interface SessionResult {
@@ -27,25 +25,34 @@ export interface CompleteOAuthInput {
   provider: string;
   query: Record<string, string>;
   cookieHeader: string | undefined;
+  context: RequestContext;
 }
 
 export interface AuthProvider {
-  signUp(input: { email: string; password: string }): Promise<SignUpResult>;
-  verifyEmail(token: string): Promise<void>;
-  login(input: { email: string; password: string }): Promise<SessionResult>;
-  logout(cookieHeader: string | undefined): Promise<string[]>;
-  refresh(cookieHeader: string | undefined): Promise<SessionResult>;
-  requestPasswordReset(email: string): Promise<void>;
-  confirmPasswordReset(input: {
-    token: string;
-    password: string;
-  }): Promise<void>;
+  login(
+    input: { email: string; password: string },
+    context: RequestContext,
+  ): Promise<SessionResult>;
+  logout(
+    cookieHeader: string | undefined,
+    context: RequestContext,
+  ): Promise<string[]>;
+  refresh(
+    cookieHeader: string | undefined,
+    context: RequestContext,
+  ): Promise<SessionResult>;
+  requestPasswordReset(email: string, context: RequestContext): Promise<void>;
+  confirmPasswordReset(
+    input: { token: string; password: string },
+    context: RequestContext,
+  ): Promise<void>;
   getSession(
     cookieHeader: string | undefined,
+    context: RequestContext,
   ): Promise<AuthenticatedSession | null>;
-  startOAuth(input: {
-    provider: string;
-    callbackURL: string;
-  }): Promise<OAuthStartResult>;
+  startOAuth(
+    input: { provider: string; callbackURL: string },
+    context: RequestContext,
+  ): Promise<OAuthStartResult>;
   completeOAuth(input: CompleteOAuthInput): Promise<OAuthCallbackResult>;
 }

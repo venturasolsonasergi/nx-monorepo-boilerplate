@@ -6,6 +6,7 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly body?: unknown,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -20,6 +21,42 @@ export function isUnauthenticatedError(error: unknown): boolean {
 
 export function isNotFoundError(error: unknown): boolean {
   return error instanceof ApiError && error.status === 404;
+}
+
+export function isRateLimitedError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 429;
+}
+
+export function rateLimitRetryAfterSeconds(error: unknown): number | null {
+  if (!isRateLimitedError(error)) {
+    return null;
+  }
+
+  const body = (error as ApiError).body;
+  if (body && typeof body === 'object' && 'retryAfterSeconds' in body) {
+    const value = (body as { retryAfterSeconds?: unknown }).retryAfterSeconds;
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+export function errorBodyField<T>(
+  error: unknown,
+  field: string,
+): T | undefined {
+  if (!(error instanceof ApiError)) {
+    return undefined;
+  }
+
+  const body = error.body;
+  if (body && typeof body === 'object' && field in body) {
+    return (body as Record<string, T>)[field];
+  }
+
+  return undefined;
 }
 
 interface ZodLikeSchema<T> {
@@ -46,9 +83,17 @@ async function request<T>(
   });
 
   if (!response.ok) {
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      body = undefined;
+    }
+
     throw new ApiError(
       response.status,
       `Request to ${path} failed with status ${response.status}`,
+      body,
     );
   }
 

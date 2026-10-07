@@ -7,6 +7,8 @@ export const AUTH_TABLES = [
   'auth_sessions',
   'auth_accounts',
   'auth_verification_tokens',
+  'auth_pending_registrations',
+  'auth_verification_resend_throttle',
 ];
 
 export const USERS_TABLES = ['user_profiles'];

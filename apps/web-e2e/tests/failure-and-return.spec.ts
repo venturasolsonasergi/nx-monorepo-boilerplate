@@ -23,18 +23,6 @@ test.describe('failure and return paths', () => {
     ).toHaveCount(0);
   });
 
-  test('verification continues to login', async ({ page }) => {
-    await page.route('**/auth/refresh', (route) =>
-      route.fulfill({ status: 401, ...json({}) }),
-    );
-    await page.goto('/verified?verified=true');
-    await expect(
-      page.getByText('Tu correo se ha verificado correctamente.'),
-    ).toBeVisible();
-    await page.getByRole('link', { name: 'Iniciar sesión' }).click();
-    await expect(page).toHaveURL(/\/login$/);
-  });
-
   test('a logout failure is recoverable and does not sign the user out', async ({
     page,
   }) => {

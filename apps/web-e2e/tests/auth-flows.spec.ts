@@ -106,28 +106,123 @@ test.describe('login', () => {
 });
 
 test.describe('signup', () => {
-  test('confirms the email and keeps the header anonymous', async ({
+  test('confirms the pending registration and keeps the header anonymous', async ({
     page,
   }) => {
     await routeAnonymous(page);
+    await page.route('**/auth/public-config', (route) =>
+      route.fulfill({
+        status: 200,
+        ...json({ supportEmail: 'help@example.com' }),
+      }),
+    );
     await page.route('**/auth/signup', (route) =>
       route.fulfill({
         status: 201,
-        ...json({ userId: 'A', status: 'pending-verification' }),
+        ...json({
+          status: 'pending-verification',
+          expiresAt: '2030-01-03T00:00:00.000Z',
+          emailStatus: 'accepted',
+        }),
       }),
     );
 
     await page.goto('/signup');
     await page.getByLabel('Correo electrónico').fill('a@example.com');
-    await page.getByLabel('Contraseña').fill('password123');
     await page.getByRole('button', { name: 'Crear cuenta' }).click();
 
     await expect(
       page.getByRole('heading', { name: 'Revisa tu correo' }),
     ).toBeVisible();
+    await expect(page.getByRole('link', { name: /soporte/i })).toBeVisible();
     await openUserMenu(page);
     await expect(
       page.getByRole('menu').getByRole('menuitem', { name: 'Acceder' }),
+    ).toBeVisible();
+  });
+
+  test('resend returns uniform acceptance without revealing account state', async ({
+    page,
+  }) => {
+    await routeAnonymous(page);
+    await page.route('**/auth/public-config', (route) =>
+      route.fulfill({ status: 200, ...json({ supportEmail: null }) }),
+    );
+    await page.route('**/auth/signup', (route) =>
+      route.fulfill({
+        status: 201,
+        ...json({
+          status: 'pending-verification',
+          expiresAt: '2030-01-03T00:00:00.000Z',
+          emailStatus: 'accepted',
+        }),
+      }),
+    );
+    await page.route('**/auth/verification/resend', (route) =>
+      route.fulfill({ status: 200, ...json({ status: 'accepted' }) }),
+    );
+
+    await page.goto('/signup');
+    await page.getByLabel('Correo electrónico').fill('a@example.com');
+    await page.getByRole('button', { name: 'Crear cuenta' }).click();
+    await page.getByRole('button', { name: 'Reenviar enlace' }).click();
+
+    await expect(
+      page.getByRole('heading', { name: 'Revisa tu correo' }),
+    ).toBeVisible();
+    await expect(page.getByText(/No se pudo/)).toHaveCount(0);
+  });
+});
+
+test.describe('complete signup', () => {
+  test('activates and continues to /users to complete the profile', async ({
+    page,
+  }) => {
+    let activated = false;
+    await page.route('**/auth/public-config', (route) =>
+      route.fulfill({ status: 200, ...json({ supportEmail: null }) }),
+    );
+    await page.route('**/auth/refresh', (route) =>
+      route.fulfill(
+        activated
+          ? { status: 200, ...json({ userId: 'A', status: 'authenticated' }) }
+          : { status: 401, ...json({}) },
+      ),
+    );
+    await page.route('**/auth/signup/complete', (route) => {
+      activated = true;
+      return route.fulfill({
+        status: 200,
+        ...json({ userId: 'A', status: 'authenticated' }),
+      });
+    });
+    await page.route('**/users/me', (route) =>
+      route.fulfill({ status: 404, ...json({}) }),
+    );
+
+    await page.goto('/complete-signup?token=token-1');
+    await page.getByLabel('Contraseña', { exact: true }).fill('password123');
+    await page.getByRole('button', { name: 'Activar cuenta' }).click();
+
+    await expect(page).toHaveURL(/\/users$/);
+    await expect(
+      page.getByRole('heading', { name: 'Crear perfil' }),
+    ).toBeVisible();
+    await expect(page).not.toHaveURL(/token=/);
+  });
+
+  test('an invalid token offers a restart', async ({ page }) => {
+    await routeAnonymous(page);
+    await page.route('**/auth/signup/complete', (route) =>
+      route.fulfill({ status: 400, ...json({}) }),
+    );
+
+    await page.goto('/complete-signup?token=expired');
+    await page.getByLabel('Contraseña', { exact: true }).fill('password123');
+    await page.getByRole('button', { name: 'Activar cuenta' }).click();
+
+    await expect(
+      page.getByRole('link', { name: 'Iniciar registro de nuevo' }),
     ).toBeVisible();
   });
 });

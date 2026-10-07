@@ -63,3 +63,40 @@ export class AuthProviderError extends Error {
     this.name = 'AuthProviderError';
   }
 }
+
+export class RateLimitedError extends Error {
+  constructor(public readonly retryAfterSeconds: number) {
+    super('Too many requests');
+    this.name = 'RateLimitedError';
+  }
+}
+
+export class SourceBlockedError extends Error {
+  constructor(public readonly retryAfterSeconds: number) {
+    super('Source is rate limited');
+    this.name = 'SourceBlockedError';
+  }
+}
+
+export class RegistrationConflictError extends Error {
+  constructor() {
+    super('Registration conflict');
+    this.name = 'RegistrationConflictError';
+  }
+}
+
+export class InvalidPasswordError extends Error {
+  constructor(message = 'Password does not meet the policy') {
+    super(message);
+    this.name = 'InvalidPasswordError';
+  }
+}
+
+export class ActivationCommittedError extends Error {
+  constructor(
+    public readonly sessionError: RateLimitedError | AuthProviderError,
+  ) {
+    super('Activation committed but session issuance failed');
+    this.name = 'ActivationCommittedError';
+  }
+}

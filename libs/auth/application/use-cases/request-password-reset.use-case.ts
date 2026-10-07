@@ -1,4 +1,5 @@
 import type { AuthProvider } from '../auth-provider.port';
+import type { RequestContext } from '../request-context';
 
 export interface RequestPasswordResetInput {
   email: string;
@@ -14,8 +15,9 @@ export class RequestPasswordResetUseCase {
 
   async execute(
     input: RequestPasswordResetInput,
+    context: RequestContext,
   ): Promise<RequestPasswordResetOutput> {
-    await this.provider.requestPasswordReset(input.email);
+    await this.provider.requestPasswordReset(input.email, context);
 
     return {
       status: 'accepted',

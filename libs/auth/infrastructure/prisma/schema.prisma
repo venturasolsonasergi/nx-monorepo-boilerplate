@@ -67,3 +67,24 @@ model Verification {
   @@index([identifier], map: "auth_verification_tokens_identifier_idx")
   @@map("auth_verification_tokens")
 }
+
+model PendingRegistration {
+  id         String    @id
+  email      String    @unique(map: "auth_pending_registrations_email_key")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  expiresAt  DateTime  @map("expires_at")
+  tokenHash  String?   @unique(map: "auth_pending_registrations_token_hash_key") @map("token_hash")
+  consumedAt DateTime? @map("consumed_at")
+
+  @@index([expiresAt], map: "auth_pending_registrations_expires_at_idx")
+  @@map("auth_pending_registrations")
+}
+
+model VerificationResendThrottle {
+  identifier      String   @id
+  windowStartedAt DateTime @map("window_started_at")
+  count           Int
+
+  @@index([windowStartedAt], map: "auth_verification_resend_throttle_window_started_at_idx")
+  @@map("auth_verification_resend_throttle")
+}

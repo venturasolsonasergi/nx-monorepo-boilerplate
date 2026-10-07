@@ -5,21 +5,24 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpException,
+  HttpStatus,
   Inject,
   Param,
   Post,
   Query,
   Req,
   Res,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { IncomingMessage } from 'node:http';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { formatZodValidationErrors } from '@app/shared/validation/zod-validation-error';
 import { MIN_PASSWORD_LENGTH } from '../domain/password.vo';
-import { SignUpUseCase } from '../application/use-cases/sign-up.use-case';
-import { VerifyEmailUseCase } from '../application/use-cases/verify-email.use-case';
+import { StartRegistrationUseCase } from '../application/use-cases/start-registration.use-case';
+import { ResendVerificationUseCase } from '../application/use-cases/resend-verification.use-case';
+import { CompleteSignUpUseCase } from '../application/use-cases/complete-sign-up.use-case';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
 import { LogoutUseCase } from '../application/use-cases/logout.use-case';
 import { RefreshSessionUseCase } from '../application/use-cases/refresh-session.use-case';
@@ -28,29 +31,42 @@ import { ConfirmPasswordResetUseCase } from '../application/use-cases/confirm-pa
 import { BeginOAuthUseCase } from '../application/use-cases/begin-oauth.use-case';
 import { CompleteOAuthUseCase } from '../application/use-cases/complete-oauth.use-case';
 import {
+  ActivationCommittedError,
   AuthProviderError,
   EmailAlreadyExistsError,
   InvalidCredentialsError,
+  InvalidPasswordError,
   InvalidResetTokenError,
   InvalidSessionError,
   InvalidVerificationTokenError,
+  RateLimitedError,
+  RegistrationConflictError,
+  SourceBlockedError,
   UnsupportedProviderError,
   UntrustedRedirectError,
   UnverifiedEmailError,
 } from '../application/auth.errors';
 import { AUTH_CONFIG, type AuthConfig } from './auth.config';
 import { readCookieHeader } from './session-cookie';
+import { sourceIpFromRequest } from './source-ip';
+import type { RequestContext } from '../application/request-context';
 
-const signUpSchema = z
+const startRegistrationSchema = z
   .object({
     email: z.string().trim().min(1).email(),
-    password: z.string().min(MIN_PASSWORD_LENGTH),
   })
   .strict();
 
-const verifyEmailSchema = z
+const resendVerificationSchema = z
+  .object({
+    email: z.string().trim().min(1).email(),
+  })
+  .strict();
+
+const completeSignUpSchema = z
   .object({
     token: z.string().trim().min(1),
+    password: z.string().min(MIN_PASSWORD_LENGTH),
   })
   .strict();
 
@@ -77,9 +93,12 @@ const confirmResetSchema = z
 @Controller('auth')
 export class AuthController {
   constructor(
-    @Inject(SignUpUseCase) private readonly signUpUseCase: SignUpUseCase,
-    @Inject(VerifyEmailUseCase)
-    private readonly verifyEmailUseCase: VerifyEmailUseCase,
+    @Inject(StartRegistrationUseCase)
+    private readonly startRegistrationUseCase: StartRegistrationUseCase,
+    @Inject(ResendVerificationUseCase)
+    private readonly resendVerificationUseCase: ResendVerificationUseCase,
+    @Inject(CompleteSignUpUseCase)
+    private readonly completeSignUpUseCase: CompleteSignUpUseCase,
     @Inject(LoginUseCase) private readonly loginUseCase: LoginUseCase,
     @Inject(LogoutUseCase) private readonly logoutUseCase: LogoutUseCase,
     @Inject(RefreshSessionUseCase)
@@ -95,67 +114,162 @@ export class AuthController {
     @Inject(AUTH_CONFIG) private readonly config: AuthConfig,
   ) {}
 
+  @Get('public-config')
+  publicConfig() {
+    return { supportEmail: this.config.supportEmail };
+  }
+
   @Post('signup')
   @HttpCode(201)
-  async signUp(@Body() body: unknown) {
-    const input = this.parse(signUpSchema, body);
+  async signUp(
+    @Body() body: unknown,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const input = this.parse(startRegistrationSchema, body);
 
     try {
-      return await this.signUpUseCase.execute(input);
+      return await this.startRegistrationUseCase.execute(
+        input,
+        this.contextFrom(request),
+      );
     } catch (error) {
       if (error instanceof EmailAlreadyExistsError) {
         throw new ConflictException('Email already exists');
       }
 
-      throw error;
-    }
-  }
-
-  @Post('verify-email')
-  @HttpCode(200)
-  async verifyEmail(@Body() body: unknown) {
-    const input = this.parse(verifyEmailSchema, body);
-
-    try {
-      return await this.verifyEmailUseCase.execute(input);
-    } catch (error) {
-      if (error instanceof InvalidVerificationTokenError) {
-        throw new BadRequestException(this.invalidToken());
+      if (error instanceof SourceBlockedError) {
+        response.setHeader('Retry-After', String(error.retryAfterSeconds));
+        throw new HttpException(
+          {
+            statusCode: 429,
+            message: 'Too Many Requests',
+            error: 'Too Many Requests',
+            retryAfterSeconds: error.retryAfterSeconds,
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
       }
 
       throw error;
     }
   }
 
-  @Get('verify-email')
-  async verifyEmailLink(
-    @Query('token') token: string | undefined,
-    @Query('redirectTo') redirectTo: string | undefined,
-    @Res() response: Response,
+  @Post('verification/resend')
+  @HttpCode(200)
+  async resendVerification(@Body() body: unknown, @Req() request: Request) {
+    const input = this.parse(resendVerificationSchema, body);
+    return this.resendVerificationUseCase.execute(
+      input,
+      this.contextFrom(request),
+    );
+  }
+
+  @Post('signup/complete')
+  @HttpCode(200)
+  async completeSignUp(
+    @Body() body: unknown,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
   ) {
-    const target = this.safeWebTarget(redirectTo, '/verified');
+    const input = this.parse(completeSignUpSchema, body);
 
     try {
-      await this.verifyEmailUseCase.execute({ token: token ?? '' });
-      response.redirect(302, this.appendQuery(target, { verified: 'true' }));
-    } catch {
-      response.redirect(
-        302,
-        this.appendQuery(target, { error: 'INVALID_TOKEN' }),
+      const result = await this.completeSignUpUseCase.execute(
+        input,
+        this.contextFrom(request),
       );
+      this.applyCookies(response, result.setCookie);
+      return { userId: result.userId, status: result.status };
+    } catch (error) {
+      if (
+        error instanceof InvalidVerificationTokenError ||
+        error instanceof InvalidPasswordError
+      ) {
+        throw new BadRequestException(this.invalidToken());
+      }
+
+      if (error instanceof RegistrationConflictError) {
+        throw new ConflictException('Registration conflict');
+      }
+
+      if (error instanceof SourceBlockedError) {
+        response.setHeader('Retry-After', String(error.retryAfterSeconds));
+        throw new HttpException(
+          {
+            statusCode: 429,
+            message: 'Too Many Requests',
+            error: 'Too Many Requests',
+            retryAfterSeconds: error.retryAfterSeconds,
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
+      if (error instanceof ActivationCommittedError) {
+        if (error.sessionError instanceof RateLimitedError) {
+          response.setHeader(
+            'Retry-After',
+            String(error.sessionError.retryAfterSeconds),
+          );
+          throw new HttpException(
+            {
+              statusCode: 429,
+              message: 'Too Many Requests',
+              error: 'Too Many Requests',
+              retryAfterSeconds: error.sessionError.retryAfterSeconds,
+              accountActivated: true,
+            },
+            HttpStatus.TOO_MANY_REQUESTS,
+          );
+        }
+
+        throw new ServiceUnavailableException({
+          statusCode: 503,
+          message: 'Service Unavailable',
+          error: 'Service Unavailable',
+          accountActivated: true,
+        });
+      }
+
+      this.rethrowProviderFailure(response, error);
     }
+  }
+
+  @Post('verify-email')
+  @HttpCode(410)
+  retiredVerifyEmail() {
+    return {
+      statusCode: 410,
+      message: 'Verification endpoint retired',
+      error: 'Gone',
+    };
+  }
+
+  @Get('verify-email')
+  verifyEmailLink(
+    @Query('token') token: string | undefined,
+    @Res() response: Response,
+  ) {
+    const target = new URL('/complete-signup', this.config.webURL);
+    target.searchParams.set('token', token ?? '');
+    response.redirect(302, target.toString());
   }
 
   @Post('login')
   @HttpCode(200)
   async login(
     @Body() body: unknown,
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
     const input = this.parse(loginSchema, body);
 
     try {
-      const result = await this.loginUseCase.execute(input);
+      const result = await this.loginUseCase.execute(
+        input,
+        this.contextFrom(request),
+      );
       this.applyCookies(response, result.setCookie);
       return { userId: result.session.userId, status: result.status };
     } catch (error) {
@@ -166,17 +280,20 @@ export class AuthController {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      throw error;
+      this.rethrowProviderFailure(response, error);
     }
   }
 
   @Post('logout')
   @HttpCode(200)
   async logout(
-    @Req() request: IncomingMessage & { headers: Record<string, unknown> },
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.logoutUseCase.execute(readCookieHeader(request));
+    const result = await this.logoutUseCase.execute(
+      readCookieHeader(request),
+      this.contextFrom(request),
+    );
     this.applyCookies(response, result.setCookie);
     return { status: result.status };
   }
@@ -184,12 +301,13 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(200)
   async refresh(
-    @Req() request: IncomingMessage & { headers: Record<string, unknown> },
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
     try {
       const result = await this.refreshSessionUseCase.execute(
         readCookieHeader(request),
+        this.contextFrom(request),
       );
       this.applyCookies(response, result.setCookie);
       return { userId: result.userId, status: result.status };
@@ -198,24 +316,30 @@ export class AuthController {
         throw new UnauthorizedException('Invalid session');
       }
 
-      throw error;
+      this.rethrowProviderFailure(response, error);
     }
   }
 
   @Post('reset-password/request')
   @HttpCode(200)
-  async requestPasswordReset(@Body() body: unknown) {
+  async requestPasswordReset(@Body() body: unknown, @Req() request: Request) {
     const input = this.parse(requestResetSchema, body);
-    return this.requestPasswordResetUseCase.execute(input);
+    return this.requestPasswordResetUseCase.execute(
+      input,
+      this.contextFrom(request),
+    );
   }
 
   @Post('reset-password/confirm')
   @HttpCode(200)
-  async confirmPasswordReset(@Body() body: unknown) {
+  async confirmPasswordReset(@Body() body: unknown, @Req() request: Request) {
     const input = this.parse(confirmResetSchema, body);
 
     try {
-      return await this.confirmPasswordResetUseCase.execute(input);
+      return await this.confirmPasswordResetUseCase.execute(
+        input,
+        this.contextFrom(request),
+      );
     } catch (error) {
       if (error instanceof InvalidResetTokenError) {
         throw new BadRequestException(this.invalidToken());
@@ -239,14 +363,18 @@ export class AuthController {
   @HttpCode(200)
   async startOAuth(
     @Param('provider') provider: string,
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
     try {
       const { authorizationUrl, setCookie } =
-        await this.beginOAuthUseCase.execute({
-          provider,
-          callbackURL: this.webDestination(),
-        });
+        await this.beginOAuthUseCase.execute(
+          {
+            provider,
+            callbackURL: this.webDestination(),
+          },
+          this.contextFrom(request),
+        );
 
       this.applyCookies(response, setCookie);
       return { provider, authorizationUrl };
@@ -274,7 +402,7 @@ export class AuthController {
   async completeOAuth(
     @Param('provider') provider: string,
     @Query() query: Record<string, string>,
-    @Req() request: IncomingMessage & { headers: Record<string, unknown> },
+    @Req() request: Request,
     @Res() response: Response,
   ) {
     try {
@@ -282,6 +410,7 @@ export class AuthController {
         provider,
         query: pickStrings(query),
         cookieHeader: readCookieHeader(request),
+        context: this.contextFrom(request),
       });
       this.applyCookies(response, result.setCookie);
       response.redirect(302, result.redirectUrl);
@@ -312,6 +441,37 @@ export class AuthController {
 
       throw error;
     }
+  }
+
+  private contextFrom(request: Request): RequestContext {
+    return {
+      sourceIp: sourceIpFromRequest(request, this.config.trustedProxies),
+    };
+  }
+
+  private rethrowProviderFailure(response: Response, error: unknown): never {
+    if (error instanceof RateLimitedError) {
+      response.setHeader('Retry-After', String(error.retryAfterSeconds));
+      throw new HttpException(
+        {
+          statusCode: 429,
+          message: 'Too Many Requests',
+          error: 'Too Many Requests',
+          retryAfterSeconds: error.retryAfterSeconds,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    if (error instanceof AuthProviderError) {
+      throw new ServiceUnavailableException({
+        statusCode: 503,
+        message: 'Service Unavailable',
+        error: 'Service Unavailable',
+      });
+    }
+
+    throw error;
   }
 
   private parse<T>(schema: z.ZodType<T>, body: unknown): T {

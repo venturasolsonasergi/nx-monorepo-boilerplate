@@ -1,7 +1,30 @@
 import { Module } from '@nestjs/common';
 import type { AuthProvider } from '../application/auth-provider.port';
-import { SignUpUseCase } from '../application/use-cases/sign-up.use-case';
-import { VerifyEmailUseCase } from '../application/use-cases/verify-email.use-case';
+import { CLOCK, type Clock } from '../application/clock.port';
+import {
+  IDENTITY_LOOKUP,
+  type IdentityLookupPort,
+} from '../application/identity-lookup.port';
+import {
+  REGISTRATION_ACTIVATION,
+  type RegistrationActivationPort,
+} from '../application/registration-activation.port';
+import {
+  REGISTRATION_REPOSITORY,
+  type PendingRegistrationRepository,
+} from '../application/pending-registration.repository';
+import {
+  VERIFICATION_MAILER,
+  type VerificationMailer,
+} from '../application/verification-mailer.port';
+import {
+  VERIFICATION_THROTTLE_REPOSITORY,
+  type VerificationThrottleRepository,
+} from '../application/verification-throttle.repository';
+import { VerificationRateLimitService } from '../application/verification-rate-limit.service';
+import { StartRegistrationUseCase } from '../application/use-cases/start-registration.use-case';
+import { ResendVerificationUseCase } from '../application/use-cases/resend-verification.use-case';
+import { CompleteSignUpUseCase } from '../application/use-cases/complete-sign-up.use-case';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
 import { LogoutUseCase } from '../application/use-cases/logout.use-case';
 import { RefreshSessionUseCase } from '../application/use-cases/refresh-session.use-case';
@@ -12,16 +35,25 @@ import { CompleteOAuthUseCase } from '../application/use-cases/complete-oauth.us
 import { ValidateSessionUseCase } from '../application/use-cases/validate-session.use-case';
 import { AuthController } from './auth.controller';
 import { BetterAuthAdapter } from './better-auth.adapter';
-import { SmtpMailSender } from './mail/smtp-mail.sender';
+import { SmtpMailSender, createSmtpTransporter } from './mail/smtp-mail.sender';
+import { IdentityLookupPrismaAdapter } from './identity-lookup.prisma';
+import { RegistrationActivationPrismaAdapter } from './registration-activation.prisma';
+import { RegistrationMailer } from './registration-mailer';
+import { SystemClock } from './system-clock';
 import { OriginValidationMiddleware } from './origin-validation.middleware';
 import { SessionValidationMiddleware } from './session-validation.middleware';
 import { AuthPrismaService } from './prisma/prisma.service';
+import { PendingRegistrationPrismaRepository } from './pending-registration.repository.prisma';
+import { VerificationThrottlePrismaRepository } from './verification-throttle.repository.prisma';
+import { RegistrationCleanupService } from './registration-cleanup.service';
 import {
   AUTH_ALLOWED_PROVIDERS,
   AUTH_CONFIG,
   AUTH_PROVIDER,
   MAIL_PORT,
+  SMTP_TRANSPORTER,
   loadAuthConfig,
+  type AuthConfig,
 } from './auth.config';
 
 @Module({
@@ -39,6 +71,11 @@ import {
       inject: [AUTH_CONFIG],
     },
     {
+      provide: SMTP_TRANSPORTER,
+      useFactory: (config: AuthConfig) => createSmtpTransporter(config.smtp),
+      inject: [AUTH_CONFIG],
+    },
+    {
       provide: MAIL_PORT,
       useClass: SmtpMailSender,
     },
@@ -46,15 +83,92 @@ import {
       provide: AUTH_PROVIDER,
       useClass: BetterAuthAdapter,
     },
+    { provide: CLOCK, useClass: SystemClock },
+    { provide: IDENTITY_LOOKUP, useClass: IdentityLookupPrismaAdapter },
+    { provide: VERIFICATION_MAILER, useClass: RegistrationMailer },
     {
-      provide: SignUpUseCase,
-      useFactory: (provider: AuthProvider) => new SignUpUseCase(provider),
-      inject: [AUTH_PROVIDER],
+      provide: REGISTRATION_ACTIVATION,
+      useClass: RegistrationActivationPrismaAdapter,
     },
     {
-      provide: VerifyEmailUseCase,
-      useFactory: (provider: AuthProvider) => new VerifyEmailUseCase(provider),
-      inject: [AUTH_PROVIDER],
+      provide: REGISTRATION_REPOSITORY,
+      useClass: PendingRegistrationPrismaRepository,
+    },
+    {
+      provide: VERIFICATION_THROTTLE_REPOSITORY,
+      useClass: VerificationThrottlePrismaRepository,
+    },
+    {
+      provide: VerificationRateLimitService,
+      useFactory: (
+        throttle: VerificationThrottleRepository,
+        config: AuthConfig,
+      ) =>
+        new VerificationRateLimitService(throttle, config.verificationLimits),
+      inject: [VERIFICATION_THROTTLE_REPOSITORY, AUTH_CONFIG],
+    },
+    {
+      provide: StartRegistrationUseCase,
+      useFactory: (
+        registrations: PendingRegistrationRepository,
+        rateLimit: VerificationRateLimitService,
+        identityLookup: IdentityLookupPort,
+        mailer: VerificationMailer,
+        clock: Clock,
+      ) =>
+        new StartRegistrationUseCase(
+          registrations,
+          rateLimit,
+          identityLookup,
+          mailer,
+          clock,
+        ),
+      inject: [
+        REGISTRATION_REPOSITORY,
+        VerificationRateLimitService,
+        IDENTITY_LOOKUP,
+        VERIFICATION_MAILER,
+        CLOCK,
+      ],
+    },
+    {
+      provide: ResendVerificationUseCase,
+      useFactory: (
+        registrations: PendingRegistrationRepository,
+        rateLimit: VerificationRateLimitService,
+        identityLookup: IdentityLookupPort,
+        mailer: VerificationMailer,
+        clock: Clock,
+      ) =>
+        new ResendVerificationUseCase(
+          registrations,
+          rateLimit,
+          identityLookup,
+          mailer,
+          clock,
+        ),
+      inject: [
+        REGISTRATION_REPOSITORY,
+        VerificationRateLimitService,
+        IDENTITY_LOOKUP,
+        VERIFICATION_MAILER,
+        CLOCK,
+      ],
+    },
+    {
+      provide: CompleteSignUpUseCase,
+      useFactory: (
+        activation: RegistrationActivationPort,
+        provider: AuthProvider,
+        rateLimit: VerificationRateLimitService,
+        clock: Clock,
+      ) => new CompleteSignUpUseCase(activation, provider, rateLimit, clock),
+      inject: [
+        REGISTRATION_ACTIVATION,
+        AUTH_PROVIDER,
+        VerificationRateLimitService,
+        CLOCK,
+      ],
     },
     {
       provide: LoginUseCase,
@@ -104,6 +218,7 @@ import {
     },
     OriginValidationMiddleware,
     SessionValidationMiddleware,
+    RegistrationCleanupService,
   ],
   exports: [
     OriginValidationMiddleware,

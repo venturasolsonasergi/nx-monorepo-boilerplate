@@ -160,6 +160,57 @@
       "affectedFiles": [
         "apps/web-e2e/playwright.config.ts"
       ]
+    },
+    {
+      "id": "password-strength-and-breach-protection",
+      "title": "Stronger password policy and breached-password blocking",
+      "status": "proposed",
+      "priority": "medium",
+      "description": "Harden the account password policy beyond the current 8–128 character length rule and refuse passwords known to be breached. Consider a higher minimum length and optional character-class or passphrase guidance, and integrate a breach check such as the Better Auth haveibeenpwned plugin or the Pwned Passwords k-anonymity range API.",
+      "motivation": "The current policy only enforces 8–128 characters with no complexity or breach screening, so users can set weak or already-compromised passwords that are accepted at activation, login, and password reset.",
+      "design": {
+        "currentState": [
+          "Minimum 8 and maximum 128 characters only.",
+          "Enforced in the web form (minLength), the Zod controller schemas, PasswordValueObject (MIN_PASSWORD_LENGTH / MAX_PASSWORD_LENGTH), and Better Auth (minPasswordLength 8 / maxPasswordLength 128 defaults).",
+          "No uppercase, number, or symbol requirement and no breached-password check (haveibeenpwned plugin not configured)."
+        ],
+        "goals": [
+          "Define one password policy shared by activation, password reset, and any future credential change.",
+          "Reject passwords found in known breach corpora without sending the full password.",
+          "Keep user-facing messages actionable and non-disclosing."
+        ],
+        "options": {
+          "strength": [
+            "Raise the minimum length (for example 12) and document the choice.",
+            "Optionally require character classes or encourage passphrases, weighing usability against security.",
+            "Expose the policy to the web so the form can validate before submit."
+          ],
+          "breachBlocking": [
+            "Enable the Better Auth haveibeenpwned plugin if the installed 1.7.7 version supports it.",
+            "Alternatively query the Pwned Passwords range API with SHA-1 k-anonymity (send only the hash prefix).",
+            "Decide fail-open versus fail-closed behavior when the breach service is unreachable, with timeouts and caching."
+          ]
+        },
+        "considerations": [
+          "Apply the same policy at activation (POST /auth/signup/complete) and password reset (POST /auth/reset-password/confirm).",
+          "Reuse the central password hashing/verification path so a policy change cannot be bypassed.",
+          "Validate before consuming a registration token so a rejected password does not consume the link.",
+          "Add startup-validated config (for example AUTH_PASSWORD_MIN_LENGTH) with safe defaults.",
+          "Update PasswordValueObject, the Better Auth emailAndPassword config, controller Zod schemas, the web forms, OpenAPI descriptions, and .env.example.",
+          "Add tests for the length boundary, character-class rules, a breached-password rejection, and breach-service failure behavior.",
+          "Document the chosen policy and its trade-offs."
+        ]
+      },
+      "affectedFiles": [
+        "libs/auth/domain/password.vo.ts",
+        "libs/auth/infrastructure/auth.config.ts",
+        "libs/auth/infrastructure/auth.controller.ts",
+        "libs/auth/infrastructure/better-auth.adapter.ts",
+        "libs/auth/specs/openapi.yaml",
+        "apps/web/src/features/auth/routes/complete-signup-page.tsx",
+        "apps/web/src/features/auth/routes/reset-password-page.tsx",
+        ".env.example"
+      ]
     }
   ],
   "workflowImpact": {

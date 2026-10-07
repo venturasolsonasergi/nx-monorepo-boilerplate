@@ -1,4 +1,5 @@
 export const MIN_PASSWORD_LENGTH = 8;
+export const MAX_PASSWORD_LENGTH = 128;
 
 export class PasswordValueObject {
   public readonly value: string;
@@ -7,6 +8,12 @@ export class PasswordValueObject {
     if (typeof value !== 'string' || value.length < MIN_PASSWORD_LENGTH) {
       throw new Error(
         `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`,
+      );
+    }
+
+    if (value.length > MAX_PASSWORD_LENGTH) {
+      throw new Error(
+        `Password must be at most ${MAX_PASSWORD_LENGTH} characters long`,
       );
     }
 

@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { createHmac } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import request from 'supertest';
@@ -118,26 +118,6 @@ function tokenFromLocation(location: string): string {
   return token;
 }
 
-function signHs256Token(
-  payload: Record<string, unknown>,
-  secret: string,
-): string {
-  const header = Buffer.from(
-    JSON.stringify({ alg: 'HS256', typ: 'JWT' }),
-  ).toString('base64url');
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = createHmac('sha256', secret)
-    .update(`${header}.${body}`)
-    .digest('base64url');
-
-  return `${header}.${body}.${signature}`;
-}
-
-function expiredVerificationToken(email: string, secret: string): string {
-  const now = Math.floor(Date.now() / 1000);
-  return signHs256Token({ email, iat: now - 7200, exp: now - 3600 }, secret);
-}
-
 async function waitForMail(
   mail: RecordingMailSender,
   predicate: (message: MailMessage) => boolean,
@@ -176,6 +156,16 @@ describe('Auth and users (e2e)', () => {
       basePath: '/auth',
       trustedOrigins: [WEB_ORIGIN, 'http://localhost:3000'],
       allowedProviders: ['google', 'test-oauth'],
+      isProduction: false,
+      supportEmail: 'support@example.com',
+      smtp: null,
+      verificationLimits: {
+        resendWindowSeconds: 60,
+        sourceWindowSeconds: 3600,
+        sourceMax: 1000,
+        retentionSeconds: 86400,
+      },
+      trustedProxies: ['127.0.0.1', '::1'],
       socialProviders: {
         google: {
           clientId: 'e2e-google-client-id',
@@ -236,11 +226,14 @@ describe('Auth and users (e2e)', () => {
     }
   });
 
-  async function signUpAndVerify(email: string): Promise<void> {
+  async function signUpAndActivate(
+    email: string,
+    password = 'password123',
+  ): Promise<{ userId: string; session: string }> {
     await request(app.getHttpServer())
       .post('/auth/signup')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email })
       .expect(201);
 
     const verificationMail = await waitForMail(
@@ -253,10 +246,28 @@ describe('Auth and users (e2e)', () => {
       true,
     );
 
-    await request(app.getHttpServer())
+    const location = await request(app.getHttpServer())
       .get(requestPathFrom(link))
       .expect(302)
-      .expect('Location', `${WEB_ORIGIN}/verified?verified=true`);
+      .then((response) => response.headers.location);
+
+    expect(location.startsWith(`${WEB_ORIGIN}/complete-signup`)).toBe(true);
+    const token = tokenFromLocation(location);
+
+    const complete = await request(app.getHttpServer())
+      .post('/auth/signup/complete')
+      .set('Origin', WEB_ORIGIN)
+      .send({ token, password })
+      .expect(200);
+
+    return {
+      userId: responseBody<{ userId: string }>(complete).userId,
+      session: cookieHeader(complete),
+    };
+  }
+
+  async function signUpAndVerify(email: string): Promise<void> {
+    await signUpAndActivate(email);
   }
 
   it('reports health without a session while preserving the root route', async () => {
@@ -455,16 +466,12 @@ describe('Auth and users (e2e)', () => {
     const email = testEmail('uuid');
     const prisma = app.get(AuthPrismaService);
 
-    const signupResponse = await request(app.getHttpServer())
-      .post('/auth/signup')
-      .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
-      .expect(201);
-    const { userId } = responseBody<{ userId: string }>(signupResponse);
+    const { userId } = await signUpAndActivate(email);
     expect(userId).toMatch(uuidPattern);
 
     const storedUser = await prisma.user.findUnique({ where: { email } });
     expect(storedUser?.id).toBe(userId);
+    expect(storedUser?.emailVerified).toBe(true);
 
     const account = await prisma.account.findFirst({ where: { userId } });
     expect(account?.id).toMatch(uuidPattern);
@@ -721,69 +728,89 @@ describe('Auth and users (e2e)', () => {
       .expect(200);
   });
 
-  it('rejects an expired verification token', async () => {
-    const email = testEmail('expired-verify');
+  it('rejects login before activation without creating an identity or session', async () => {
+    const email = testEmail('unverified-login');
+    const prisma = app.get(AuthPrismaService);
 
     await request(app.getHttpServer())
       .post('/auth/signup')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email })
       .expect(201);
 
-    const token = expiredVerificationToken(email, authConfig.secret);
+    expect(await prisma.user.findUnique({ where: { email } })).toBeNull();
 
     await request(app.getHttpServer())
-      .get(`/auth/verify-email?token=${encodeURIComponent(token)}`)
-      .expect(302)
-      .expect('Location', `${WEB_ORIGIN}/verified?error=INVALID_TOKEN`);
+      .post('/auth/login')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email, password: 'password123' })
+      .expect(401);
   });
 
-  it('accepts a reused verification token idempotently without creating a session', async () => {
-    const email = testEmail('reused-verify');
+  it('rejects completion for an expired registration', async () => {
+    const email = testEmail('expired-verify');
+    const prisma = app.get(AuthPrismaService);
 
     await request(app.getHttpServer())
       .post('/auth/signup')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email })
       .expect(201);
 
     const verificationMail = await waitForMail(
       mail,
       (message) => message.to === email,
     );
-    const verificationLink = linkFrom(verificationMail);
-    const token = tokenFromLocation(verificationLink);
-
-    const firstVerification = await request(app.getHttpServer())
-      .post('/auth/verify-email')
-      .set('Origin', WEB_ORIGIN)
-      .send({ token })
-      .expect(200)
-      .expect({ status: 'verified' });
-
-    expect(cookieHeader(firstVerification)).toBe('');
-
-    const repeatedVerification = await request(app.getHttpServer())
-      .post('/auth/verify-email')
-      .set('Origin', WEB_ORIGIN)
-      .send({ token })
-      .expect(200)
-      .expect({ status: 'verified' });
-
-    expect(cookieHeader(repeatedVerification)).toBe('');
-
-    const repeatedLink = await request(app.getHttpServer())
-      .get(requestPathFrom(verificationLink))
+    const location = await request(app.getHttpServer())
+      .get(requestPathFrom(linkFrom(verificationMail)))
       .expect(302)
-      .expect('Location', `${WEB_ORIGIN}/verified?verified=true`);
+      .then((response) => response.headers.location);
+    const token = tokenFromLocation(location);
 
-    expect(cookieHeader(repeatedLink)).toBe('');
-
-    const user = await app.get(AuthPrismaService).user.findUnique({
+    await prisma.pendingRegistration.updateMany({
       where: { email },
-      select: { emailVerified: true },
+      data: { expiresAt: new Date(Date.now() - 60_000) },
     });
-    expect(user?.emailVerified).toBe(true);
+
+    await request(app.getHttpServer())
+      .post('/auth/signup/complete')
+      .set('Origin', WEB_ORIGIN)
+      .send({ token, password: 'password123' })
+      .expect(400);
+  });
+
+  it('rejects a replayed registration token', async () => {
+    const email = testEmail('reused-verify');
+
+    await request(app.getHttpServer())
+      .post('/auth/signup')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email })
+      .expect(201);
+
+    const verificationMail = await waitForMail(
+      mail,
+      (message) => message.to === email,
+    );
+    const location = await request(app.getHttpServer())
+      .get(requestPathFrom(linkFrom(verificationMail)))
+      .expect(302)
+      .then((response) => response.headers.location);
+    const token = tokenFromLocation(location);
+
+    const first = await request(app.getHttpServer())
+      .post('/auth/signup/complete')
+      .set('Origin', WEB_ORIGIN)
+      .send({ token, password: 'password123' })
+      .expect(200);
+
+    expect(cookieHeader(first)).toContain('better-auth.session_token');
+
+    await request(app.getHttpServer())
+      .post('/auth/signup/complete')
+      .set('Origin', WEB_ORIGIN)
+      .send({ token, password: 'password456' })
+      .expect(400);
   });
 
   it('rejects an expired password reset token', async () => {
@@ -860,6 +887,163 @@ describe('Auth and users (e2e)', () => {
       });
   });
 
+  it('shares the address limit between signup and an immediate resend', async () => {
+    const email = testEmail('resend-share');
+
+    const signup = await request(app.getHttpServer())
+      .post('/auth/signup')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email })
+      .expect(201);
+    expect(responseBody<{ emailStatus: string }>(signup).emailStatus).toBe(
+      'accepted',
+    );
+
+    await request(app.getHttpServer())
+      .post('/auth/verification/resend')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email })
+      .expect(200)
+      .expect((response) => {
+        expect(responseBody<{ status: string }>(response).status).toBe(
+          'accepted',
+        );
+      });
+
+    const delivered = mail.messages.filter((message) => message.to === email);
+    expect(delivered).toHaveLength(1);
+  });
+
+  it('keeps the activation link valid under concurrent signups', async () => {
+    const email = testEmail('concurrent-signup');
+
+    await Promise.all([
+      request(app.getHttpServer())
+        .post('/auth/signup')
+        .set('Origin', WEB_ORIGIN)
+        .send({ email })
+        .expect(201),
+      request(app.getHttpServer())
+        .post('/auth/signup')
+        .set('Origin', WEB_ORIGIN)
+        .send({ email })
+        .expect(201),
+    ]);
+
+    const prisma = app.get(AuthPrismaService);
+    const stored = await prisma.pendingRegistration.findUnique({
+      where: { email },
+    });
+    expect(stored?.tokenHash).not.toBeNull();
+
+    const verificationMail = await waitForMail(
+      mail,
+      (message) => message.to === email,
+    );
+    const location = await request(app.getHttpServer())
+      .get(requestPathFrom(linkFrom(verificationMail)))
+      .expect(302)
+      .then((response) => response.headers.location);
+    const token = tokenFromLocation(location);
+
+    await request(app.getHttpServer())
+      .post('/auth/signup/complete')
+      .set('Origin', WEB_ORIGIN)
+      .send({ token, password: 'password123' })
+      .expect(200);
+  });
+
+  it('refuses to activate over an already verified identity', async () => {
+    const email = testEmail('activation-conflict');
+    await signUpAndActivate(email);
+
+    const prisma = app.get(AuthPrismaService);
+    const token = `activation-conflict-${Date.now()}`;
+    await prisma.pendingRegistration.deleteMany({ where: { email } });
+    await prisma.pendingRegistration.create({
+      data: {
+        id: randomUUID(),
+        email,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 3_600_000),
+        tokenHash: createHash('sha256').update(token).digest('hex'),
+      },
+    });
+
+    await request(app.getHttpServer())
+      .post('/auth/signup/complete')
+      .set('Origin', WEB_ORIGIN)
+      .send({ token, password: 'password123' })
+      .expect(409);
+  });
+
+  it('preserves an eligible legacy unverified identity id on activation', async () => {
+    const email = testEmail('legacy-activate');
+    const prisma = app.get(AuthPrismaService);
+    const legacyId = `legacy-${Date.now()}`;
+
+    await prisma.user.create({
+      data: { id: legacyId, name: 'Legacy', email, emailVerified: false },
+    });
+
+    const token = `legacy-token-${Date.now()}`;
+    await prisma.pendingRegistration.create({
+      data: {
+        id: randomUUID(),
+        email,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 3_600_000),
+        tokenHash: createHash('sha256').update(token).digest('hex'),
+      },
+    });
+
+    const complete = await request(app.getHttpServer())
+      .post('/auth/signup/complete')
+      .set('Origin', WEB_ORIGIN)
+      .send({ token, password: 'password123' })
+      .expect(200);
+
+    expect(responseBody<{ userId: string }>(complete).userId).toBe(legacyId);
+
+    const stored = await prisma.user.findUnique({ where: { email } });
+    expect(stored?.id).toBe(legacyId);
+    expect(stored?.emailVerified).toBe(true);
+  });
+
+  it('activates exactly once under concurrent completion', async () => {
+    const email = testEmail('concurrent-activate');
+
+    await request(app.getHttpServer())
+      .post('/auth/signup')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email })
+      .expect(201);
+
+    const verificationMail = await waitForMail(
+      mail,
+      (message) => message.to === email,
+    );
+    const location = await request(app.getHttpServer())
+      .get(requestPathFrom(linkFrom(verificationMail)))
+      .expect(302)
+      .then((response) => response.headers.location);
+    const token = tokenFromLocation(location);
+
+    const attempts = await Promise.all([
+      request(app.getHttpServer())
+        .post('/auth/signup/complete')
+        .set('Origin', WEB_ORIGIN)
+        .send({ token, password: 'password123' }),
+      request(app.getHttpServer())
+        .post('/auth/signup/complete')
+        .set('Origin', WEB_ORIGIN)
+        .send({ token, password: 'password123' }),
+    ]);
+
+    const statuses = attempts.map((response) => response.status).sort();
+    expect(statuses).toEqual([200, 400]);
+  });
+
   it('aligns the OAuth redirect URI with the exposed callback route', async () => {
     const response = await request(app.getHttpServer())
       .post('/auth/oauth/google')
@@ -926,6 +1110,35 @@ describe('Auth and users (e2e)', () => {
         phone: '555-0100',
       })
       .expect(201);
+  });
+
+  it('attributes sessions to the trusted client source and isolates clients', async () => {
+    const email = testEmail('ip-attribution');
+    await signUpAndVerify(email);
+
+    const loginA = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Origin', WEB_ORIGIN)
+      .set('X-Forwarded-For', '203.0.113.10')
+      .send({ email, password: 'password123' })
+      .expect(200);
+    const { userId } = responseBody<{ userId: string }>(loginA);
+    expect(cookieHeader(loginA)).toContain('better-auth.session_token');
+
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Origin', WEB_ORIGIN)
+      .set('X-Forwarded-For', '203.0.113.20')
+      .send({ email, password: 'password123' })
+      .expect(200);
+
+    const sessions = await app
+      .get(AuthPrismaService)
+      .session.findMany({ where: { userId } });
+    const addresses = sessions.map((session) => session.ipAddress);
+
+    expect(addresses).toContain('203.0.113.10');
+    expect(addresses).toContain('203.0.113.20');
   });
 
   it('rejects an OAuth callback whose provider email is unverified', async () => {

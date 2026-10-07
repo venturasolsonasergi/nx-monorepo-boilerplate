@@ -1,6 +1,7 @@
 # web/authentication Specification
 
 ## Purpose
+
 Define the browser entry points for session-gated interactions and for the email-verification, password-reset, and OAuth callback routes the API redirects the browser to.
 
 ## Requirements
@@ -19,17 +20,6 @@ The web client SHALL determine whether a browser session is active by calling `P
 #### Scenario: Session check fails without a definitive answer
 - **WHEN** the session check fails with a network error or a non-`401` response
 - **THEN** the client exposes an unknown session state, does not treat the caller as authenticated, and does not present the caller as signed out
-
-### Requirement: Present the email verification outcome
-The `/verified` route SHALL read the `verified` and `error` query parameters, SHALL render the matching outcome message, and SHALL offer a link that continues to `/login`. The message SHALL NOT claim that verification started an authenticated session.
-
-#### Scenario: Verification succeeded
-- **WHEN** the browser opens `/verified?verified=true`
-- **THEN** the page confirms that the email was verified, does not claim that a session was started, and offers a link to `/login`
-
-#### Scenario: Verification failed
-- **WHEN** the browser opens `/verified?error=<code>`
-- **THEN** the page shows a failure message that includes the error value and offers a link to `/login`
 
 ### Requirement: Present the password reset flow
 The `/reset-password` route SHALL read the `token` query parameter, SHALL refuse to render the reset form when the token is missing, and SHALL submit a new password to `POST /auth/reset-password/confirm`. It SHALL label the password field accessibly, SHALL report success or failure inline, and SHALL offer a link to `/login` once the password has been updated. It SHALL distinguish an invalid or expired link (`400`) from a network failure and SHALL NOT present a network failure as an invalid link.
@@ -62,46 +52,119 @@ The `/auth/oauth/callback` route SHALL read the `error` query parameter and SHAL
 - **THEN** the page shows a failure message that includes the error value and offers a link to `/users`
 
 ### Requirement: Present the login flow
-The `/login` route SHALL collect an email and a password, SHALL submit them to `POST /auth/login` with credentials included, and SHALL continue to `/users` when the request succeeds. On success it SHALL update the resolved session so that the header and `/users` reflect the signed-in user and SHALL NOT retain the previous caller's private data. On a `401` response it SHALL show an inline invalid credentials message without revealing whether the email is registered. On a validation or network failure it SHALL show an inline recoverable message. The client MUST NOT persist session material in `localStorage` or any storage other than the HTTP-only session cookie.
+The `/login` route SHALL collect an email and password, submit them to `POST /auth/login` with credentials included, and continue to `/users` on success. It SHALL update resolved session state and remove the previous caller's private data. A `401` SHALL show a non-disclosing invalid-credentials message; a `429` SHALL show a retry waiting state rather than invalid credentials. Validation, network, and service failures SHALL show recoverable messages without claiming authentication. The client MUST NOT persist session material outside the HTTP-only cookie.
 
 #### Scenario: Successful login
-- **WHEN** the user submits a valid email and password and `POST /auth/login` succeeds
-- **THEN** the client continues to `/users` and the session is carried by the HTTP-only cookie
+- **WHEN** valid verified credentials are accepted
+- **THEN** the browser continues to `/users` with the session cookie
 
 #### Scenario: Invalid credentials
-- **WHEN** `POST /auth/login` fails with `401`
-- **THEN** the page shows an inline invalid credentials message and does not navigate
+- **WHEN** login returns `401`
+- **THEN** an inline invalid-credentials message is shown without disclosing account existence or navigating
+
+#### Scenario: Login is rate limited
+- **WHEN** login returns `429` with a retry interval
+- **THEN** the page shows a waiting state and not an invalid-credentials message
 
 #### Scenario: Login fails without a definitive answer
-- **WHEN** login fails with a validation error or a network failure
-- **THEN** the page shows an inline recoverable message and does not treat the caller as signed in
+- **WHEN** validation, network, or service failure prevents login
+- **THEN** a recoverable message is shown and the client does not claim authentication
 
 #### Scenario: No token is persisted
-- **WHEN** a login succeeds
-- **THEN** no session token is written to `localStorage` or any non-HTTP-only storage
+- **WHEN** login succeeds
+- **THEN** no session material is stored in localStorage or any non-HTTP-only storage
 
 #### Scenario: Login updates the session state
-- **WHEN** `POST /auth/login` succeeds
-- **THEN** the header and `/users` reflect the signed-in user rather than any pre-login session state
+- **WHEN** login succeeds
+- **THEN** the header and `/users` reflect the signed-in identity instead of pre-login state
 
 #### Scenario: A later user does not inherit previous private data
-- **WHEN** a user signs out and a different user signs in on the same browser
-- **THEN** the new user sees none of the previous user's session or profile data
+- **WHEN** a different user signs in after logout on the same browser
+- **THEN** no private session or profile data from the previous user is shown
 
 ### Requirement: Present the signup flow
-The `/signup` route SHALL collect an email and a password, SHALL submit them to `POST /auth/signup` with credentials included, and SHALL NOT create a profile and SHALL NOT start a session. When the request succeeds it SHALL replace the form with a confirmation that an email has been sent and that the address must be verified before signing in. On a `409` it SHALL show an inline message that the email is already registered. On a validation or network failure it SHALL show an inline recoverable message.
+The `/signup` route SHALL collect only an email and submit it to `POST /auth/signup` with credentials included. It SHALL NOT request or store a password, create a profile, or start a session. On `201`, it SHALL show the pending-verification state, the fixed 48-hour activation deadline, resend, a configured support contact, and a link to `/login`. It SHALL distinguish transport acceptance, failed sending, and throttling without claiming mailbox delivery. Repeated signup for an unexpired pending registration SHALL show the same state without disclosing that registration already existed or extending the displayed deadline. A `409` SHALL show the existing registered-email message; validation, rate-limit, and network/service errors SHALL remain recoverable.
 
 #### Scenario: Successful signup
-- **WHEN** the user submits a valid email and password and `POST /auth/signup` returns `201`
-- **THEN** the page confirms that a verification email was sent, remains unauthenticated, and creates no profile
+- **WHEN** the user submits a valid email and signup returns `201` with transport acceptance
+- **THEN** the page shows the pending state and deadline, offers resend, support, and login, and creates neither a password nor a session or profile
+
+#### Scenario: Signup with a delivery failure
+- **WHEN** signup returns `201` with a failed send outcome
+- **THEN** the page says the email could not be sent and offers resend and support without claiming success
+
+#### Scenario: Pending address registered again
+- **WHEN** signup is repeated for an unexpired pending registration
+- **THEN** the page shows the same pending state and original deadline, requests no password, and does not identify it as a duplicate registration
+
+#### Scenario: Signup is throttled
+- **WHEN** signup reports throttling and a retry interval
+- **THEN** the page shows the waiting state and prevents repeated sends until that interval elapses
 
 #### Scenario: Email already registered
-- **WHEN** `POST /auth/signup` returns `409`
+- **WHEN** signup returns `409` for an active identity
 - **THEN** the page shows an inline message that the email is already registered
 
 #### Scenario: Signup fails without a definitive answer
-- **WHEN** signup fails with a validation error or a network failure
-- **THEN** the page shows an inline recoverable message
+- **WHEN** signup fails with validation, rate limiting, network, or service errors
+- **THEN** the page shows the appropriate recoverable message and does not claim the account was created or the email sent
+
+### Requirement: Present the verification resend flow
+The pending state SHALL call `POST /auth/verification/resend` with credentials included. Its confirmation SHALL report request acceptance only, using non-disclosing conditional copy without claiming sending or delivery. It SHALL show the original registration deadline, explain that a new signup is needed after 48 hours, and disable resend until any returned retry interval elapses. When the displayed deadline passes, it SHALL offer restart at `/signup` rather than continue resending. Network or service failures SHALL remain recoverable and SHALL NOT start a session or create a profile.
+
+#### Scenario: Resend accepted
+- **WHEN** the user resends and receives uniform request acceptance
+- **THEN** conditional confirmation is shown without claiming delivery, and the original registration deadline remains unchanged
+
+#### Scenario: Resend rate limited
+- **WHEN** resend reports a retry interval
+- **THEN** the action is disabled for that interval and the message reveals no account state
+
+#### Scenario: Registration deadline passes
+- **WHEN** the displayed 48-hour deadline passes
+- **THEN** the page offers a new signup and no longer presents resend as a way to extend the registration
+
+#### Scenario: Resend fails without a definitive answer
+- **WHEN** resend fails with a network or service error
+- **THEN** an inline recoverable message appears without changing the registration deadline or claiming sending succeeded
+
+### Requirement: Complete signup with a password
+The `/complete-signup` route SHALL read the registration token supplied by the email return path and present a single password field with a show/hide control. It SHALL refuse to submit without a token or a valid password and SHALL call `POST /auth/signup/complete` with credentials included. On authenticated success it SHALL update session state, clear previous private caches and token-bearing browser URLs, and navigate to `/users` so the caller completes the profile in the same flow. Invalid, expired, superseded, or consumed tokens SHALL show a safe link error with a restart action. Rate limits and network/service failures SHALL show recoverable messages. If the API reports that activation committed but session issuance failed, the page SHALL offer normal login with the chosen password rather than another registration. No password or token SHALL be persisted in browser storage or logs.
+
+#### Scenario: Missing token
+- **WHEN** `/complete-signup` has no token
+- **THEN** no completion can be submitted and the page offers a new signup
+
+#### Scenario: Password can be shown or hidden
+- **WHEN** the user toggles the password visibility control
+- **THEN** the single password field switches between masked and visible without changing its value
+
+#### Scenario: Activation and authenticated continuation
+- **WHEN** completion succeeds with the session cookie
+- **THEN** session and private caches are updated, the token-bearing URL is replaced, and `/users` presents the profile completion form for the authenticated caller
+
+#### Scenario: Expired or unusable link
+- **WHEN** completion rejects an expired, invalid, superseded, or consumed token
+- **THEN** the page offers a new signup and does not claim activation or authentication
+
+#### Scenario: Operational completion failure
+- **WHEN** completion is rate limited or fails without a definitive activation result
+- **THEN** the page shows a recoverable error and does not report the token as invalid solely because of that failure
+
+#### Scenario: Activation completed but login did not
+- **WHEN** the API explicitly reports committed activation without a session
+- **THEN** the page offers `/login` with the established password and does not claim authentication or request another signup
+
+### Requirement: Offer registration support
+Signup and pending-registration screens SHALL obtain the public support email from `GET /auth/public-config` and offer an accessible email contact for users who have not received the message. The browser SHALL receive no SMTP credentials or auth secrets. Missing development configuration or a failed config request SHALL NOT result in a fabricated email address or prevent the user from using signup and resend.
+
+#### Scenario: Configured support email
+- **WHEN** public config provides a valid support contact
+- **THEN** signup and pending screens offer a mail link to that address
+
+#### Scenario: Public config is unavailable
+- **WHEN** support configuration cannot be obtained or is absent in development
+- **THEN** no fabricated contact is shown and signup and resend remain usable
 
 ### Requirement: Present the password recovery request
 The `/forgot-password` route SHALL collect an email and submit it to `POST /auth/reset-password/request`. On success it SHALL show a uniform confirmation that does not disclose whether an account exists. On a validation or network failure it SHALL show an inline recoverable message.

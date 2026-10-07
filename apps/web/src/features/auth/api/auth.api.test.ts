@@ -3,6 +3,8 @@ import {
   loginResponseSchema,
   logoutResponseSchema,
   passwordResetRequestResponseSchema,
+  publicConfigResponseSchema,
+  resendVerificationResponseSchema,
   signupResponseSchema,
 } from './auth.api';
 
@@ -19,13 +21,48 @@ describe('auth response schemas', () => {
     ).toThrow();
   });
 
-  it('accepts a pending-verification signup response', () => {
+  it('accepts an email-only pending signup response without a userId', () => {
     expect(
+      signupResponseSchema.parse({
+        status: 'pending-verification',
+        expiresAt: '2026-01-03T00:00:00.000Z',
+        emailStatus: 'accepted',
+      }),
+    ).toMatchObject({ emailStatus: 'accepted' });
+
+    expect(() =>
       signupResponseSchema.parse({
         userId: 'u1',
         status: 'pending-verification',
       }),
-    ).toEqual({ userId: 'u1', status: 'pending-verification' });
+    ).toThrow();
+  });
+
+  it('accepts an optional retry interval on signup and resend', () => {
+    expect(
+      signupResponseSchema.parse({
+        status: 'pending-verification',
+        expiresAt: '2026-01-03T00:00:00.000Z',
+        emailStatus: 'throttled',
+        retryAfterSeconds: 30,
+      }),
+    ).toMatchObject({ emailStatus: 'throttled', retryAfterSeconds: 30 });
+
+    expect(
+      resendVerificationResponseSchema.parse({
+        status: 'accepted',
+        retryAfterSeconds: 15,
+      }),
+    ).toEqual({ status: 'accepted', retryAfterSeconds: 15 });
+  });
+
+  it('accepts a nullable or configured support email', () => {
+    expect(
+      publicConfigResponseSchema.parse({ supportEmail: 'help@example.com' }),
+    ).toEqual({ supportEmail: 'help@example.com' });
+    expect(publicConfigResponseSchema.parse({ supportEmail: null })).toEqual({
+      supportEmail: null,
+    });
   });
 
   it('accepts the uniform reset-request response', () => {

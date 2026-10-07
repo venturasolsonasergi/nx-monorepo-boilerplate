@@ -18,16 +18,16 @@ export function createAuthRoutes(parentRoute: AnyRoute) {
     component: lazyRouteComponent(() => import('./signup-page')),
   });
 
+  const completeSignupRoute = createRoute({
+    getParentRoute: () => parentRoute,
+    path: '/complete-signup',
+    component: lazyRouteComponent(() => import('./complete-signup-page')),
+  });
+
   const forgotPasswordRoute = createRoute({
     getParentRoute: () => parentRoute,
     path: '/forgot-password',
     component: lazyRouteComponent(() => import('./forgot-password-page')),
-  });
-
-  const verifiedRoute = createRoute({
-    getParentRoute: () => parentRoute,
-    path: '/verified',
-    component: lazyRouteComponent(() => import('./verified-page')),
   });
 
   const resetPasswordRoute = createRoute({
@@ -45,8 +45,8 @@ export function createAuthRoutes(parentRoute: AnyRoute) {
   return [
     loginRoute,
     signupRoute,
+    completeSignupRoute,
     forgotPasswordRoute,
-    verifiedRoute,
     resetPasswordRoute,
     oauthCallbackRoute,
   ];

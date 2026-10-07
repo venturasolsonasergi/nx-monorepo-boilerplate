@@ -24,29 +24,9 @@ test.describe('navigation', () => {
       page.getByRole('heading', { name: 'nx-monorepo-boilerplate' }),
     ).toBeVisible();
   });
-
-  test('verification page continues to login', async ({ page }) => {
-    await page.goto('/verified?verified=true');
-    await page.getByRole('link', { name: 'Iniciar sesión' }).click();
-    await expect(page).toHaveURL(/\/login$/);
-  });
 });
 
 test.describe('authentication entry points', () => {
-  test('verification success is announced', async ({ page }) => {
-    await page.goto('/verified?verified=true');
-    await expect(
-      page.getByText('Tu correo se ha verificado correctamente.'),
-    ).toBeVisible();
-  });
-
-  test('verification failure shows the error value', async ({ page }) => {
-    await page.goto('/verified?error=INVALID_TOKEN');
-    await expect(
-      page.getByText('No se pudo verificar el correo (INVALID_TOKEN).'),
-    ).toBeVisible();
-  });
-
   test('oauth callback success is announced', async ({ page }) => {
     await page.goto('/auth/oauth/callback');
     await expect(

@@ -1,4 +1,5 @@
 import type { AuthProvider } from '../auth-provider.port';
+import type { RequestContext } from '../request-context';
 import { PasswordValueObject } from '../../domain/password.vo';
 import { InvalidResetTokenError } from '../auth.errors';
 
@@ -16,16 +17,20 @@ export class ConfirmPasswordResetUseCase {
 
   async execute(
     input: ConfirmPasswordResetInput,
+    context: RequestContext,
   ): Promise<ConfirmPasswordResetOutput> {
     if (!input.token || input.token.trim().length === 0) {
       throw new InvalidResetTokenError();
     }
 
     const password = new PasswordValueObject(input.password);
-    await this.provider.confirmPasswordReset({
-      token: input.token,
-      password: password.value,
-    });
+    await this.provider.confirmPasswordReset(
+      {
+        token: input.token,
+        password: password.value,
+      },
+      context,
+    );
 
     return { status: 'ok' };
   }

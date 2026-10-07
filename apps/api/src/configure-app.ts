@@ -18,7 +18,7 @@ export function collectTrustedOrigins(
   );
 }
 
-export const EXPOSED_RESPONSE_HEADERS = ['x-request-id'];
+export const EXPOSED_RESPONSE_HEADERS = ['x-request-id', 'Retry-After'];
 
 export function configureApp(app: INestApplication): void {
   app.enableCors({
