@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: nestjs-boilerplate-postgres
+    container_name: nx-monorepo-boilerplate-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -22,7 +22,7 @@ services:
     build:
       context: .
       dockerfile: docker/api/Dockerfile.dev
-    container_name: nestjs-boilerplate-api
+    container_name: nx-monorepo-boilerplate-api
     restart: unless-stopped
     depends_on:
       postgres:
@@ -54,7 +54,7 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
-    container_name: nestjs-boilerplate-mailpit
+    container_name: nx-monorepo-boilerplate-mailpit
     restart: unless-stopped
     ports:
       - '${MAILPIT_SMTP_PORT:-1025}:1025'
@@ -64,7 +64,7 @@ services:
     build:
       context: .
       dockerfile: docker/api/Dockerfile.dev
-    container_name: nestjs-boilerplate-web
+    container_name: nx-monorepo-boilerplate-web
     restart: unless-stopped
     depends_on:
       - api

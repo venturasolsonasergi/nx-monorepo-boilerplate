@@ -10,10 +10,15 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../../shared/lib/api-client';
 
+const mockNavigate = vi.fn();
+const mockSearch: { current: Record<string, unknown> } = { current: {} };
+
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ to, children }: { to: string; children: ReactNode }) => (
     <a href={to}>{children}</a>
   ),
+  useNavigate: () => mockNavigate,
+  useSearch: () => mockSearch.current,
 }));
 
 vi.mock('../../auth', () => ({ useSessionState: vi.fn() }));
@@ -65,6 +70,8 @@ afterEach(() => {
   mockSessionState.mockReset();
   getCurrent.mockReset();
   create.mockReset();
+  mockNavigate.mockReset();
+  mockSearch.current = {};
 });
 
 describe('UsersPage', () => {
@@ -160,5 +167,53 @@ describe('UsersPage', () => {
       expect(screen.getByText('Mi perfil')).toBeInTheDocument(),
     );
     expect(screen.queryByRole('heading', { name: 'Crear perfil' })).toBeNull();
+  });
+
+  it('continues to /dashboard for an existing profile with an authorized returnTo', async () => {
+    mockSearch.current = { returnTo: '/dashboard' };
+    setSession('authenticated');
+    getCurrent.mockResolvedValue(profile);
+    renderPage();
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' }),
+    );
+  });
+
+  it('continues to /dashboard after creating a profile with an authorized returnTo', async () => {
+    mockSearch.current = { returnTo: '/dashboard' };
+    setSession('authenticated');
+    getCurrent.mockRejectedValue(new ApiError(404, 'Profile not found'));
+    create.mockResolvedValue(profile);
+    renderPage();
+
+    await screen.findByRole('heading', { name: 'Crear perfil' });
+    fireEvent.change(screen.getByPlaceholderText('Nombre'), {
+      target: { value: 'Ana' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Apellidos'), {
+      target: { value: 'García' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Dirección'), {
+      target: { value: 'Calle 1' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Teléfono'), {
+      target: { value: '600000000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear perfil' }));
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' }),
+    );
+  });
+
+  it('ignores an unauthorized returnTo and keeps the default behavior', async () => {
+    mockSearch.current = { returnTo: '//evil.example.com' };
+    setSession('authenticated');
+    getCurrent.mockResolvedValue(profile);
+    renderPage();
+
+    expect(await screen.findByText('Mi perfil')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

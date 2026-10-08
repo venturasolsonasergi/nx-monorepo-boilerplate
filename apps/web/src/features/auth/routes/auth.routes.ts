@@ -3,12 +3,14 @@ import {
   lazyRouteComponent,
   type AnyRoute,
 } from '@tanstack/react-router';
+import { validateReturnToSearch } from '../../../shared/lib/return-to';
 
 // Routes live inside the feature; app/router.tsx only composes them under the root route.
 export function createAuthRoutes(parentRoute: AnyRoute) {
   const loginRoute = createRoute({
     getParentRoute: () => parentRoute,
     path: '/login',
+    validateSearch: validateReturnToSearch,
     component: lazyRouteComponent(() => import('./login-page')),
   });
 

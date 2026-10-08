@@ -1,24 +1,21 @@
 import { Link } from '@tanstack/react-router';
 import { User as UserIcon } from 'lucide-react';
-import { useLogout } from '../../features/auth/hooks/use-logout';
-import { useSessionState } from '../../features/auth/hooks/use-session';
 import { Button } from '../ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Spinner } from '../ui/spinner';
 import { Wordmark } from '../ui/wordmark';
+import { AccountMenuItems } from './account/account-menu-items';
+import { useAccount } from './account/use-account';
 
-// Shared header for every route. The user control's menu reflects the resolved
+// Shared header for public routes. The user control's menu reflects the resolved
 // session state: pending, unauthenticated, authenticated, or unknown.
 export function AppHeader() {
-  const { state, refetch } = useSessionState();
-  const logout = useLogout();
+  const account = useAccount();
+  const { state, logout } = account;
 
   return (
     <header className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6">
@@ -66,45 +63,7 @@ export function AppHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {state === 'authenticated' ? (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link to="/users">Mi perfil</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    Dashboard
-                    <span className="text-muted-foreground ml-auto text-xs">
-                      Próximamente
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    disabled={logout.isPending}
-                    onSelect={() => {
-                      logout.mutate();
-                    }}
-                  >
-                    Cerrar sesión
-                  </DropdownMenuItem>
-                </>
-              ) : state === 'unauthenticated' ? (
-                <DropdownMenuItem asChild>
-                  <Link to="/login">Acceder</Link>
-                </DropdownMenuItem>
-              ) : (
-                <>
-                  <DropdownMenuLabel>
-                    No se pudo comprobar la sesión
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      refetch();
-                    }}
-                  >
-                    Reintentar
-                  </DropdownMenuItem>
-                </>
-              )}
+              <AccountMenuItems account={account} />
             </DropdownMenuContent>
           </DropdownMenu>
         )}

@@ -52,35 +52,43 @@ The `/auth/oauth/callback` route SHALL read the `error` query parameter and SHAL
 - **THEN** the page shows a failure message that includes the error value and offers a link to `/users`
 
 ### Requirement: Present the login flow
-The `/login` route SHALL collect an email and password, submit them to `POST /auth/login` with credentials included, and continue to `/users` on success. It SHALL update resolved session state and remove the previous caller's private data. A `401` SHALL show a non-disclosing invalid-credentials message; a `429` SHALL show a retry waiting state rather than invalid credentials. Validation, network, and service failures SHALL show recoverable messages without claiming authentication. The client MUST NOT persist session material outside the HTTP-only cookie.
+The `/login` route SHALL collect an email and a password, SHALL submit them to `POST /auth/login` with credentials included, and on success SHALL continue to an authorized `returnTo` destination when the route was opened with one, and to `/users` otherwise. The client SHALL accept only the exact value `/dashboard` as an authorized destination; any other value, including an external URL, a protocol-relative host, or a different internal route, SHALL be discarded and the default `/users` continuation SHALL be used. On success it SHALL update the resolved session so that the header and `/users` reflect the signed-in user and SHALL NOT retain the previous caller's private data. On a `401` response it SHALL show an inline invalid credentials message without revealing whether the email is registered. On a validation or network failure it SHALL show an inline recoverable message. The client MUST NOT persist session material in `localStorage` or any storage other than the HTTP-only session cookie.
 
 #### Scenario: Successful login
-- **WHEN** valid verified credentials are accepted
-- **THEN** the browser continues to `/users` with the session cookie
+- **WHEN** the user submits a valid email and password and `POST /auth/login` succeeds without an authorized `returnTo` destination
+- **THEN** the client continues to `/users` and the session is carried by the HTTP-only cookie
+
+#### Scenario: Login continues to an authorized destination
+- **WHEN** the browser opens `/login?returnTo=%2Fdashboard`, the user submits valid credentials, and `POST /auth/login` succeeds
+- **THEN** the client continues to `/dashboard`
+
+#### Scenario: Login discards an unauthorized destination
+- **WHEN** the browser opens `/login` with a `returnTo` that is not exactly `/dashboard`
+- **THEN** the client discards it and continues to `/users`
 
 #### Scenario: Invalid credentials
-- **WHEN** login returns `401`
-- **THEN** an inline invalid-credentials message is shown without disclosing account existence or navigating
+- **WHEN** `POST /auth/login` fails with `401`
+- **THEN** the page shows an inline invalid credentials message and does not navigate
 
 #### Scenario: Login is rate limited
-- **WHEN** login returns `429` with a retry interval
+- **WHEN** `POST /auth/login` returns `429` with a retry interval
 - **THEN** the page shows a waiting state and not an invalid-credentials message
 
 #### Scenario: Login fails without a definitive answer
-- **WHEN** validation, network, or service failure prevents login
-- **THEN** a recoverable message is shown and the client does not claim authentication
+- **WHEN** login fails with a validation error or a network failure
+- **THEN** the page shows an inline recoverable message and does not treat the caller as signed in
 
 #### Scenario: No token is persisted
-- **WHEN** login succeeds
-- **THEN** no session material is stored in localStorage or any non-HTTP-only storage
+- **WHEN** a login succeeds
+- **THEN** no session token is written to `localStorage` or any non-HTTP-only storage
 
 #### Scenario: Login updates the session state
-- **WHEN** login succeeds
-- **THEN** the header and `/users` reflect the signed-in identity instead of pre-login state
+- **WHEN** `POST /auth/login` succeeds
+- **THEN** the header and `/users` reflect the signed-in user rather than any pre-login session state
 
 #### Scenario: A later user does not inherit previous private data
-- **WHEN** a different user signs in after logout on the same browser
-- **THEN** no private session or profile data from the previous user is shown
+- **WHEN** a user signs out and a different user signs in on the same browser
+- **THEN** the new user sees none of the previous user's session or profile data
 
 ### Requirement: Present the signup flow
 The `/signup` route SHALL collect only an email and submit it to `POST /auth/signup` with credentials included. It SHALL NOT request or store a password, create a profile, or start a session. On `201`, it SHALL show the pending-verification state, the fixed 48-hour activation deadline, resend, a configured support contact, and a link to `/login`. It SHALL distinguish transport acceptance, failed sending, and throttling without claiming mailbox delivery. Repeated signup for an unexpired pending registration SHALL show the same state without disclosing that registration already existed or extending the displayed deadline. A `409` SHALL show the existing registered-email message; validation, rate-limit, and network/service errors SHALL remain recoverable.

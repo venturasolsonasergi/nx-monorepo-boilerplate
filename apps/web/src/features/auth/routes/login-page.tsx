@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
+import { validateReturnToSearch } from '../../../shared/lib/return-to';
 import { Button } from '../../../shared/ui/button';
 import { Input } from '../../../shared/ui/input';
 import { loginErrorMessage } from '../lib/auth-messages';
@@ -8,7 +9,8 @@ import { useLogin } from '../hooks/use-login';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const login = useLogin();
+  const { returnTo } = validateReturnToSearch(useSearch({ strict: false }));
+  const login = useLogin(returnTo);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

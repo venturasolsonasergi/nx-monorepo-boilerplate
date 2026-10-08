@@ -1,4 +1,4 @@
-# NestJS SDD Microservices Boilerplate
+# SDD Monorepo Boilerplate
 
 Backend boilerplate for microservices with:
 

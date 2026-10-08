@@ -52,13 +52,19 @@ vi.mock('../../features/auth/hooks/use-logout', () => ({
   useLogout: vi.fn(),
 }));
 
+vi.mock('../../features/users/hooks/use-profile', () => ({
+  useProfile: vi.fn(),
+}));
+
 import { useLogout } from '../../features/auth/hooks/use-logout';
 import { useSessionState } from '../../features/auth/hooks/use-session';
 import type { SessionStatus } from '../../features/auth/hooks/use-session';
+import { useProfile } from '../../features/users/hooks/use-profile';
 import { AppHeader } from './app-header';
 
 const mockSessionState = vi.mocked(useSessionState);
 const mockLogout = vi.mocked(useLogout);
+const mockProfile = vi.mocked(useProfile);
 
 function withState(state: SessionStatus['state']) {
   mockSessionState.mockReturnValue({
@@ -80,14 +86,24 @@ function withLogout(
   } as unknown as ReturnType<typeof useLogout>);
 }
 
+function withProfile(
+  data: { name: string; surname: string } | undefined = undefined,
+) {
+  mockProfile.mockReturnValue({
+    data,
+  } as unknown as ReturnType<typeof useProfile>);
+}
+
 beforeEach(() => {
   withLogout();
+  withProfile();
 });
 
 afterEach(() => {
   cleanup();
   mockSessionState.mockReset();
   mockLogout.mockReset();
+  mockProfile.mockReset();
 });
 
 describe('AppHeader', () => {
@@ -112,21 +128,19 @@ describe('AppHeader', () => {
     );
   });
 
-  it('shows profile, a disabled Dashboard and logout when authenticated', () => {
+  it('shows profile, a Dashboard link and logout when authenticated', () => {
     withState('authenticated');
+    withProfile({ name: 'Ana', surname: 'García' });
     render(<AppHeader />);
 
     expect(screen.getByRole('link', { name: 'Mi perfil' })).toHaveAttribute(
       'href',
       '/users',
     );
-
-    const dashboard = screen.getByText('Dashboard');
-    expect(dashboard.closest('a')).toBeNull();
-    expect(dashboard.closest('[role="menuitem"]')).toHaveAttribute(
-      'data-disabled',
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
+      'href',
+      '/dashboard',
     );
-
     expect(
       screen.getByRole('menuitem', { name: 'Cerrar sesión' }),
     ).toBeInTheDocument();

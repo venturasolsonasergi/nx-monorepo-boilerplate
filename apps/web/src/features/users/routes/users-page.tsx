@@ -1,12 +1,16 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useSessionState } from '../../auth';
 import {
   isNotFoundError,
   isUnauthenticatedError,
 } from '../../../shared/lib/api-client';
 import { clearPrivateCaches } from '../../../shared/lib/private-cache';
+import {
+  authorizedReturnTo,
+  validateReturnToSearch,
+} from '../../../shared/lib/return-to';
 import { Button } from '../../../shared/ui/button';
 import { Spinner } from '../../../shared/ui/spinner';
 import { ProfileView } from '../components/profile-view';
@@ -18,6 +22,7 @@ const PAGE = 'mx-auto flex max-w-2xl flex-col gap-6 p-6';
 
 // Lazily loaded via lazyRouteComponent — must be the default export.
 export default function UsersPage() {
+  const { returnTo } = validateReturnToSearch(useSearch({ strict: false }));
   const { state, userId, refetch } = useSessionState();
 
   if (state === 'pending') {
@@ -58,11 +63,27 @@ export default function UsersPage() {
     );
   }
 
-  return <ProfileSection userId={userId as string} />;
+  return <ProfileSection userId={userId as string} returnTo={returnTo} />;
 }
 
-function ProfileSection({ userId }: { userId: string }) {
+function ProfileSection({
+  userId,
+  returnTo,
+}: {
+  userId: string;
+  returnTo?: string;
+}) {
   const profile = useProfile(userId);
+  const navigate = useNavigate();
+  const destination = authorizedReturnTo(returnTo);
+
+  // An authorized destination continues to `/dashboard` for both the existing
+  // (200) and the created (201) profile, once the profile is available.
+  useEffect(() => {
+    if (destination && profile.isSuccess) {
+      void navigate({ to: destination });
+    }
+  }, [destination, profile.isSuccess, navigate]);
 
   if (profile.isPending) {
     return (
@@ -80,6 +101,14 @@ function ProfileSection({ userId }: { userId: string }) {
       return <CreateProfile userId={userId} />;
     }
     return <ProfileUnavailable onRetry={() => void profile.refetch()} />;
+  }
+
+  if (destination) {
+    return (
+      <main className={PAGE}>
+        <Spinner />
+      </main>
+    );
   }
 
   return <ProfileContent profile={profile.data} />;

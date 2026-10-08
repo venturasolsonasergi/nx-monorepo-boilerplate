@@ -54,7 +54,7 @@ test.describe('landing and anonymous header', () => {
 });
 
 test.describe('login', () => {
-  test('success continues to /users with the authenticated menu', async ({
+  test('success continues to /users with the workspace shell', async ({
     page,
   }) => {
     let authenticated = false;
@@ -82,10 +82,22 @@ test.describe('login', () => {
     await page.getByRole('button', { name: 'Acceder' }).click();
 
     await expect(page).toHaveURL(/\/users$/);
-    await openUserMenu(page);
+    await expect(page.getByText('Ana García')).toBeVisible();
+    // The workspace shell provides navigation (not the public header)
     await expect(
-      page.getByRole('menuitem', { name: 'Mi perfil' }),
+      page
+        .locator('[data-slot="sidebar-menu"]')
+        .getByRole('link', { name: 'Mi perfil' }),
     ).toBeVisible();
+    await expect(
+      page
+        .locator('[data-slot="sidebar-menu"]')
+        .getByRole('link', { name: 'Panel' }),
+    ).toBeVisible();
+    // The public header does not render on workspace pages
+    await expect(
+      page.getByRole('button', { name: 'Cuenta de usuario' }),
+    ).toBeHidden();
   });
 
   test('invalid credentials are surfaced inline', async ({ page }) => {
@@ -262,7 +274,7 @@ test.describe('/users profile states', () => {
     );
 
     await page.goto('/users');
-    await expect(page.getByText('Ana')).toBeVisible();
+    await expect(page.getByText('Ana García')).toBeVisible();
     await expect(
       page.getByRole('heading', { name: 'Crear perfil' }),
     ).toBeHidden();
@@ -295,7 +307,7 @@ test.describe('/users profile states', () => {
 });
 
 test.describe('logout and user switch', () => {
-  test('logout clears private data and returns to the anonymous menu', async ({
+  test('logout clears private data and returns to the landing', async ({
     page,
   }) => {
     let authenticated = true;
@@ -315,16 +327,17 @@ test.describe('logout and user switch', () => {
     );
 
     await page.goto('/users');
-    await expect(page.getByText('Ana')).toBeVisible();
+    await expect(page.getByText('Ana García')).toBeVisible();
 
-    await openUserMenu(page);
-    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click();
-    await expect(page.getByRole('menu')).toBeHidden();
+    // Click the workspace shell's logout button in the sidebar footer
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+    await expect(page).toHaveURL('/');
     await expect(
-      page.getByRole('link', { name: 'Iniciar sesión' }),
+      page.getByRole('heading', { name: 'nx-monorepo-boilerplate' }),
     ).toBeVisible();
 
-    await openUserMenu(page);
+    // The public header on the landing shows the anonymous menu
+    await page.getByRole('button', { name: 'Cuenta de usuario' }).click();
     await expect(
       page.getByRole('menu').getByRole('menuitem', { name: 'Acceder' }),
     ).toBeVisible();
@@ -369,13 +382,13 @@ test.describe('logout and user switch', () => {
     await page.getByLabel('Correo electrónico').fill('a@example.com');
     await page.getByLabel('Contraseña').fill('password123');
     await page.getByRole('button', { name: 'Acceder' }).click();
-    await expect(page.getByText('Ana')).toBeVisible();
+    await expect(page.getByText('Ana García')).toBeVisible();
 
-    await openUserMenu(page);
-    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click();
-    await expect(page.getByRole('menu')).toBeHidden();
+    // Logout from the workspace shell (not the public header)
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+    await expect(page).toHaveURL('/');
     await expect(
-      page.getByRole('link', { name: 'Iniciar sesión' }),
+      page.getByRole('heading', { name: 'nx-monorepo-boilerplate' }),
     ).toBeVisible();
 
     await page.goto('/login');
@@ -383,7 +396,7 @@ test.describe('logout and user switch', () => {
     await page.getByLabel('Contraseña').fill('password123');
     await page.getByRole('button', { name: 'Acceder' }).click();
 
-    await expect(page.getByText('Beto')).toBeVisible();
-    await expect(page.getByText('Ana')).toBeHidden();
+    await expect(page.getByText('Beto López')).toBeVisible();
+    await expect(page.getByText('Ana García')).toBeHidden();
   });
 });

@@ -115,5 +115,10 @@ test.describe('profile session gating', () => {
       page.getByRole('heading', { name: 'Crear perfil' }),
     ).toBeVisible();
     await expect(page.getByPlaceholder('Nombre')).toBeVisible();
+    // `/users` now renders inside the workspace shell, not the public header.
+    await expect(page.locator('aside[data-slot="sidebar"]')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Cuenta de usuario' }),
+    ).toHaveCount(0);
   });
 });

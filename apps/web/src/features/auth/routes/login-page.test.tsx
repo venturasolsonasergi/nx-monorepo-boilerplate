@@ -12,12 +12,14 @@ import { ApiError } from '../../../shared/lib/api-client';
 import { sessionQueryKey } from '../../../shared/lib/query-keys';
 
 const mockNavigate = vi.fn();
+const mockSearch: { current: Record<string, unknown> } = { current: {} };
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ to, children }: { to: string; children: ReactNode }) => (
     <a href={to}>{children}</a>
   ),
   useNavigate: () => mockNavigate,
+  useSearch: () => mockSearch.current,
 }));
 
 vi.mock('../api/auth.api', () => ({
@@ -55,6 +57,7 @@ afterEach(() => {
   cleanup();
   login.mockReset();
   mockNavigate.mockReset();
+  mockSearch.current = {};
   window.localStorage.clear();
   window.sessionStorage.clear();
 });
@@ -114,6 +117,31 @@ describe('LoginPage', () => {
     expect(client.getQueryData(sessionQueryKey)).toEqual({
       userId: 'user-1',
       status: 'authenticated',
+    });
+  });
+
+  it('continues to /dashboard when the returnTo is authorized', async () => {
+    mockSearch.current = { returnTo: '/dashboard' };
+    login.mockResolvedValue({ userId: 'user-1', status: 'authenticated' });
+    renderPage();
+    submit();
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' }),
+    );
+  });
+
+  it('discards an unauthorized returnTo and continues to /users', async () => {
+    mockSearch.current = { returnTo: 'https://evil.example.com' };
+    login.mockResolvedValue({ userId: 'user-1', status: 'authenticated' });
+    renderPage();
+    submit();
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/users' }),
+    );
+    expect(mockNavigate).not.toHaveBeenCalledWith({
+      to: 'https://evil.example.com',
     });
   });
 

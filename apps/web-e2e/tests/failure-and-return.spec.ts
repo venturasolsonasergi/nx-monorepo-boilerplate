@@ -48,17 +48,18 @@ test.describe('failure and return paths', () => {
     );
 
     await page.goto('/users');
-    await expect(page.getByText('Ana')).toBeVisible();
+    await expect(page.getByText('Ana García')).toBeVisible();
 
-    await openUserMenu(page);
-    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click();
+    // Click the workspace shell's logout button
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click();
 
     await expect(page.getByRole('alert')).toContainText(
       'No se pudo cerrar la sesión.',
     );
-    await openUserMenu(page);
     await expect(
-      page.getByRole('menuitem', { name: 'Mi perfil' }),
+      page
+        .locator('[data-slot="sidebar-menu"]')
+        .getByRole('link', { name: 'Mi perfil' }),
     ).toBeVisible();
   });
 
@@ -100,7 +101,7 @@ test.describe('failure and return paths', () => {
     ).toBeVisible();
     await page.getByRole('link', { name: 'Continuar' }).click();
     await expect(page).toHaveURL(/\/users$/);
-    await expect(page.getByText('Ana')).toBeVisible();
+    await expect(page.getByText('Ana García')).toBeVisible();
 
     const cookies = await page.context().cookies();
     expect(
