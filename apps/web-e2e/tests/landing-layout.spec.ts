@@ -1,5 +1,15 @@
 import { expect, test } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/users/me/settings', (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: '{}',
+    }),
+  );
+});
+
 const SIZES = [
   { name: 'mobile', width: 375, height: 800 },
   { name: 'desktop', width: 1280, height: 800 },

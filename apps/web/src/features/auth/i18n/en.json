@@ -1,0 +1,69 @@
+{
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submitting": "Signing in…",
+    "submit": "Sign in",
+    "toSignup": "Create an account",
+    "toForgot": "I forgot my password"
+  },
+  "signup": {
+    "title": "Create an account",
+    "email": "Email",
+    "sending": "Sending…",
+    "submit": "Create account",
+    "toLogin": "I already have an account",
+    "pendingTitle": "Check your email",
+    "expired": "The 48-hour activation window has expired. Start registration again.",
+    "accepted": "We have sent an activation link to your email. Open it to choose your password.",
+    "failed": "The activation email could not be sent. You can request a resend or contact support.",
+    "throttled": "Too many recent sends requested. Wait before asking for another.",
+    "deadline": "The link expires on {{date}}.",
+    "restart": "Start registration again",
+    "resending": "Sending…",
+    "resend": "Resend link",
+    "resendWait": "You will be able to resend again in a few seconds.",
+    "support": "Not receiving the email? Contact support",
+    "toLoginPending": "Go to sign in"
+  },
+  "completeSignup": {
+    "invalidLinkTitle": "Invalid link",
+    "missingToken": "The activation token is missing. Start registration again.",
+    "restart": "Start registration again",
+    "restartShort": "Start registration",
+    "choosePassword": "Choose your password",
+    "password": "Password",
+    "show": "Show",
+    "hide": "Hide",
+    "activating": "Activating…",
+    "submit": "Activate account",
+    "activatedTitle": "Account activated",
+    "activatedMessage": "Your account was activated, but signing in automatically failed. Sign in with the password you chose.",
+    "toLogin": "Sign in"
+  },
+  "forgot": {
+    "title": "Recover password",
+    "email": "Email",
+    "sending": "Sending…",
+    "submit": "Send link",
+    "sentTitle": "Check your email",
+    "sentMessage": "If the email matches an account, you will receive a link to reset your password.",
+    "toLogin": "Back to sign in"
+  },
+  "reset": {
+    "missingToken": "The reset token is missing.",
+    "done": "Password updated. You can sign in now.",
+    "title": "Reset password",
+    "newPassword": "New password",
+    "saving": "Saving…",
+    "submit": "Change password",
+    "toLogin": "Sign in"
+  },
+  "oauth": {
+    "title": "Sign in with provider",
+    "failed": "Could not complete sign in ({{error}}).",
+    "success": "Signed in successfully.",
+    "continue": "Continue"
+  }
+}

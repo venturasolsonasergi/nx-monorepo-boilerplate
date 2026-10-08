@@ -1,11 +1,14 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../shared/ui/button';
 import { Input } from '../../../shared/ui/input';
 import { recoverErrorMessage } from '../lib/auth-messages';
 import { useRequestPasswordReset } from '../hooks/use-request-password-reset';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const [email, setEmail] = useState('');
   const request = useRequestPasswordReset();
 
@@ -17,13 +20,12 @@ export default function ForgotPasswordPage() {
   if (request.isSuccess) {
     return (
       <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-        <h1 className="text-lg font-semibold">Revisa tu correo</h1>
+        <h1 className="text-lg font-semibold">{t('forgot.sentTitle')}</h1>
         <p className="text-sm text-muted-foreground">
-          Si el correo corresponde a una cuenta, recibirás un enlace para
-          restablecer tu contraseña.
+          {t('forgot.sentMessage')}
         </p>
         <Link to="/login" className="text-sm underline">
-          Volver a iniciar sesión
+          {t('forgot.toLogin')}
         </Link>
       </main>
     );
@@ -31,10 +33,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-      <h1 className="text-lg font-semibold">Recuperar contraseña</h1>
+      <h1 className="text-lg font-semibold">{t('forgot.title')}</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <label htmlFor="forgot-email" className="text-sm font-medium">
-          Correo electrónico
+          {t('forgot.email')}
         </label>
         <Input
           id="forgot-email"
@@ -47,16 +49,16 @@ export default function ForgotPasswordPage() {
           required
         />
         <Button type="submit" disabled={request.isPending}>
-          {request.isPending ? 'Enviando…' : 'Enviar enlace'}
+          {request.isPending ? t('forgot.sending') : t('forgot.submit')}
         </Button>
       </form>
       {request.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {recoverErrorMessage(request.error)}
+          {tCommon(recoverErrorMessage(request.error))}
         </p>
       ) : null}
       <Link to="/login" className="text-sm underline">
-        Volver a iniciar sesión
+        {t('forgot.toLogin')}
       </Link>
     </main>
   );

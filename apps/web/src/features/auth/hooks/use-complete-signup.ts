@@ -21,7 +21,7 @@ export function useCompleteSignup() {
       queryClient.removeQueries({ queryKey: profileQueryPrefix });
       queryClient.setQueryData(sessionQueryKey, data);
       await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
-      await navigate({ to: '/users', replace: true });
+      await navigate({ to: '/settings', replace: true });
     },
   });
 }

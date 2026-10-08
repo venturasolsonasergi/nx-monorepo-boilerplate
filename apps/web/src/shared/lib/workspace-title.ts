@@ -2,7 +2,7 @@ export interface WorkspaceRouteMeta {
   workspaceTitle?: string;
 }
 
-export const DEFAULT_WORKSPACE_TITLE = 'Panel';
+export const DEFAULT_WORKSPACE_TITLE = 'workspace.defaultTitle';
 
 interface MatchWithStaticData {
   staticData?: unknown;

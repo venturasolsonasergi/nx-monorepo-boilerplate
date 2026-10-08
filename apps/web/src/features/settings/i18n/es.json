@@ -1,0 +1,26 @@
+{
+  "title": "Mi perfil",
+  "createTitle": "Crear perfil",
+  "unauthenticated": "Necesitas iniciar sesión con un correo verificado para ver o crear tu perfil.",
+  "signIn": "Iniciar sesión",
+  "sessionUnknown": "No se pudo comprobar la sesión. Comprueba tu conexión e inténtalo de nuevo.",
+  "profileUnavailable": "No se pudo cargar el perfil. Inténtalo de nuevo.",
+  "expired": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
+  "retry": "Reintentar",
+  "fields": {
+    "name": "Nombre",
+    "surname": "Apellidos",
+    "address": "Dirección",
+    "phone": "Teléfono"
+  },
+  "saving": "Guardando…",
+  "create": "Crear perfil",
+  "languageTitle": "Idioma",
+  "languageDescription": "Selecciona tu idioma preferido para navegar y las comunicaciones que recibas.",
+  "language": "Idioma",
+  "languages": {
+    "es": "Español",
+    "en": "English",
+    "ca": "Català"
+  }
+}

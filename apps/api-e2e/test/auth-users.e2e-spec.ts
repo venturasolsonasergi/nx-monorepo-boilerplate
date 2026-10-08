@@ -207,6 +207,7 @@ describe('Auth and users (e2e)', () => {
         // fixture is reset instead of only the identities tracked by this
         // suite. This also removes verification-token rows (reset-password:*,
         // auth-state:*) whose identifiers are not derived from an email.
+        await usersPrisma.userSettings.deleteMany({});
         await usersPrisma.userProfile.deleteMany({});
         await authPrisma.session.deleteMany({});
         await authPrisma.account.deleteMany({});
@@ -458,6 +459,88 @@ describe('Auth and users (e2e)', () => {
       .expect((response) => {
         expect(JSON.stringify(response.body)).not.toContain('Ada');
       });
+  });
+
+  it('stores and isolates user settings via /users/me/settings', async () => {
+    await request(app.getHttpServer())
+      .get('/users/me/settings')
+      .expect(401)
+      .expect({
+        statusCode: 401,
+        message: 'Invalid session',
+        error: 'Unauthorized',
+      });
+
+    const emailA = testEmail('settings-a');
+    await signUpAndVerify(emailA);
+
+    const loginA = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email: emailA, password: 'password123' })
+      .expect(200);
+    const sessionA = cookieHeader(loginA);
+    const { userId: userIdA } = responseBody<{ userId: string }>(loginA);
+
+    await request(app.getHttpServer())
+      .get('/users/me/settings')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionA)
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .patch('/users/me/settings')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionA)
+      .send({ language: 'ca' })
+      .expect(200)
+      .expect({ language: 'ca' });
+
+    await request(app.getHttpServer())
+      .get('/users/me/settings')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionA)
+      .expect(200)
+      .expect({ language: 'ca' });
+
+    await request(app.getHttpServer())
+      .patch('/users/me/settings')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionA)
+      .send({ language: 'en' })
+      .expect(200)
+      .expect({ language: 'en' });
+
+    const emailB = testEmail('settings-b');
+    await signUpAndVerify(emailB);
+
+    const loginB = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Origin', WEB_ORIGIN)
+      .send({ email: emailB, password: 'password123' })
+      .expect(200);
+    const sessionB = cookieHeader(loginB);
+
+    await request(app.getHttpServer())
+      .get('/users/me/settings')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionB)
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .patch(`/users/me/settings?authUserId=${encodeURIComponent(userIdA)}`)
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionB)
+      .send({ language: 'es' })
+      .expect(200)
+      .expect({ language: 'es' });
+
+    await request(app.getHttpServer())
+      .get('/users/me/settings')
+      .set('Origin', WEB_ORIGIN)
+      .set('Cookie', sessionA)
+      .expect(200)
+      .expect({ language: 'en' });
   });
 
   it('issues UUID-format ids for new identities while legacy ids still resolve', async () => {

@@ -13,6 +13,12 @@ function json(body: unknown) {
   return { contentType: 'application/json', body: JSON.stringify(body) };
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/users/me/settings', (route) =>
+    route.fulfill({ status: 401, ...json({}) }),
+  );
+});
+
 async function routeWorkspace(page: Page) {
   await page.route('**/auth/refresh', (route) =>
     route.fulfill({
@@ -73,7 +79,7 @@ test.describe('dashboard shell layout', () => {
   test('/users renders inside the same workspace shell', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await routeWorkspace(page);
-    await page.goto('/users');
+    await page.goto('/settings');
 
     await expect(page.locator('aside[data-slot="sidebar"]')).toBeVisible();
     await expect(page.locator('header')).toHaveCount(1);

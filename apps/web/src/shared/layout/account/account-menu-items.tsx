@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import {
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -9,16 +10,17 @@ import type { Account } from './use-account';
 // Dropdown items shared by the header's user menu. The dashboard sidebar footer
 // renders the same account state with its own markup.
 export function AccountMenuItems({ account }: { account: Account }) {
+  const { t } = useTranslation('common');
   const { state, refetch, logout } = account;
 
   if (state === 'authenticated') {
     return (
       <>
         <DropdownMenuItem asChild>
-          <Link to="/users">Mi perfil</Link>
+          <Link to="/settings">{t('header.profile')}</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/dashboard">Dashboard</Link>
+          <Link to="/dashboard">{t('header.dashboard')}</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -27,7 +29,7 @@ export function AccountMenuItems({ account }: { account: Account }) {
             logout.mutate();
           }}
         >
-          Cerrar sesión
+          {t('header.logout')}
         </DropdownMenuItem>
       </>
     );
@@ -36,20 +38,20 @@ export function AccountMenuItems({ account }: { account: Account }) {
   if (state === 'unauthenticated') {
     return (
       <DropdownMenuItem asChild>
-        <Link to="/login">Acceder</Link>
+        <Link to="/login">{t('header.login')}</Link>
       </DropdownMenuItem>
     );
   }
 
   return (
     <>
-      <DropdownMenuLabel>No se pudo comprobar la sesión</DropdownMenuLabel>
+      <DropdownMenuLabel>{t('account.sessionUnknown')}</DropdownMenuLabel>
       <DropdownMenuItem
         onSelect={() => {
           refetch();
         }}
       >
-        Reintentar
+        {t('account.retry')}
       </DropdownMenuItem>
     </>
   );

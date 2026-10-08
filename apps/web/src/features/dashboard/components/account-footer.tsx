@@ -1,5 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { LogIn, LogOut, RefreshCw, User as UserIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAccount } from '../../../shared/layout/account/use-account';
 import { cn } from '../../../shared/lib/cn';
 import { Button } from '../../../shared/ui/button';
@@ -11,6 +12,7 @@ import { useLogoutTransition } from '../lib/logout-transition';
 // successful logout, continues to the landing instead of the login page. When the
 // sidebar is collapsed only icons are shown; each control keeps an accessible name.
 export function AccountFooter() {
+  const { t } = useTranslation('common');
   const { state, displayName, refetch, logout } = useAccount();
   const navigate = useNavigate();
   const { setLoggingOut } = useLogoutTransition();
@@ -38,7 +40,7 @@ export function AccountFooter() {
         )}
       >
         <Spinner />
-        {collapsed ? null : <span>Comprobando sesión…</span>}
+        {collapsed ? null : <span>{t('account.sessionPending')}</span>}
       </div>
     );
   }
@@ -52,7 +54,7 @@ export function AccountFooter() {
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0"
-            aria-label="Reintentar sesión"
+            aria-label={t('account.retry')}
             onClick={refetch}
           >
             <RefreshCw className="h-4 w-4" />
@@ -63,10 +65,10 @@ export function AccountFooter() {
     return (
       <div className="flex flex-col gap-2">
         <p role="alert" className="text-destructive text-xs">
-          No se pudo comprobar la sesión.
+          {t('account.sessionUnknown')}
         </p>
         <Button type="button" variant="outline" size="sm" onClick={refetch}>
-          Reintentar
+          {t('account.retry')}
         </Button>
       </div>
     );
@@ -77,7 +79,7 @@ export function AccountFooter() {
       return (
         <div className="flex justify-center">
           <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <Link to="/login" aria-label="Acceder">
+            <Link to="/login" aria-label={t('header.login')}>
               <LogIn className="h-4 w-4" />
             </Link>
           </Button>
@@ -86,7 +88,7 @@ export function AccountFooter() {
     }
     return (
       <Button asChild variant="outline" size="sm">
-        <Link to="/login">Acceder</Link>
+        <Link to="/login">{t('header.login')}</Link>
       </Button>
     );
   }
@@ -95,7 +97,7 @@ export function AccountFooter() {
     return (
       <div className="flex flex-col items-center gap-1">
         <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0">
-          <Link to="/users" aria-label="Mi perfil">
+          <Link to="/settings" aria-label={t('header.profile')}>
             <UserIcon className="h-4 w-4" />
           </Link>
         </Button>
@@ -104,7 +106,7 @@ export function AccountFooter() {
           variant="ghost"
           size="sm"
           className="h-8 w-8 p-0"
-          aria-label="Cerrar sesión"
+          aria-label={t('header.logout')}
           disabled={logout.isPending}
           onClick={handleLogout}
         >
@@ -112,7 +114,7 @@ export function AccountFooter() {
         </Button>
         {logout.isError ? (
           <p role="alert" className="sr-only">
-            No se pudo cerrar la sesión.
+            {t('account.logoutError')}
           </p>
         ) : null}
       </div>
@@ -121,9 +123,11 @@ export function AccountFooter() {
 
   return (
     <div className="flex flex-col gap-1">
-      <p className="truncate text-sm font-medium">{displayName ?? 'Sesión'}</p>
+      <p className="truncate text-sm font-medium">
+        {displayName ?? t('account.session')}
+      </p>
       <Button asChild variant="ghost" size="sm" className="justify-start">
-        <Link to="/users">Mi perfil</Link>
+        <Link to="/settings">{t('header.profile')}</Link>
       </Button>
       <Button
         type="button"
@@ -133,11 +137,11 @@ export function AccountFooter() {
         disabled={logout.isPending}
         onClick={handleLogout}
       >
-        Cerrar sesión
+        {t('header.logout')}
       </Button>
       {logout.isError ? (
         <p role="alert" className="text-destructive text-xs">
-          No se pudo cerrar la sesión.
+          {t('account.logoutError')}
         </p>
       ) : null}
     </div>

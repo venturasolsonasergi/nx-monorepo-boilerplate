@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Users Service API
-  version: 0.4.0
+  version: 0.5.0
   x-spec-id: create-profile
   description: >
     Creates a business profile for the authenticated, email-verified identity.
@@ -120,6 +120,89 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+  /users/me/settings:
+    get:
+      operationId: getUserSettings
+      summary: Retrieve the authenticated caller's own settings
+      description: >
+        Returns the settings linked to the caller's session-derived identity.
+        The identity is resolved exclusively from the session cookie; no
+        caller-supplied identifier is accepted. Email verification is not
+        required for this read.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The caller's settings
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettingsResponse'
+        '401':
+          description: Missing or invalid session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: The authenticated identity has no stored settings
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsNotFoundError'
+    patch:
+      operationId: updateUserSettings
+      summary: Create or partially update the authenticated caller's settings
+      description: >
+        Applies only the fields present in the request to the settings linked to
+        the caller's session-derived identity, creating them when none exist.
+        The identity is resolved exclusively from the session cookie; no
+        caller-supplied identifier is accepted.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserSettingsRequest'
+      responses:
+        '200':
+          description: The resulting settings
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettingsResponse'
+        '400':
+          description: Invalid request
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Missing or invalid session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
 components:
   headers:
     RequestId:
@@ -291,3 +374,36 @@ components:
         error:
           type: string
           enum: [Not Found]
+    SettingsNotFoundError:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          enum: [404]
+        message:
+          type: string
+          enum: [Settings not found]
+        error:
+          type: string
+          enum: [Not Found]
+    UserSettingsResponse:
+      type: object
+      required:
+        - language
+      properties:
+        language:
+          type: string
+          enum: [es, en, ca]
+    UpdateUserSettingsRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - language
+      properties:
+        language:
+          type: string
+          enum: [es, en, ca]

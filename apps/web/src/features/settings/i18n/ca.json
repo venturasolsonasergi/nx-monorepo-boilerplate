@@ -1,0 +1,26 @@
+{
+  "title": "El meu perfil",
+  "createTitle": "Crea el perfil",
+  "unauthenticated": "Has d'iniciar la sessió amb un correu verificat per veure o crear el teu perfil.",
+  "signIn": "Inicia la sessió",
+  "sessionUnknown": "No s'ha pogut comprovar la sessió. Comprova la connexió i torna-ho a provar.",
+  "profileUnavailable": "No s'ha pogut carregar el perfil. Torna-ho a provar.",
+  "expired": "La teva sessió ha caducat. Torna a iniciar la sessió.",
+  "retry": "Reintenta",
+  "fields": {
+    "name": "Nom",
+    "surname": "Cognoms",
+    "address": "Adreça",
+    "phone": "Telèfon"
+  },
+  "saving": "Desant…",
+  "create": "Crea el perfil",
+  "languageTitle": "Idioma",
+  "languageDescription": "Selecciona el teu idioma preferit per navegar i per a les comunicacions que rebis.",
+  "language": "Idioma",
+  "languages": {
+    "es": "Español",
+    "en": "English",
+    "ca": "Català"
+  }
+}

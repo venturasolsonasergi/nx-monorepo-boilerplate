@@ -1,0 +1,11 @@
+{
+  "greeting": "Hola, {{name}} {{surname}}",
+  "subtitle": "Este es tu panel de trabajo.",
+  "profileSummary": "Resumen del perfil",
+  "profileLink": "Mi perfil",
+  "loadingLabel": "Cargando panel",
+  "title": "Panel",
+  "sessionUnknown": "No se pudo comprobar la sesión. Comprueba tu conexión e inténtalo de nuevo.",
+  "profileUnavailable": "No se pudo cargar el perfil. Inténtalo de nuevo.",
+  "retry": "Reintentar"
+}

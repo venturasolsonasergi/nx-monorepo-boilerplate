@@ -7,6 +7,7 @@ import {
   HttpCode,
   Inject,
   NotFoundException,
+  Patch,
   Post,
   Body,
   Req,
@@ -15,10 +16,14 @@ import {
 import { z } from 'zod';
 import { CreateProfileUseCase } from '../application/create-profile.use-case';
 import { GetCurrentProfileUseCase } from '../application/get-current-profile.use-case';
+import { GetUserSettingsUseCase } from '../application/get-user-settings.use-case';
+import { UpdateUserSettingsUseCase } from '../application/update-user-settings.use-case';
 import {
   ProfileAlreadyExistsError,
   ProfileNotFoundError,
 } from '../application/profile.repository';
+import { UserSettingsNotFoundError } from '../application/user-settings.repository';
+import { SUPPORTED_LANGUAGES } from '../domain/supported-language.vo';
 import { formatZodValidationErrors } from '@app/shared/validation/zod-validation-error';
 
 const createProfileSchema = z
@@ -27,6 +32,12 @@ const createProfileSchema = z
     surname: z.string().trim().min(1),
     address: z.string().trim().min(1),
     phone: z.string().trim().min(1),
+  })
+  .strict();
+
+const updateUserSettingsSchema = z
+  .object({
+    language: z.enum(SUPPORTED_LANGUAGES),
   })
   .strict();
 
@@ -42,6 +53,10 @@ export class UsersController {
     private readonly createProfileUseCase: CreateProfileUseCase,
     @Inject(GetCurrentProfileUseCase)
     private readonly getCurrentProfileUseCase: GetCurrentProfileUseCase,
+    @Inject(GetUserSettingsUseCase)
+    private readonly getUserSettingsUseCase: GetUserSettingsUseCase,
+    @Inject(UpdateUserSettingsUseCase)
+    private readonly updateUserSettingsUseCase: UpdateUserSettingsUseCase,
   ) {}
 
   @Get('health')
@@ -64,6 +79,48 @@ export class UsersController {
 
       throw error;
     }
+  }
+
+  @Get('me/settings')
+  async getUserSettings(@Req() request: SessionRequest) {
+    if (!request.authUserId) {
+      throw new UnauthorizedException('Invalid session');
+    }
+
+    try {
+      return await this.getUserSettingsUseCase.execute(request.authUserId);
+    } catch (error) {
+      if (error instanceof UserSettingsNotFoundError) {
+        throw new NotFoundException('Settings not found');
+      }
+
+      throw error;
+    }
+  }
+
+  @Patch('me/settings')
+  async updateUserSettings(
+    @Body() body: unknown,
+    @Req() request: SessionRequest,
+  ) {
+    const parsedBody = updateUserSettingsSchema.safeParse(body);
+    if (!parsedBody.success) {
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Validation failed',
+        details: formatZodValidationErrors(parsedBody.error),
+      });
+    }
+
+    if (!request.authUserId) {
+      throw new UnauthorizedException('Invalid session');
+    }
+
+    return this.updateUserSettingsUseCase.execute({
+      authUserId: request.authUserId,
+      language: parsedBody.data.language,
+    });
   }
 
   @Post()

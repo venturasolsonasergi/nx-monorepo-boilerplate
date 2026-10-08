@@ -117,14 +117,14 @@ describe('DashboardPage', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('continues to /users with /dashboard preserved when the profile does not exist', async () => {
+  it('continues to /settings with /dashboard preserved when the profile does not exist', async () => {
     setSession('authenticated');
     getCurrent.mockRejectedValue(new ApiError(404, 'Profile not found'));
     renderPage();
 
     await waitFor(() =>
       expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/users',
+        to: '/settings',
         search: { returnTo: '/dashboard' },
       }),
     );

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -94,6 +95,17 @@ function withProfile(
   } as unknown as ReturnType<typeof useProfile>);
 }
 
+function renderHeader() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <AppHeader />
+    </QueryClientProvider>,
+  );
+}
+
 beforeEach(() => {
   withLogout();
   withProfile();
@@ -109,7 +121,7 @@ afterEach(() => {
 describe('AppHeader', () => {
   it('renders the wordmark and a loading control while the session is pending', () => {
     withState('pending');
-    render(<AppHeader />);
+    renderHeader();
     expect(
       screen.getByRole('link', { name: 'nx-monorepo-boilerplate' }),
     ).toBeInTheDocument();
@@ -121,7 +133,7 @@ describe('AppHeader', () => {
 
   it('offers "Acceder" linking to /login when unauthenticated', () => {
     withState('unauthenticated');
-    render(<AppHeader />);
+    renderHeader();
     expect(screen.getByRole('link', { name: 'Acceder' })).toHaveAttribute(
       'href',
       '/login',
@@ -131,11 +143,11 @@ describe('AppHeader', () => {
   it('shows profile, a Dashboard link and logout when authenticated', () => {
     withState('authenticated');
     withProfile({ name: 'Ana', surname: 'García' });
-    render(<AppHeader />);
+    renderHeader();
 
     expect(screen.getByRole('link', { name: 'Mi perfil' })).toHaveAttribute(
       'href',
-      '/users',
+      '/settings',
     );
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
       'href',
@@ -148,10 +160,10 @@ describe('AppHeader', () => {
 
   it('shows a recoverable non-signed-out state when the session is unknown', () => {
     withState('unknown');
-    render(<AppHeader />);
+    renderHeader();
 
     expect(
-      screen.getByText('No se pudo comprobar la sesión'),
+      screen.getByText('No se pudo comprobar la sesión.'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('menuitem', { name: 'Reintentar' }),
@@ -162,11 +174,26 @@ describe('AppHeader', () => {
   it('shows a recoverable message when logout fails and stays signed in', () => {
     withState('authenticated');
     withLogout({ isError: true });
-    render(<AppHeader />);
+    renderHeader();
 
     expect(screen.getByRole('alert')).toHaveTextContent(
       'No se pudo cerrar la sesión.',
     );
     expect(screen.getByRole('link', { name: 'Mi perfil' })).toBeInTheDocument();
+  });
+
+  it('shows the language switcher when no session is active', () => {
+    withState('unauthenticated');
+    renderHeader();
+
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('hides the language switcher when authenticated', () => {
+    withState('authenticated');
+    withProfile({ name: 'Ana', surname: 'García' });
+    renderHeader();
+
+    expect(screen.queryByRole('combobox')).toBeNull();
   });
 });

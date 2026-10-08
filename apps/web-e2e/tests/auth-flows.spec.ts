@@ -1,5 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/users/me/settings', (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: '{}',
+    }),
+  );
+});
+
 const profileA = {
   id: 1,
   authUserId: 'A',
@@ -75,14 +85,19 @@ test.describe('login', () => {
     await page.route('**/users/me', (route) =>
       route.fulfill({ status: 200, ...json(profileA) }),
     );
+    await page.route('**/users/me/settings', (route) =>
+      route.fulfill({ status: 401, ...json({}) }),
+    );
 
     await page.goto('/login');
     await page.getByLabel('Correo electrónico').fill('a@example.com');
     await page.getByLabel('Contraseña').fill('password123');
     await page.getByRole('button', { name: 'Acceder' }).click();
 
-    await expect(page).toHaveURL(/\/users$/);
-    await expect(page.getByText('Ana García')).toBeVisible();
+    await expect(page).toHaveURL(/\/es\/dashboard$/);
+    await expect(
+      page.getByRole('heading', { name: 'Hola, Ana García' }),
+    ).toBeVisible();
     // The workspace shell provides navigation (not the public header)
     await expect(
       page
@@ -211,12 +226,15 @@ test.describe('complete signup', () => {
     await page.route('**/users/me', (route) =>
       route.fulfill({ status: 404, ...json({}) }),
     );
+    await page.route('**/users/me/settings', (route) =>
+      route.fulfill({ status: 401, ...json({}) }),
+    );
 
     await page.goto('/complete-signup?token=token-1');
     await page.getByLabel('Contraseña', { exact: true }).fill('password123');
     await page.getByRole('button', { name: 'Activar cuenta' }).click();
 
-    await expect(page).toHaveURL(/\/users$/);
+    await expect(page).toHaveURL(/\/es\/settings$/);
     await expect(
       page.getByRole('heading', { name: 'Crear perfil' }),
     ).toBeVisible();
@@ -273,7 +291,7 @@ test.describe('/users profile states', () => {
       route.fulfill({ status: 200, ...json(profileA) }),
     );
 
-    await page.goto('/users');
+    await page.goto('/settings');
     await expect(page.getByText('Ana García')).toBeVisible();
     await expect(
       page.getByRole('heading', { name: 'Crear perfil' }),
@@ -291,7 +309,7 @@ test.describe('/users profile states', () => {
       route.fulfill({ status: 404, ...json({}) }),
     );
 
-    await page.goto('/users');
+    await page.goto('/settings');
     await expect(
       page.getByRole('heading', { name: 'Crear perfil' }),
     ).toBeVisible();
@@ -299,7 +317,7 @@ test.describe('/users profile states', () => {
 
   test('asks to sign in when there is no session', async ({ page }) => {
     await routeAnonymous(page);
-    await page.goto('/users');
+    await page.goto('/settings');
     await expect(
       page.getByRole('link', { name: 'Iniciar sesión' }),
     ).toBeVisible();
@@ -326,12 +344,12 @@ test.describe('logout and user switch', () => {
       route.fulfill({ status: 200, ...json(profileA) }),
     );
 
-    await page.goto('/users');
+    await page.goto('/settings');
     await expect(page.getByText('Ana García')).toBeVisible();
 
     // Click the workspace shell's logout button in the sidebar footer
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL(/\/es\/?$/);
     await expect(
       page.getByRole('heading', { name: 'nx-monorepo-boilerplate' }),
     ).toBeVisible();
@@ -382,11 +400,13 @@ test.describe('logout and user switch', () => {
     await page.getByLabel('Correo electrónico').fill('a@example.com');
     await page.getByLabel('Contraseña').fill('password123');
     await page.getByRole('button', { name: 'Acceder' }).click();
-    await expect(page.getByText('Ana García')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Hola, Ana García' }),
+    ).toBeVisible();
 
     // Logout from the workspace shell (not the public header)
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL(/\/es\/?$/);
     await expect(
       page.getByRole('heading', { name: 'nx-monorepo-boilerplate' }),
     ).toBeVisible();
@@ -396,7 +416,11 @@ test.describe('logout and user switch', () => {
     await page.getByLabel('Contraseña').fill('password123');
     await page.getByRole('button', { name: 'Acceder' }).click();
 
-    await expect(page.getByText('Beto López')).toBeVisible();
-    await expect(page.getByText('Ana García')).toBeHidden();
+    await expect(
+      page.getByRole('heading', { name: 'Hola, Beto López' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Hola, Ana García' }),
+    ).toHaveCount(0);
   });
 });

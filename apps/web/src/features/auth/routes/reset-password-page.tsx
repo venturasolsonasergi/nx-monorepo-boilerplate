@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../shared/ui/button';
 import { Input } from '../../../shared/ui/input';
 import { authApi } from '../api/auth.api';
@@ -8,6 +9,8 @@ import { resetErrorMessage } from '../lib/auth-messages';
 // Landed here from the emailed reset link (GET /auth/reset-password/confirm),
 // which redirects with the token in the query string.
 export default function ResetPasswordPage() {
+  const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const token = new URLSearchParams(window.location.search).get('token') ?? '';
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<
@@ -32,7 +35,7 @@ export default function ResetPasswordPage() {
   if (!token) {
     return (
       <main className="mx-auto max-w-md p-6 text-sm text-red-600">
-        Falta el token de restablecimiento.
+        {t('reset.missingToken')}
       </main>
     );
   }
@@ -40,11 +43,9 @@ export default function ResetPasswordPage() {
   if (status === 'done') {
     return (
       <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-        <p className="text-sm text-green-700">
-          Contraseña actualizada. Ya puedes iniciar sesión.
-        </p>
+        <p className="text-sm text-green-700">{t('reset.done')}</p>
         <Link to="/login" className="text-sm underline">
-          Iniciar sesión
+          {t('reset.toLogin')}
         </Link>
       </main>
     );
@@ -52,7 +53,7 @@ export default function ResetPasswordPage() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-      <h1 className="text-lg font-semibold">Restablecer contraseña</h1>
+      <h1 className="text-lg font-semibold">{t('reset.title')}</h1>
       <form
         onSubmit={(event) => {
           void handleSubmit(event);
@@ -60,12 +61,12 @@ export default function ResetPasswordPage() {
         className="flex flex-col gap-3"
       >
         <label htmlFor="reset-password" className="text-sm font-medium">
-          Nueva contraseña
+          {t('reset.newPassword')}
         </label>
         <Input
           id="reset-password"
           type="password"
-          placeholder="Nueva contraseña"
+          placeholder={t('reset.newPassword')}
           autoComplete="new-password"
           value={password}
           minLength={8}
@@ -75,12 +76,12 @@ export default function ResetPasswordPage() {
           required
         />
         <Button type="submit" disabled={status === 'submitting'}>
-          {status === 'submitting' ? 'Guardando…' : 'Cambiar contraseña'}
+          {status === 'submitting' ? t('reset.saving') : t('reset.submit')}
         </Button>
       </form>
       {status === 'error' ? (
         <p role="alert" className="text-sm text-red-600">
-          {resetErrorMessage(error)}
+          {tCommon(resetErrorMessage(error))}
         </p>
       ) : null}
     </main>

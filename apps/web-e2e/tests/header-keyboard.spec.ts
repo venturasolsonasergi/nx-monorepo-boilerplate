@@ -1,5 +1,15 @@
 import { expect, test } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/users/me/settings', (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: '{}',
+    }),
+  );
+});
+
 test('session menu is keyboard operable and restores focus on Escape', async ({
   page,
 }) => {

@@ -26,7 +26,16 @@ vi.mock('../api/auth.api', () => ({
   authApi: { login: vi.fn() },
 }));
 
+vi.mock('../../../shared/i18n/routing', () => ({
+  switchLocale: vi.fn(),
+  ensureSignedInLanguage: vi.fn(),
+}));
+
 import { authApi } from '../api/auth.api';
+import {
+  ensureSignedInLanguage,
+  switchLocale,
+} from '../../../shared/i18n/routing';
 import LoginPage from './login-page';
 
 const login = vi.mocked(authApi.login);
@@ -58,6 +67,8 @@ afterEach(() => {
   login.mockReset();
   mockNavigate.mockReset();
   mockSearch.current = {};
+  vi.mocked(ensureSignedInLanguage).mockReset();
+  vi.mocked(switchLocale).mockReset();
   window.localStorage.clear();
   window.sessionStorage.clear();
 });
@@ -106,18 +117,52 @@ describe('LoginPage', () => {
     expect(screen.queryByText('Correo o contraseña no válidos.')).toBeNull();
   });
 
-  it('updates the session and continues to /users on success', async () => {
+  it('updates the session and continues to /dashboard on success', async () => {
     login.mockResolvedValue({ userId: 'user-1', status: 'authenticated' });
     const client = renderPage();
     submit();
 
     await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/users' }),
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' }),
     );
     expect(client.getQueryData(sessionQueryKey)).toEqual({
       userId: 'user-1',
       status: 'authenticated',
     });
+  });
+
+  it('applies the stored language after login', async () => {
+    login.mockResolvedValue({ userId: 'user-1', status: 'authenticated' });
+    vi.mocked(ensureSignedInLanguage).mockResolvedValue('ca');
+    renderPage();
+    submit();
+
+    await waitFor(() =>
+      expect(switchLocale).toHaveBeenCalledWith('ca', expect.any(String)),
+    );
+  });
+
+  it('applies the default language when none was stored', async () => {
+    login.mockResolvedValue({ userId: 'user-1', status: 'authenticated' });
+    vi.mocked(ensureSignedInLanguage).mockResolvedValue('en');
+    renderPage();
+    submit();
+
+    await waitFor(() =>
+      expect(switchLocale).toHaveBeenCalledWith('en', '/dashboard'),
+    );
+  });
+
+  it('continues under the current locale when the settings read fails', async () => {
+    login.mockResolvedValue({ userId: 'user-1', status: 'authenticated' });
+    vi.mocked(ensureSignedInLanguage).mockResolvedValue(null);
+    renderPage();
+    submit();
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' }),
+    );
+    expect(switchLocale).not.toHaveBeenCalled();
   });
 
   it('continues to /dashboard when the returnTo is authorized', async () => {
@@ -131,14 +176,14 @@ describe('LoginPage', () => {
     );
   });
 
-  it('discards an unauthorized returnTo and continues to /users', async () => {
+  it('discards an unauthorized returnTo and continues to /dashboard', async () => {
     mockSearch.current = { returnTo: 'https://evil.example.com' };
     login.mockResolvedValue({ userId: 'user-1', status: 'authenticated' });
     renderPage();
     submit();
 
     await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/users' }),
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' }),
     );
     expect(mockNavigate).not.toHaveBeenCalledWith({
       to: 'https://evil.example.com',

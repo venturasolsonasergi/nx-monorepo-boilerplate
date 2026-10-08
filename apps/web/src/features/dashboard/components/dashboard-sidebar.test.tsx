@@ -40,7 +40,7 @@ describe('DashboardSidebar', () => {
     );
     expect(screen.getByRole('link', { name: /Mi perfil/ })).toHaveAttribute(
       'href',
-      '/users',
+      '/settings',
     );
     expect(screen.getByRole('link', { name: /Inicio/ })).toHaveAttribute(
       'href',

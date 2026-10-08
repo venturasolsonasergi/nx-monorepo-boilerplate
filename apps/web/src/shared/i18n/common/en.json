@@ -1,0 +1,47 @@
+{
+  "app": {
+    "loading": "Loading…"
+  },
+  "header": {
+    "checkSession": "Checking session",
+    "accountControl": "User account",
+    "login": "Sign in",
+    "profile": "My profile",
+    "dashboard": "Dashboard",
+    "logout": "Sign out"
+  },
+  "account": {
+    "session": "Session",
+    "sessionPending": "Checking session…",
+    "sessionUnknown": "Could not check the session.",
+    "logoutError": "Could not sign out.",
+    "retry": "Retry"
+  },
+  "nav": {
+    "section": "Navigation",
+    "dashboard": "Dashboard",
+    "profile": "My profile",
+    "home": "Home"
+  },
+  "workspace": {
+    "defaultTitle": "Dashboard"
+  },
+  "authErrors": {
+    "loginInvalidCredentials": "Invalid email or password.",
+    "loginThrottled": "Too many attempts. Wait a moment and try again.",
+    "loginFailed": "Could not sign in. Check your details and try again.",
+    "network": "Could not connect. Check your connection and try again.",
+    "signupExists": "This email is already registered.",
+    "signupThrottled": "Too many requests. Wait a moment and try again.",
+    "signupFailed": "Could not start registration. Check the email and try again.",
+    "resendThrottled": "Too many requests. Wait a moment and try again.",
+    "resendFailed": "Could not request the resend. Try again.",
+    "completeInvalid": "The link is invalid or has expired. Start registration again.",
+    "completeConflict": "Could not complete registration with this email.",
+    "completeThrottled": "Too many attempts. Wait a moment and try again.",
+    "completeFailed": "Could not complete registration. Try again.",
+    "recoverFailed": "Could not send the request. Check the email and try again.",
+    "resetInvalid": "The link is invalid or has expired.",
+    "resetFailed": "Could not reset the password. Try again."
+  }
+}

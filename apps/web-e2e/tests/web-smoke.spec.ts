@@ -17,6 +17,16 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/users/me/settings', (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: '{}',
+    }),
+  );
+});
+
 test.describe('navigation', () => {
   test('root route shows the landing page', async ({ page }) => {
     await page.goto('/');
@@ -82,7 +92,7 @@ test.describe('profile session gating', () => {
   test('without a session the profile is withheld behind a login prompt', async ({
     page,
   }) => {
-    await page.goto('/users');
+    await page.goto('/settings');
     await expect(
       page.getByText(
         'Necesitas iniciar sesión con un correo verificado para ver o crear tu perfil.',
@@ -90,7 +100,7 @@ test.describe('profile session gating', () => {
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: 'Iniciar sesión' }),
-    ).toHaveAttribute('href', '/login');
+    ).toHaveAttribute('href', '/es/login');
   });
 
   test('with a session but no profile the creation form is shown', async ({
@@ -110,12 +120,12 @@ test.describe('profile session gating', () => {
         body: '{}',
       }),
     );
-    await page.goto('/users');
+    await page.goto('/settings');
     await expect(
       page.getByRole('heading', { name: 'Crear perfil' }),
     ).toBeVisible();
     await expect(page.getByPlaceholder('Nombre')).toBeVisible();
-    // `/users` now renders inside the workspace shell, not the public header.
+    // `/settings` now renders inside the workspace shell, not the public header.
     await expect(page.locator('aside[data-slot="sidebar"]')).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Cuenta de usuario' }),

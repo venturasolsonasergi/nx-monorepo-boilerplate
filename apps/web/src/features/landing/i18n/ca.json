@@ -1,0 +1,29 @@
+{
+  "purpose": "Boilerplate per construir microserveis amb NestJS i desenvolupament guiat per especificacions (SDD): les capacitats es descriuen com a requisits abans d'implementar-les.",
+  "login": "Accedeix",
+  "signup": "Crea un compte",
+  "stackTitle": "Tecnologies",
+  "stack": {
+    "nestjs": "NestJS + TypeScript (apps/api i libs)",
+    "prisma": "Prisma per a la persistència",
+    "zod": "Zod per a la validació",
+    "pnpm": "pnpm workspaces i Nx",
+    "react": "React + Vite amb TanStack Router/Query (apps/web)",
+    "i18n": "Multilingüe amb i18next (es, en, ca)",
+    "testing": "Jest, Vitest i Playwright"
+  },
+  "architectureTitle": "Arquitectura",
+  "arch": {
+    "code": "Organització del codi",
+    "web": "Client React amb Vite, TanStack Router/Query i i18next",
+    "api": "Host NestJS que integra els serveis",
+    "auth": "Identitat, credencials i sessions",
+    "users": "Perfils de negoci",
+    "orders": "Servei de comandes",
+    "runtime": "Execució",
+    "runtimeText": "apps/api allotja els mòduls auth, users i orders; en aquest boilerplate no es despleguen com a serveis independents.",
+    "http": "HTTP (cookies)",
+    "integrates": "integra",
+    "layers": "Capes per servei"
+  }
+}

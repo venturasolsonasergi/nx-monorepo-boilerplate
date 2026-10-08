@@ -8,3 +8,8 @@ export const profileQueryPrefix = ['users', 'me'] as const;
 
 export const profileQueryKey = (userId: string) =>
   [...profileQueryPrefix, userId] as const;
+
+export const settingsQueryPrefix = ['users', 'me', 'settings'] as const;
+
+export const settingsQueryKey = (userId: string) =>
+  [...settingsQueryPrefix, userId] as const;

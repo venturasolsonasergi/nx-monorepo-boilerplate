@@ -1,0 +1,69 @@
+{
+  "login": {
+    "title": "Inicia la sessió",
+    "email": "Correu electrònic",
+    "password": "Contrasenya",
+    "submitting": "Accedint…",
+    "submit": "Accedeix",
+    "toSignup": "Crea un compte",
+    "toForgot": "He oblidat la contrasenya"
+  },
+  "signup": {
+    "title": "Crea un compte",
+    "email": "Correu electrònic",
+    "sending": "Enviant…",
+    "submit": "Crea el compte",
+    "toLogin": "Ja tinc un compte",
+    "pendingTitle": "Revisa el correu",
+    "expired": "El termini d'activació de 48 hores ha caducat. Inicia el registre de nou.",
+    "accepted": "Hem enviat un enllaç d'activació al teu correu. Obre'l per triar la contrasenya.",
+    "failed": "No s'ha pogut enviar el correu d'activació. Pots sol·licitar un reenviament o contactar amb suport.",
+    "throttled": "S'han sol·licitat massa enviaments recents. Espera abans de demanar-ne un altre.",
+    "deadline": "L'enllaç caduca el {{date}}.",
+    "restart": "Inicia el registre de nou",
+    "resending": "Enviant…",
+    "resend": "Reenviar enllaç",
+    "resendWait": "Podràs reenviar de nou d'aquí a uns segons.",
+    "support": "No reps el correu? Contacta amb suport",
+    "toLoginPending": "Ves a iniciar la sessió"
+  },
+  "completeSignup": {
+    "invalidLinkTitle": "Enllaç no vàlid",
+    "missingToken": "Falta el testimoni d'activació. Inicia el registre de nou.",
+    "restart": "Inicia el registre de nou",
+    "restartShort": "Inicia el registre",
+    "choosePassword": "Tria la teva contrasenya",
+    "password": "Contrasenya",
+    "show": "Mostra",
+    "hide": "Amaga",
+    "activating": "Activant…",
+    "submit": "Activa el compte",
+    "activatedTitle": "Compte activat",
+    "activatedMessage": "El teu compte s'ha activat, però no s'ha pogut iniciar la sessió automàticament. Inicia la sessió amb la contrasenya que vas triar.",
+    "toLogin": "Inicia la sessió"
+  },
+  "forgot": {
+    "title": "Recupera la contrasenya",
+    "email": "Correu electrònic",
+    "sending": "Enviant…",
+    "submit": "Envia l'enllaç",
+    "sentTitle": "Revisa el correu",
+    "sentMessage": "Si el correu correspon a un compte, rebràs un enllaç per restablir la contrasenya.",
+    "toLogin": "Torna a iniciar la sessió"
+  },
+  "reset": {
+    "missingToken": "Falta el testimoni de restabliment.",
+    "done": "Contrasenya actualitzada. Ja pots iniciar la sessió.",
+    "title": "Restableix la contrasenya",
+    "newPassword": "Contrasenya nova",
+    "saving": "Desant…",
+    "submit": "Canvia la contrasenya",
+    "toLogin": "Inicia la sessió"
+  },
+  "oauth": {
+    "title": "Inici de sessió amb proveïdor",
+    "failed": "No s'ha pogut completar l'inici de sessió ({{error}}).",
+    "success": "Sessió iniciada correctament.",
+    "continue": "Continua"
+  }
+}

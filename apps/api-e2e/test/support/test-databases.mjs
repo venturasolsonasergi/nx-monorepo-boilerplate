@@ -11,7 +11,7 @@ export const AUTH_TABLES = [
   'auth_verification_resend_throttle',
 ];
 
-export const USERS_TABLES = ['user_profiles'];
+export const USERS_TABLES = ['user_profiles', 'user_settings'];
 
 export function getTestDatabaseUrls() {
   const authUrl = process.env.AUTH_TEST_DATABASE_URL;

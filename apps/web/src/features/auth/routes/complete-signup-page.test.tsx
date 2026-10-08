@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 describe('CompleteSignupPage', () => {
-  it('activates, continues to /users to complete the profile, and persists nothing', async () => {
+  it('activates, continues to /settings to complete the profile, and persists nothing', async () => {
     completeSignup.mockResolvedValue({
       userId: 'user-1',
       status: 'authenticated',
@@ -64,7 +64,7 @@ describe('CompleteSignupPage', () => {
     });
     await vi.waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith({
-        to: '/users',
+        to: '/settings',
         replace: true,
       });
     });

@@ -6,3 +6,4 @@ pnpm run validate:domain
 pnpm run check:domain-invariants
 pnpm run check:package-versions
 pnpm run test:contract
+pnpm web:test --run

@@ -19,6 +19,7 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'on-first-retry',
+    locale: 'es-ES',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

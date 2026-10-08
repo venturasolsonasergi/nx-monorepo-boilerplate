@@ -1,0 +1,47 @@
+{
+  "app": {
+    "loading": "Cargando…"
+  },
+  "header": {
+    "checkSession": "Comprobando sesión",
+    "accountControl": "Cuenta de usuario",
+    "login": "Acceder",
+    "profile": "Mi perfil",
+    "dashboard": "Dashboard",
+    "logout": "Cerrar sesión"
+  },
+  "account": {
+    "session": "Sesión",
+    "sessionPending": "Comprobando sesión…",
+    "sessionUnknown": "No se pudo comprobar la sesión.",
+    "logoutError": "No se pudo cerrar la sesión.",
+    "retry": "Reintentar"
+  },
+  "nav": {
+    "section": "Navegación",
+    "dashboard": "Panel",
+    "profile": "Mi perfil",
+    "home": "Inicio"
+  },
+  "workspace": {
+    "defaultTitle": "Panel"
+  },
+  "authErrors": {
+    "loginInvalidCredentials": "Correo o contraseña no válidos.",
+    "loginThrottled": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    "loginFailed": "No se pudo iniciar sesión. Revisa los datos e inténtalo de nuevo.",
+    "network": "No se pudo conectar. Comprueba tu conexión e inténtalo de nuevo.",
+    "signupExists": "Este correo ya está registrado.",
+    "signupThrottled": "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.",
+    "signupFailed": "No se pudo iniciar el registro. Revisa el correo e inténtalo de nuevo.",
+    "resendThrottled": "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.",
+    "resendFailed": "No se pudo solicitar el reenvío. Inténtalo de nuevo.",
+    "completeInvalid": "El enlace no es válido o ha caducado. Inicia el registro de nuevo.",
+    "completeConflict": "No se pudo completar el registro con este correo.",
+    "completeThrottled": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    "completeFailed": "No se pudo completar el registro. Inténtalo de nuevo.",
+    "recoverFailed": "No se pudo enviar la solicitud. Revisa el correo e inténtalo de nuevo.",
+    "resetInvalid": "El enlace no es válido o ha caducado.",
+    "resetFailed": "No se pudo restablecer la contraseña. Inténtalo de nuevo."
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "login": {
+    "title": "Iniciar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "submitting": "Accediendo…",
+    "submit": "Acceder",
+    "toSignup": "Crear una cuenta",
+    "toForgot": "He olvidado mi contraseña"
+  },
+  "signup": {
+    "title": "Crear una cuenta",
+    "email": "Correo electrónico",
+    "sending": "Enviando…",
+    "submit": "Crear cuenta",
+    "toLogin": "Ya tengo una cuenta",
+    "pendingTitle": "Revisa tu correo",
+    "expired": "El plazo de activación de 48 horas ha caducado. Inicia el registro de nuevo.",
+    "accepted": "Hemos enviado un enlace de activación a tu correo. Ábrelo para elegir tu contraseña.",
+    "failed": "No se pudo enviar el correo de activación. Puedes solicitar un reenvío o contactar con soporte.",
+    "throttled": "Se han solicitado demasiados envíos recientes. Espera antes de pedir otro.",
+    "deadline": "El enlace caduca el {{date}}.",
+    "restart": "Iniciar registro de nuevo",
+    "resending": "Enviando…",
+    "resend": "Reenviar enlace",
+    "resendWait": "Podrás reenviar de nuevo en unos segundos.",
+    "support": "¿No recibes el correo? Contacta con soporte",
+    "toLoginPending": "Ir a iniciar sesión"
+  },
+  "completeSignup": {
+    "invalidLinkTitle": "Enlace no válido",
+    "missingToken": "Falta el token de activación. Inicia el registro de nuevo.",
+    "restart": "Iniciar registro de nuevo",
+    "restartShort": "Iniciar registro",
+    "choosePassword": "Elige tu contraseña",
+    "password": "Contraseña",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "activating": "Activando…",
+    "submit": "Activar cuenta",
+    "activatedTitle": "Cuenta activada",
+    "activatedMessage": "Tu cuenta se ha activado, pero no se pudo iniciar sesión automáticamente. Inicia sesión con la contraseña que elegiste.",
+    "toLogin": "Iniciar sesión"
+  },
+  "forgot": {
+    "title": "Recuperar contraseña",
+    "email": "Correo electrónico",
+    "sending": "Enviando…",
+    "submit": "Enviar enlace",
+    "sentTitle": "Revisa tu correo",
+    "sentMessage": "Si el correo corresponde a una cuenta, recibirás un enlace para restablecer tu contraseña.",
+    "toLogin": "Volver a iniciar sesión"
+  },
+  "reset": {
+    "missingToken": "Falta el token de restablecimiento.",
+    "done": "Contraseña actualizada. Ya puedes iniciar sesión.",
+    "title": "Restablecer contraseña",
+    "newPassword": "Nueva contraseña",
+    "saving": "Guardando…",
+    "submit": "Cambiar contraseña",
+    "toLogin": "Iniciar sesión"
+  },
+  "oauth": {
+    "title": "Inicio de sesión con proveedor",
+    "failed": "No se pudo completar el inicio de sesión ({{error}}).",
+    "success": "Sesión iniciada correctamente.",
+    "continue": "Continuar"
+  }
+}

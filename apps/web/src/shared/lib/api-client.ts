@@ -107,4 +107,6 @@ export const apiClient = {
     request(path, schema, { method: 'GET' }),
   post: <T>(path: string, schema: ZodLikeSchema<T>, body: unknown) =>
     request(path, schema, { method: 'POST', body }),
+  patch: <T>(path: string, schema: ZodLikeSchema<T>, body: unknown) =>
+    request(path, schema, { method: 'PATCH', body }),
 };

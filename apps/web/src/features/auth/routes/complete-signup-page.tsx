@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../shared/ui/button';
 import { Input } from '../../../shared/ui/input';
 import { errorBodyField } from '../../../shared/lib/api-client';
@@ -9,6 +10,8 @@ import { useCompleteSignup } from '../hooks/use-complete-signup';
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function CompleteSignupPage() {
+  const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const token = new URLSearchParams(window.location.search).get('token') ?? '';
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,12 +20,14 @@ export default function CompleteSignupPage() {
   if (!token) {
     return (
       <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-        <h1 className="text-lg font-semibold">Enlace no válido</h1>
+        <h1 className="text-lg font-semibold">
+          {t('completeSignup.invalidLinkTitle')}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Falta el token de activación. Inicia el registro de nuevo.
+          {t('completeSignup.missingToken')}
         </p>
         <Link to="/signup" className="text-sm underline">
-          Iniciar registro
+          {t('completeSignup.restartShort')}
         </Link>
       </main>
     );
@@ -40,13 +45,14 @@ export default function CompleteSignupPage() {
   if (activationCommitted) {
     return (
       <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-        <h1 className="text-lg font-semibold">Cuenta activada</h1>
+        <h1 className="text-lg font-semibold">
+          {t('completeSignup.activatedTitle')}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Tu cuenta se ha activado, pero no se pudo iniciar sesión
-          automáticamente. Inicia sesión con la contraseña que elegiste.
+          {t('completeSignup.activatedMessage')}
         </p>
         <Link to="/login" className="text-sm underline">
-          Iniciar sesión
+          {t('completeSignup.toLogin')}
         </Link>
       </main>
     );
@@ -54,10 +60,12 @@ export default function CompleteSignupPage() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-      <h1 className="text-lg font-semibold">Elige tu contraseña</h1>
+      <h1 className="text-lg font-semibold">
+        {t('completeSignup.choosePassword')}
+      </h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <label htmlFor="complete-password" className="text-sm font-medium">
-          Contraseña
+          {t('completeSignup.password')}
         </label>
         <div className="flex items-center gap-2">
           <Input
@@ -78,20 +86,22 @@ export default function CompleteSignupPage() {
             aria-pressed={showPassword}
             onClick={() => setShowPassword((visible) => !visible)}
           >
-            {showPassword ? 'Ocultar' : 'Mostrar'}
+            {showPassword ? t('completeSignup.hide') : t('completeSignup.show')}
           </Button>
         </div>
         <Button type="submit" disabled={complete.isPending}>
-          {complete.isPending ? 'Activando…' : 'Activar cuenta'}
+          {complete.isPending
+            ? t('completeSignup.activating')
+            : t('completeSignup.submit')}
         </Button>
       </form>
       {complete.isError && !activationCommitted ? (
         <div className="flex flex-col gap-2">
           <p role="alert" className="text-sm text-destructive">
-            {completeSignupErrorMessage(complete.error)}
+            {tCommon(completeSignupErrorMessage(complete.error))}
           </p>
           <Link to="/signup" className="text-sm underline">
-            Iniciar registro de nuevo
+            {t('completeSignup.restart')}
           </Link>
         </div>
       ) : null}

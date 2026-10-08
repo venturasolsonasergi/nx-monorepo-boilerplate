@@ -10,7 +10,7 @@ export function createDashboardRoutes(parentRoute: AnyRoute) {
   const dashboardIndexRoute = createRoute({
     getParentRoute: () => parentRoute,
     path: '/dashboard',
-    staticData: { workspaceTitle: 'Panel' },
+    staticData: { workspaceTitle: 'nav.dashboard' },
     component: lazyRouteComponent(() => import('./dashboard-page')),
   });
 

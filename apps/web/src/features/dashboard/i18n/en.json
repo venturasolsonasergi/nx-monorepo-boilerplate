@@ -1,0 +1,11 @@
+{
+  "greeting": "Hello, {{name}} {{surname}}",
+  "subtitle": "This is your workspace.",
+  "profileSummary": "Profile summary",
+  "profileLink": "My profile",
+  "loadingLabel": "Loading dashboard",
+  "title": "Dashboard",
+  "sessionUnknown": "Could not check the session. Check your connection and try again.",
+  "profileUnavailable": "Could not load the profile. Try again.",
+  "retry": "Retry"
+}

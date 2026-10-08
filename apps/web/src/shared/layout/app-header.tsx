@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { User as UserIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import {
   DropdownMenu,
@@ -8,12 +9,14 @@ import {
 } from '../ui/dropdown-menu';
 import { Spinner } from '../ui/spinner';
 import { Wordmark } from '../ui/wordmark';
+import { LanguageSwitcher } from './language-switcher';
 import { AccountMenuItems } from './account/account-menu-items';
 import { useAccount } from './account/use-account';
 
 // Shared header for public routes. The user control's menu reflects the resolved
 // session state: pending, unauthenticated, authenticated, or unknown.
 export function AppHeader() {
+  const { t } = useTranslation('common');
   const account = useAccount();
   const { state, logout } = account;
 
@@ -23,12 +26,13 @@ export function AppHeader() {
         <Wordmark />
       </Link>
       <div className="flex items-center gap-3">
+        {state !== 'authenticated' ? <LanguageSwitcher /> : null}
         {logout.isError ? (
           <div
             role="alert"
             className="flex items-center gap-2 text-xs text-destructive"
           >
-            <span>No se pudo cerrar la sesión.</span>
+            <span>{t('account.logoutError')}</span>
             <Button
               variant="ghost"
               size="sm"
@@ -36,7 +40,7 @@ export function AppHeader() {
               disabled={logout.isPending}
               onClick={() => logout.mutate()}
             >
-              Reintentar
+              {t('account.retry')}
             </Button>
           </div>
         ) : null}
@@ -46,7 +50,7 @@ export function AppHeader() {
             size="sm"
             type="button"
             disabled
-            aria-label="Comprobando sesión"
+            aria-label={t('header.checkSession')}
           >
             <Spinner />
           </Button>
@@ -57,7 +61,7 @@ export function AppHeader() {
                 variant="ghost"
                 size="sm"
                 type="button"
-                aria-label="Cuenta de usuario"
+                aria-label={t('header.accountControl')}
               >
                 <UserIcon className="h-4 w-4" />
               </Button>

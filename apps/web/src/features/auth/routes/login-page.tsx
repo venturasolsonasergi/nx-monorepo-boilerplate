@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useSearch } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { validateReturnToSearch } from '../../../shared/lib/return-to';
 import { Button } from '../../../shared/ui/button';
 import { Input } from '../../../shared/ui/input';
@@ -7,6 +8,8 @@ import { loginErrorMessage } from '../lib/auth-messages';
 import { useLogin } from '../hooks/use-login';
 
 export default function LoginPage() {
+  const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { returnTo } = validateReturnToSearch(useSearch({ strict: false }));
@@ -19,10 +22,10 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-      <h1 className="text-lg font-semibold">Iniciar sesión</h1>
+      <h1 className="text-lg font-semibold">{t('login.title')}</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <label htmlFor="login-email" className="text-sm font-medium">
-          Correo electrónico
+          {t('login.email')}
         </label>
         <Input
           id="login-email"
@@ -35,7 +38,7 @@ export default function LoginPage() {
           required
         />
         <label htmlFor="login-password" className="text-sm font-medium">
-          Contraseña
+          {t('login.password')}
         </label>
         <Input
           id="login-password"
@@ -48,20 +51,20 @@ export default function LoginPage() {
           required
         />
         <Button type="submit" disabled={login.isPending}>
-          {login.isPending ? 'Accediendo…' : 'Acceder'}
+          {login.isPending ? t('login.submitting') : t('login.submit')}
         </Button>
       </form>
       {login.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {loginErrorMessage(login.error)}
+          {tCommon(loginErrorMessage(login.error))}
         </p>
       ) : null}
       <div className="flex flex-col gap-2 text-sm sm:flex-row sm:justify-between">
         <Link to="/signup" className="underline">
-          Crear una cuenta
+          {t('login.toSignup')}
         </Link>
         <Link to="/forgot-password" className="underline">
-          He olvidado mi contraseña
+          {t('login.toForgot')}
         </Link>
       </div>
     </main>

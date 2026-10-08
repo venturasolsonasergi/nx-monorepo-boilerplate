@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { useSessionState } from '../../auth';
 import {
   isNotFoundError,
@@ -11,17 +12,19 @@ import {
   authorizedReturnTo,
   validateReturnToSearch,
 } from '../../../shared/lib/return-to';
+import { LanguagePreference } from '../components/language-preference';
 import { Button } from '../../../shared/ui/button';
 import { Spinner } from '../../../shared/ui/spinner';
-import { ProfileView } from '../components/profile-view';
-import { UserFormContainer } from '../components/user-form.container';
-import { useProfile } from '../hooks/use-profile';
-import type { Profile } from '../api/users.schema';
+import { ProfileView, useProfile } from '../../users';
+import type { Profile } from '../../users';
+import { ProfileForm } from '../components/profile-form';
+import { useCompleteProfile } from '../hooks/use-complete-profile';
 
 const PAGE = 'mx-auto flex max-w-2xl flex-col gap-6 p-6';
 
 // Lazily loaded via lazyRouteComponent — must be the default export.
-export default function UsersPage() {
+export default function SettingsPage() {
+  const { t } = useTranslation('settings');
   const { returnTo } = validateReturnToSearch(useSearch({ strict: false }));
   const { state, userId, refetch } = useSessionState();
 
@@ -36,13 +39,10 @@ export default function UsersPage() {
   if (state === 'unauthenticated') {
     return (
       <main className={PAGE}>
-        <h1 className="text-lg font-semibold">Perfil</h1>
-        <p className="text-sm text-muted-foreground">
-          Necesitas iniciar sesión con un correo verificado para ver o crear tu
-          perfil.
-        </p>
+        <h1 className="text-lg font-semibold">{t('title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('unauthenticated')}</p>
         <Link to="/login" className="text-sm underline">
-          Iniciar sesión
+          {t('signIn')}
         </Link>
       </main>
     );
@@ -51,22 +51,21 @@ export default function UsersPage() {
   if (state === 'unknown') {
     return (
       <main className={PAGE}>
-        <h1 className="text-lg font-semibold">Perfil</h1>
+        <h1 className="text-lg font-semibold">{t('title')}</h1>
         <p role="alert" className="text-sm text-destructive">
-          No se pudo comprobar la sesión. Comprueba tu conexión e inténtalo de
-          nuevo.
+          {t('sessionUnknown')}
         </p>
         <Button type="button" variant="outline" onClick={refetch}>
-          Reintentar
+          {t('retry')}
         </Button>
       </main>
     );
   }
 
-  return <ProfileSection userId={userId as string} returnTo={returnTo} />;
+  return <SettingsSection userId={userId as string} returnTo={returnTo} />;
 }
 
-function ProfileSection({
+function SettingsSection({
   userId,
   returnTo,
 }: {
@@ -111,41 +110,60 @@ function ProfileSection({
     );
   }
 
-  return <ProfileContent profile={profile.data} />;
+  return <SettingsContent profile={profile.data} />;
 }
 
-function ProfileContent({ profile }: { profile: Profile }) {
+function SettingsContent({ profile }: { profile: Profile }) {
+  const { t } = useTranslation('settings');
+
   return (
     <main className={PAGE}>
       <ProfileView profile={profile} />
+      <section aria-labelledby="settings-language">
+        <h2 id="settings-language" className="text-lg font-semibold">
+          {t('languageTitle')}
+        </h2>
+        <div className="mt-3">
+          <LanguagePreference />
+        </div>
+      </section>
     </main>
   );
 }
 
 function CreateProfile({ userId }: { userId: string }) {
+  const { t } = useTranslation('settings');
+  const complete = useCompleteProfile(userId);
+
   return (
     <main className={PAGE}>
-      <h1 className="text-lg font-semibold">Crear perfil</h1>
-      <UserFormContainer userId={userId} />
+      <h1 className="text-lg font-semibold">{t('createTitle')}</h1>
+      <ProfileForm
+        isSubmitting={complete.isPending}
+        onSubmit={(input) => complete.mutate(input)}
+      />
     </main>
   );
 }
 
 function ProfileUnavailable({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation('settings');
+
   return (
     <main className={PAGE}>
-      <h1 className="text-lg font-semibold">Perfil</h1>
+      <h1 className="text-lg font-semibold">{t('title')}</h1>
       <p role="alert" className="text-sm text-destructive">
-        No se pudo cargar el perfil. Inténtalo de nuevo.
+        {t('profileUnavailable')}
       </p>
       <Button type="button" variant="outline" onClick={onRetry}>
-        Reintentar
+        {t('retry')}
       </Button>
     </main>
   );
 }
 
 function ExpiredSession() {
+  const { t } = useTranslation('settings');
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -154,12 +172,10 @@ function ExpiredSession() {
 
   return (
     <main className={PAGE}>
-      <h1 className="text-lg font-semibold">Perfil</h1>
-      <p className="text-sm text-muted-foreground">
-        Tu sesión ha caducado. Vuelve a iniciar sesión.
-      </p>
+      <h1 className="text-lg font-semibold">{t('title')}</h1>
+      <p className="text-sm text-muted-foreground">{t('expired')}</p>
       <Link to="/login" className="text-sm underline">
-        Iniciar sesión
+        {t('signIn')}
       </Link>
     </main>
   );

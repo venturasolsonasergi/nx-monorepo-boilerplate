@@ -1,0 +1,26 @@
+{
+  "title": "My profile",
+  "createTitle": "Create profile",
+  "unauthenticated": "You need to sign in with a verified email to view or create your profile.",
+  "signIn": "Sign in",
+  "sessionUnknown": "Could not check the session. Check your connection and try again.",
+  "profileUnavailable": "Could not load the profile. Try again.",
+  "expired": "Your session has expired. Sign in again.",
+  "retry": "Retry",
+  "fields": {
+    "name": "Name",
+    "surname": "Surname",
+    "address": "Address",
+    "phone": "Phone"
+  },
+  "saving": "Saving…",
+  "create": "Create profile",
+  "languageTitle": "Language",
+  "languageDescription": "Select your preferred language for navigation and the communications you receive.",
+  "language": "Language",
+  "languages": {
+    "es": "Español",
+    "en": "English",
+    "ca": "Català"
+  }
+}

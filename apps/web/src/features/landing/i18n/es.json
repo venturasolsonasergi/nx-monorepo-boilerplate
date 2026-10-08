@@ -1,0 +1,29 @@
+{
+  "purpose": "Boilerplate para construir microservicios con NestJS y desarrollo guiado por especificaciones (SDD): las capacidades se describen como requisitos antes de implementarlas.",
+  "login": "Acceder",
+  "signup": "Crear cuenta",
+  "stackTitle": "Tecnologías",
+  "stack": {
+    "nestjs": "NestJS + TypeScript (apps/api y libs)",
+    "prisma": "Prisma para persistencia",
+    "zod": "Zod para validación",
+    "pnpm": "pnpm workspaces y Nx",
+    "react": "React + Vite con TanStack Router/Query (apps/web)",
+    "i18n": "Multilenguaje con i18next (es, en, ca)",
+    "testing": "Jest, Vitest y Playwright"
+  },
+  "architectureTitle": "Arquitectura",
+  "arch": {
+    "code": "Organización del código",
+    "web": "Cliente React con Vite, TanStack Router/Query e i18next",
+    "api": "Host NestJS que integra los servicios",
+    "auth": "Identidad, credenciales y sesiones",
+    "users": "Perfiles de negocio",
+    "orders": "Servicio de pedidos",
+    "runtime": "Ejecución",
+    "runtimeText": "apps/api aloja los módulos auth, users y orders; en este boilerplate no se despliegan como servicios independientes.",
+    "http": "HTTP (cookies)",
+    "integrates": "integra",
+    "layers": "Capas por servicio"
+  }
+}

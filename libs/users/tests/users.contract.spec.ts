@@ -5,10 +5,13 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { CreateProfileUseCase } from '../application/create-profile.use-case';
 import { GetCurrentProfileUseCase } from '../application/get-current-profile.use-case';
+import { GetUserSettingsUseCase } from '../application/get-user-settings.use-case';
+import { UpdateUserSettingsUseCase } from '../application/update-user-settings.use-case';
 import {
   ProfileAlreadyExistsError,
   ProfileNotFoundError,
 } from '../application/profile.repository';
+import { UserSettingsNotFoundError } from '../application/user-settings.repository';
 import { UsersController } from '../infrastructure/users.controller';
 
 describe('users contract', () => {
@@ -26,9 +29,19 @@ describe('users contract', () => {
 
   const getCurrentExecute = jest.fn<(authUserId: string) => Promise<unknown>>();
 
+  const getSettingsExecute =
+    jest.fn<(authUserId: string) => Promise<unknown>>();
+
+  const updateSettingsExecute =
+    jest.fn<
+      (input: { authUserId: string; language: string }) => Promise<unknown>
+    >();
+
   beforeEach(async () => {
     execute.mockReset();
     getCurrentExecute.mockReset();
+    getSettingsExecute.mockReset();
+    updateSettingsExecute.mockReset();
     const module = await Test.createTestingModule({
       controllers: [UsersController],
       providers: [
@@ -36,6 +49,14 @@ describe('users contract', () => {
         {
           provide: GetCurrentProfileUseCase,
           useValue: { execute: getCurrentExecute },
+        },
+        {
+          provide: GetUserSettingsUseCase,
+          useValue: { execute: getSettingsExecute },
+        },
+        {
+          provide: UpdateUserSettingsUseCase,
+          useValue: { execute: updateSettingsExecute },
         },
       ],
     }).compile();
@@ -324,6 +345,109 @@ describe('users contract', () => {
       .expect(200);
 
     expect(getCurrentExecute).toHaveBeenCalledWith('auth-user-1');
+  });
+
+  it('returns the authenticated caller settings from GET /users/me/settings', async () => {
+    getSettingsExecute.mockResolvedValue({ language: 'ca' });
+
+    await request(app.getHttpServer())
+      .get('/users/me/settings')
+      .set('x-auth-user-id', 'auth-user-1')
+      .expect(200)
+      .expect({ language: 'ca' });
+
+    expect(getSettingsExecute).toHaveBeenCalledWith('auth-user-1');
+  });
+
+  it('rejects settings retrieval without an active session', async () => {
+    await request(app.getHttpServer())
+      .get('/users/me/settings')
+      .expect(401)
+      .expect({
+        statusCode: 401,
+        message: 'Invalid session',
+        error: 'Unauthorized',
+      });
+
+    expect(getSettingsExecute).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when the identity has no settings', async () => {
+    getSettingsExecute.mockRejectedValue(new UserSettingsNotFoundError());
+
+    await request(app.getHttpServer())
+      .get('/users/me/settings')
+      .set('x-auth-user-id', 'auth-user-1')
+      .expect(404)
+      .expect({
+        statusCode: 404,
+        message: 'Settings not found',
+        error: 'Not Found',
+      });
+  });
+
+  it('uses only the session identity when another identifier is supplied for settings', async () => {
+    getSettingsExecute.mockResolvedValue({ language: 'en' });
+
+    await request(app.getHttpServer())
+      .get('/users/me/settings?authUserId=forged')
+      .set('x-auth-user-id', 'auth-user-1')
+      .expect(200);
+
+    expect(getSettingsExecute).toHaveBeenCalledWith('auth-user-1');
+  });
+
+  it('updates the caller settings from PATCH /users/me/settings', async () => {
+    updateSettingsExecute.mockResolvedValue({ language: 'en' });
+
+    await request(app.getHttpServer())
+      .patch('/users/me/settings')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({ language: 'en' })
+      .expect(200)
+      .expect({ language: 'en' });
+
+    expect(updateSettingsExecute).toHaveBeenCalledWith({
+      authUserId: 'auth-user-1',
+      language: 'en',
+    });
+  });
+
+  it('rejects an unsupported language with validation details', async () => {
+    await request(app.getHttpServer())
+      .patch('/users/me/settings')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({ language: 'fr' })
+      .expect(400)
+      .expect((response) => {
+        const body = response.body as {
+          message: string;
+          details: Array<{ field: string }>;
+        };
+
+        expect(body.message).toBe('Validation failed');
+        expect(body.details).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ field: 'language' }),
+          ]),
+        );
+      });
+
+    expect(updateSettingsExecute).not.toHaveBeenCalled();
+  });
+
+  it('rejects settings update without an active session', async () => {
+    await request(app.getHttpServer())
+      .patch('/users/me/settings')
+      .send({ language: 'en' })
+      .expect(401)
+      .expect({
+        statusCode: 401,
+        message: 'Invalid session',
+        error: 'Unauthorized',
+      });
+
+    expect(updateSettingsExecute).not.toHaveBeenCalled();
   });
 
   it('preserves the health endpoint', async () => {

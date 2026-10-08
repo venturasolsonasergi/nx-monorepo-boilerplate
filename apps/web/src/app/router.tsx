@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   createRootRoute,
   createRoute,
@@ -9,15 +10,19 @@ import { createAuthRoutes } from '../features/auth/routes/auth.routes';
 import { createDashboardRoutes } from '../features/dashboard';
 import { WorkspaceLayout } from '../features/dashboard/routes/workspace-layout';
 import { createLandingRoutes } from '../features/landing';
-import { createUsersRoutes } from '../features/users/routes/users.routes';
+import { createSettingsRoutes } from '../features/settings';
 import { PublicLayout } from '../shared/layout/public-layout';
 
 function RootLayout() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Suspense
         fallback={
-          <div className="p-6 text-sm text-muted-foreground">Cargando…</div>
+          <div className="p-6 text-sm text-muted-foreground">
+            {t('app.loading')}
+          </div>
         }
       >
         <Outlet />
@@ -43,21 +48,27 @@ const workspaceLayoutRoute = createRoute({
 });
 
 // Each feature owns and exports its own routes; the router only composes them.
-const routeTree = rootRoute.addChildren([
+export const routeTree = rootRoute.addChildren([
   publicLayoutRoute.addChildren([
     ...createLandingRoutes(publicLayoutRoute),
     ...createAuthRoutes(publicLayoutRoute),
   ]),
   workspaceLayoutRoute.addChildren([
     ...createDashboardRoutes(workspaceLayoutRoute),
-    ...createUsersRoutes(workspaceLayoutRoute),
+    ...createSettingsRoutes(workspaceLayoutRoute),
   ]),
 ]);
 
-export const router = createRouter({ routeTree });
+// The locale is the router basepath, so every in-app link and navigation stays
+// under the active locale prefix without feature code special-casing it.
+export function createAppRouter(basepath: string) {
+  return createRouter({ routeTree, basepath });
+}
+
+export type AppRouter = ReturnType<typeof createAppRouter>;
 
 declare module '@tanstack/react-router' {
   interface Register {
-    router: typeof router;
+    router: AppRouter;
   }
 }

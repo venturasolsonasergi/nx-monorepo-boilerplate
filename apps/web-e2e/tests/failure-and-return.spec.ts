@@ -4,6 +4,12 @@ function json(body: unknown) {
   return { contentType: 'application/json', body: JSON.stringify(body) };
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/users/me/settings', (route) =>
+    route.fulfill({ status: 401, ...json({}) }),
+  );
+});
+
 async function openUserMenu(page: Page) {
   await page.getByRole('button', { name: 'Cuenta de usuario' }).click();
 }
@@ -16,7 +22,7 @@ test.describe('failure and return paths', () => {
     await page.goto('/');
     await openUserMenu(page);
     await expect(
-      page.getByRole('menu').getByText('No se pudo comprobar la sesión'),
+      page.getByRole('menu').getByText('No se pudo comprobar la sesión.'),
     ).toBeVisible();
     await expect(
       page.getByRole('menu').getByRole('menuitem', { name: 'Acceder' }),
@@ -47,7 +53,7 @@ test.describe('failure and return paths', () => {
       }),
     );
 
-    await page.goto('/users');
+    await page.goto('/settings');
     await expect(page.getByText('Ana García')).toBeVisible();
 
     // Click the workspace shell's logout button
@@ -100,7 +106,7 @@ test.describe('failure and return paths', () => {
       page.getByText('Sesión iniciada correctamente.'),
     ).toBeVisible();
     await page.getByRole('link', { name: 'Continuar' }).click();
-    await expect(page).toHaveURL(/\/users$/);
+    await expect(page).toHaveURL(/\/es\/settings$/);
     await expect(page.getByText('Ana García')).toBeVisible();
 
     const cookies = await page.context().cookies();

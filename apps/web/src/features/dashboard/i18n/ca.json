@@ -1,0 +1,11 @@
+{
+  "greeting": "Hola, {{name}} {{surname}}",
+  "subtitle": "Aquest és el teu tauler de treball.",
+  "profileSummary": "Resum del perfil",
+  "profileLink": "El meu perfil",
+  "loadingLabel": "Carregant el tauler",
+  "title": "Tauler",
+  "sessionUnknown": "No s'ha pogut comprovar la sessió. Comprova la connexió i torna-ho a provar.",
+  "profileUnavailable": "No s'ha pogut carregar el perfil. Torna-ho a provar.",
+  "retry": "Reintenta"
+}

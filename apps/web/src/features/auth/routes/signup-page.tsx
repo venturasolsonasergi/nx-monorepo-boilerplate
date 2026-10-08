@@ -1,5 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../shared/ui/button';
 import { Input } from '../../../shared/ui/input';
 import { signupErrorMessage, resendErrorMessage } from '../lib/auth-messages';
@@ -8,6 +9,8 @@ import { useResendVerification } from '../hooks/use-resend-verification';
 import { usePublicConfig } from '../hooks/use-public-config';
 
 export default function SignupPage() {
+  const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const [email, setEmail] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [resendUntil, setResendUntil] = useState<number | null>(null);
@@ -64,63 +67,57 @@ export default function SignupPage() {
 
     return (
       <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-        <h1 className="text-lg font-semibold">Revisa tu correo</h1>
+        <h1 className="text-lg font-semibold">{t('signup.pendingTitle')}</h1>
         {expired ? (
-          <p className="text-sm text-muted-foreground">
-            El plazo de activación de 48 horas ha caducado. Inicia el registro
-            de nuevo.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('signup.expired')}</p>
         ) : (
           <>
             {data.emailStatus === 'accepted' ? (
               <p className="text-sm text-muted-foreground">
-                Hemos enviado un enlace de activación a tu correo. Ábrelo para
-                elegir tu contraseña.
+                {t('signup.accepted')}
               </p>
             ) : data.emailStatus === 'failed' ? (
-              <p className="text-sm text-destructive">
-                No se pudo enviar el correo de activación. Puedes solicitar un
-                reenvío o contactar con soporte.
-              </p>
+              <p className="text-sm text-destructive">{t('signup.failed')}</p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Se han solicitado demasiados envíos recientes. Espera antes de
-                pedir otro.
+                {t('signup.throttled')}
               </p>
             )}
             <p className="text-sm text-muted-foreground">
-              El enlace caduca el {new Date(data.expiresAt).toLocaleString()}.
+              {t('signup.deadline', {
+                date: new Date(data.expiresAt).toLocaleString(),
+              })}
             </p>
           </>
         )}
 
         {expired ? (
           <Button type="button" onClick={restart}>
-            Iniciar registro de nuevo
+            {t('signup.restart')}
           </Button>
         ) : (
           <Button type="button" onClick={handleResend} disabled={resendBlocked}>
-            {resend.isPending ? 'Enviando…' : 'Reenviar enlace'}
+            {resend.isPending ? t('signup.resending') : t('signup.resend')}
           </Button>
         )}
 
         {resend.isError ? (
           <p role="alert" className="text-sm text-destructive">
-            {resendErrorMessage(resend.error)}
+            {tCommon(resendErrorMessage(resend.error))}
           </p>
         ) : null}
         {resendUntil !== null && now < resendUntil && !expired ? (
           <p className="text-sm text-muted-foreground">
-            Podrás reenviar de nuevo en unos segundos.
+            {t('signup.resendWait')}
           </p>
         ) : null}
         {support ? (
           <a href={`mailto:${support}`} className="text-sm underline">
-            ¿No recibes el correo? Contacta con soporte
+            {t('signup.support')}
           </a>
         ) : null}
         <Link to="/login" className="text-sm underline">
-          Ir a iniciar sesión
+          {t('signup.toLoginPending')}
         </Link>
       </main>
     );
@@ -128,10 +125,10 @@ export default function SignupPage() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-      <h1 className="text-lg font-semibold">Crear una cuenta</h1>
+      <h1 className="text-lg font-semibold">{t('signup.title')}</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <label htmlFor="signup-email" className="text-sm font-medium">
-          Correo electrónico
+          {t('signup.email')}
         </label>
         <Input
           id="signup-email"
@@ -144,16 +141,16 @@ export default function SignupPage() {
           required
         />
         <Button type="submit" disabled={signup.isPending}>
-          {signup.isPending ? 'Enviando…' : 'Crear cuenta'}
+          {signup.isPending ? t('signup.sending') : t('signup.submit')}
         </Button>
       </form>
       {signup.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {signupErrorMessage(signup.error)}
+          {tCommon(signupErrorMessage(signup.error))}
         </p>
       ) : null}
       <Link to="/login" className="text-sm underline">
-        Ya tengo una cuenta
+        {t('signup.toLogin')}
       </Link>
     </main>
   );

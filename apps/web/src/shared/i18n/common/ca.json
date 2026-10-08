@@ -1,0 +1,47 @@
+{
+  "app": {
+    "loading": "Carregant…"
+  },
+  "header": {
+    "checkSession": "Comprovant la sessió",
+    "accountControl": "Compte d'usuari",
+    "login": "Accedeix",
+    "profile": "El meu perfil",
+    "dashboard": "Tauler",
+    "logout": "Tanca la sessió"
+  },
+  "account": {
+    "session": "Sessió",
+    "sessionPending": "Comprovant la sessió…",
+    "sessionUnknown": "No s'ha pogut comprovar la sessió.",
+    "logoutError": "No s'ha pogut tancar la sessió.",
+    "retry": "Reintenta"
+  },
+  "nav": {
+    "section": "Navegació",
+    "dashboard": "Tauler",
+    "profile": "El meu perfil",
+    "home": "Inici"
+  },
+  "workspace": {
+    "defaultTitle": "Tauler"
+  },
+  "authErrors": {
+    "loginInvalidCredentials": "Correu o contrasenya no vàlids.",
+    "loginThrottled": "Massa intents. Espera un moment i torna-ho a provar.",
+    "loginFailed": "No s'ha pogut iniciar la sessió. Revisa les dades i torna-ho a provar.",
+    "network": "No s'ha pogut connectar. Comprova la connexió i torna-ho a provar.",
+    "signupExists": "Aquest correu ja està registrat.",
+    "signupThrottled": "Massa sol·licituds. Espera un moment i torna-ho a provar.",
+    "signupFailed": "No s'ha pogut iniciar el registre. Revisa el correu i torna-ho a provar.",
+    "resendThrottled": "Massa sol·licituds. Espera un moment i torna-ho a provar.",
+    "resendFailed": "No s'ha pogut sol·licitar el reenviament. Torna-ho a provar.",
+    "completeInvalid": "L'enllaç no és vàlid o ha caducat. Inicia el registre de nou.",
+    "completeConflict": "No s'ha pogut completar el registre amb aquest correu.",
+    "completeThrottled": "Massa intents. Espera un moment i torna-ho a provar.",
+    "completeFailed": "No s'ha pogut completar el registre. Torna-ho a provar.",
+    "recoverFailed": "No s'ha pogut enviar la sol·licitud. Revisa el correu i torna-ho a provar.",
+    "resetInvalid": "L'enllaç no és vàlid o ha caducat.",
+    "resetFailed": "No s'ha pogut restablir la contrasenya. Torna-ho a provar."
+  }
+}

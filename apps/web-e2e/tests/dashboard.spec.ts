@@ -24,6 +24,12 @@ function json(body: unknown) {
   return { contentType: 'application/json', body: JSON.stringify(body) };
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/users/me/settings', (route) =>
+    route.fulfill({ status: 401, ...json({}) }),
+  );
+});
+
 async function routeAnonymous(page: Page) {
   await page.route('**/auth/refresh', (route) =>
     route.fulfill({ status: 401, ...json({}) }),
@@ -87,7 +93,7 @@ test.describe('dashboard gating', () => {
   }) => {
     await routeAnonymous(page);
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/login\?returnTo=%2Fdashboard/);
+    await expect(page).toHaveURL(/\/es\/login\?returnTo=%2Fdashboard/);
   });
 
   test('a successful login continues to the dashboard', async ({ page }) => {
@@ -113,7 +119,7 @@ test.describe('dashboard gating', () => {
     await page.goto('/login?returnTo=%2Fdashboard');
     await loginAs(page, 'a@example.com');
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/es\/dashboard$/);
     await expect(
       page.getByRole('heading', { name: 'Hola, Ana García' }),
     ).toBeVisible();
@@ -129,7 +135,7 @@ test.describe('dashboard gating', () => {
 
     await page.goto('/dashboard');
 
-    await expect(page).toHaveURL(/\/users\?returnTo=%2Fdashboard/);
+    await expect(page).toHaveURL(/\/es\/settings\?returnTo=%2Fdashboard/);
     await expect(
       page.getByRole('heading', { name: 'Crear perfil' }),
     ).toBeVisible();
@@ -145,7 +151,7 @@ test.describe('dashboard gating', () => {
 
     await page.goto('/dashboard');
 
-    await expect(page).toHaveURL(/\/login\?returnTo=%2Fdashboard/);
+    await expect(page).toHaveURL(/\/es\/login\?returnTo=%2Fdashboard/);
   });
 
   test('a later user does not inherit the previous profile', async ({
@@ -190,7 +196,7 @@ test.describe('dashboard gating', () => {
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/es\/?$/);
     await expect(
       page.getByRole('heading', { name: 'nx-monorepo-boilerplate' }),
     ).toBeVisible();
