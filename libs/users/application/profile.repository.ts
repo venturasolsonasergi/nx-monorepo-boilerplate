@@ -14,8 +14,19 @@ export class ProfileNotFoundError extends Error {
   }
 }
 
+export interface ProfileUpdateData {
+  name: string;
+  surname: string;
+  address: string;
+  phone: string;
+}
+
 export interface ProfileRepository {
   findById(id: number): Promise<ProfileEntity | null>;
   findByAuthUserId(authUserId: string): Promise<ProfileEntity | null>;
   save(entity: ProfileEntity): Promise<ProfileEntity>;
+  updateByAuthUserId(
+    authUserId: string,
+    data: ProfileUpdateData,
+  ): Promise<ProfileEntity>;
 }

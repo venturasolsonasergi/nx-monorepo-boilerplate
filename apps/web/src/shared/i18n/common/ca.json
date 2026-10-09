@@ -26,6 +26,19 @@
   "workspace": {
     "defaultTitle": "Tauler"
   },
+  "passwordRules": {
+    "title": "Requisits de la contrasenya",
+    "rules": {
+      "min_length": "Com a mínim {{min}} caràcters",
+      "max_length": "Com a màxim {{max}} caràcters",
+      "lowercase": "Una lletra minúscula",
+      "uppercase": "Una lletra majúscula",
+      "digit": "Un dígit",
+      "special": "Un caràcter especial"
+    },
+    "met": "complert",
+    "unmet": "pendent"
+  },
   "authErrors": {
     "loginInvalidCredentials": "Correu o contrasenya no vàlids.",
     "loginThrottled": "Massa intents. Espera un moment i torna-ho a provar.",

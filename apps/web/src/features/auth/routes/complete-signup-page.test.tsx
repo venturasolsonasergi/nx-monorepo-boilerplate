@@ -32,7 +32,7 @@ function renderAt(path: string) {
   );
 }
 
-function submit(password = 'password123') {
+function submit(password = 'Str0ng!Passphrase') {
   fireEvent.change(screen.getByLabelText('Contraseña'), {
     target: { value: password },
   });
@@ -59,7 +59,7 @@ describe('CompleteSignupPage', () => {
     await vi.waitFor(() => {
       expect(completeSignup).toHaveBeenCalledWith({
         token: 'token-1',
-        password: 'password123',
+        password: 'Str0ng!Passphrase',
       });
     });
     await vi.waitFor(() => {
@@ -75,16 +75,27 @@ describe('CompleteSignupPage', () => {
     renderAt('/complete-signup?token=token-1');
     const passwordInput = screen.getByLabelText('Contraseña');
 
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.change(passwordInput, { target: { value: 'Str0ng!Passphrase' } });
     expect(passwordInput).toHaveAttribute('type', 'password');
 
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar' }));
     expect(passwordInput).toHaveAttribute('type', 'text');
-    expect(passwordInput).toHaveValue('password123');
+    expect(passwordInput).toHaveValue('Str0ng!Passphrase');
 
     fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
     expect(passwordInput).toHaveAttribute('type', 'password');
-    expect(passwordInput).toHaveValue('password123');
+    expect(passwordInput).toHaveValue('Str0ng!Passphrase');
+  });
+
+  it('refuses to submit a password that does not satisfy the policy', () => {
+    renderAt('/complete-signup?token=token-1');
+
+    submit('password123');
+
+    expect(completeSignup).not.toHaveBeenCalled();
+    expect(
+      screen.getByLabelText('Requisitos de la contraseña'),
+    ).toBeInTheDocument();
   });
 
   it('offers a restart when the token is missing', () => {

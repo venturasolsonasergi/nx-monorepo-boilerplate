@@ -436,6 +436,153 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceUnavailableError'
+  /auth/account:
+    get:
+      operationId: authAccountSummary
+      summary: Read the session identity's account summary
+      description: >
+        Returns the email of the identity resolved from the active valid
+        verified session, whether a password credential exists for it, and
+        when the current password was established or last changed. It uses
+        only the session-derived identity and never returns another
+        identity's data. No physical storage identifier is exposed.
+      responses:
+        '200':
+          description: Account summary of the session identity
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountSummaryResponse'
+        '401':
+          description: Absent, invalid, revoked, expired, or unverified session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '429':
+          description: Session provider rate limited the session check
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TooManyRequestsError'
+        '503':
+          description: >
+            Operational failure while resolving the session; not interpreted
+            as an absent session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnavailableError'
+  /auth/password/change:
+    post:
+      operationId: authChangePassword
+      summary: Change the session identity's password with the current one
+      description: >
+        Requires the current password and a new password satisfying the shared
+        password policy (at least 12 and at most 128 characters, with at least
+        one lowercase letter, one uppercase letter, one digit, and one special
+        character). On a match the credential is replaced and every other
+        active session of the identity is revoked, while the calling session is
+        rotated with a replacement session cookie so the caller stays
+        authenticated on the current device. A wrong current password returns
+        400 identifying the current password field without changing the
+        credential. A caller without a password credential is rejected with 400
+        and no credential is created.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: >
+            Password changed; every other session of the identity is revoked
+            and the calling session is rotated with a replacement session cookie
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+            Set-Cookie:
+              $ref: '#/components/headers/SessionCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: >
+            Validation failure (missing or unmet password policy, unrecognized
+            fields), an incorrect current password, or no existing password
+            credential; the credential is unchanged in every case
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Absent, invalid, revoked, expired, or unverified session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Request from an untrusted origin
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '429':
+          description: Password change rate limited by the credential provider
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TooManyRequestsError'
+        '503':
+          description: >
+            Operational failure while changing the credential or revoking the
+            sessions; the change is not reported as successful
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnavailableError'
   /auth/reset-password/request:
     post:
       operationId: authRequestPasswordReset
@@ -700,7 +847,12 @@ components:
           minLength: 1
         password:
           type: string
-          minLength: 8
+          minLength: 12
+          maxLength: 128
+          description: >
+            Must satisfy the shared password policy: at least 12 and at most
+            128 characters, with at least one lowercase letter, one uppercase
+            letter, one digit, and one special (non-alphanumeric) character.
     SignupCompleteResponse:
       type: object
       required:
@@ -781,6 +933,27 @@ components:
         status:
           type: string
           enum: [authenticated]
+    AccountSummaryResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - hasPassword
+        - passwordUpdatedAt
+      properties:
+        email:
+          type: string
+          format: email
+        hasPassword:
+          type: boolean
+          description: Whether the identity has a password credential.
+        passwordUpdatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >
+            When the current password was established or last changed; null
+            when the identity has no password credential.
     PasswordResetRequest:
       type: object
       additionalProperties: false
@@ -814,7 +987,30 @@ components:
           minLength: 1
         password:
           type: string
-          minLength: 8
+          minLength: 12
+          maxLength: 128
+          description: >
+            Must satisfy the shared password policy: at least 12 and at most
+            128 characters, with at least one lowercase letter, one uppercase
+            letter, one digit, and one special (non-alphanumeric) character.
+    ChangePasswordRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          minLength: 12
+          maxLength: 128
+          description: >
+            Must satisfy the shared password policy: at least 12 and at most
+            128 characters, with at least one lowercase letter, one uppercase
+            letter, one digit, and one special (non-alphanumeric) character.
     OAuthStartResponse:
       type: object
       required:
@@ -872,6 +1068,7 @@ components:
             - too_small
             - invalid_format
             - unrecognized_keys
+            - custom
         message:
           type: string
     UnauthorizedError:

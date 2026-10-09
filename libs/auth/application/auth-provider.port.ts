@@ -28,6 +28,12 @@ export interface CompleteOAuthInput {
   context: RequestContext;
 }
 
+export interface ChangePasswordInput {
+  cookieHeader: string | undefined;
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface AuthProvider {
   login(
     input: { email: string; password: string },
@@ -50,6 +56,10 @@ export interface AuthProvider {
     cookieHeader: string | undefined,
     context: RequestContext,
   ): Promise<AuthenticatedSession | null>;
+  changePassword(
+    input: ChangePasswordInput,
+    context: RequestContext,
+  ): Promise<string[]>;
   startOAuth(
     input: { provider: string; callbackURL: string },
     context: RequestContext,

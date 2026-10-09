@@ -121,7 +121,7 @@ function context() {
 describe('StartRegistrationUseCase', () => {
   it('creates a pending registration and sends the activation link', async () => {
     const registrations = new InMemoryRegistrations();
-    const send = jest.fn(async () => undefined);
+    const send: () => Promise<void> = jest.fn(async () => undefined);
     const useCase = new StartRegistrationUseCase(
       registrations,
       rateLimit({ allowed: true, retryAfterSeconds: 0, reason: null }),
@@ -153,7 +153,7 @@ describe('StartRegistrationUseCase', () => {
     }).withTokenHash('old-hash');
     registrations.rows.set('ada@example.com', existing);
 
-    const send = jest.fn(async () => undefined);
+    const send: () => Promise<void> = jest.fn(async () => undefined);
     const useCase = new StartRegistrationUseCase(
       registrations,
       rateLimit({ allowed: true, retryAfterSeconds: 0, reason: null }),
@@ -242,7 +242,7 @@ describe('StartRegistrationUseCase', () => {
 
   it('retains the registration and reports throttled without sending', async () => {
     const registrations = new InMemoryRegistrations();
-    const send = jest.fn(async () => undefined);
+    const send: () => Promise<void> = jest.fn(async () => undefined);
     const useCase = new StartRegistrationUseCase(
       registrations,
       rateLimit({ allowed: false, retryAfterSeconds: 45, reason: 'address' }),
@@ -273,7 +273,7 @@ describe('ResendVerificationUseCase', () => {
     }).withTokenHash('old-hash');
     registrations.rows.set('ada@example.com', pending);
 
-    const send = jest.fn(async () => undefined);
+    const send: () => Promise<void> = jest.fn(async () => undefined);
     const useCase = new ResendVerificationUseCase(
       registrations,
       rateLimit({ allowed: true, retryAfterSeconds: 0, reason: null }),
@@ -298,7 +298,7 @@ describe('ResendVerificationUseCase', () => {
   });
 
   it('returns uniform acceptance without sending for an unknown address', async () => {
-    const send = jest.fn(async () => undefined);
+    const send: () => Promise<void> = jest.fn(async () => undefined);
     const useCase = new ResendVerificationUseCase(
       new InMemoryRegistrations(),
       rateLimit({ allowed: true, retryAfterSeconds: 0, reason: null }),
@@ -314,7 +314,7 @@ describe('ResendVerificationUseCase', () => {
   });
 
   it('does not send for a verified identity', async () => {
-    const send = jest.fn(async () => undefined);
+    const send: () => Promise<void> = jest.fn(async () => undefined);
     const useCase = new ResendVerificationUseCase(
       new InMemoryRegistrations(),
       rateLimit({ allowed: true, retryAfterSeconds: 0, reason: null }),
@@ -338,7 +338,7 @@ describe('ResendVerificationUseCase', () => {
       }).withTokenHash('old-hash'),
     );
 
-    const send = jest.fn(async () => undefined);
+    const send: () => Promise<void> = jest.fn(async () => undefined);
     const useCase = new ResendVerificationUseCase(
       registrations,
       rateLimit({ allowed: false, retryAfterSeconds: 20, reason: 'address' }),
@@ -370,7 +370,7 @@ describe('ResendVerificationUseCase', () => {
       }).withTokenHash('old-hash'),
     );
 
-    const send = jest.fn(async () => {
+    const send: () => Promise<void> = jest.fn(async () => {
       throw new Error('smtp down');
     });
     const useCase = new ResendVerificationUseCase(

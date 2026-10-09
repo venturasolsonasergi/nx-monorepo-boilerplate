@@ -92,6 +92,13 @@ export class InvalidPasswordError extends Error {
   }
 }
 
+export class NoPasswordCredentialError extends Error {
+  constructor() {
+    super('No password credential');
+    this.name = 'NoPasswordCredentialError';
+  }
+}
+
 export class ActivationCommittedError extends Error {
   constructor(
     public readonly sessionError: RateLimitedError | AuthProviderError,

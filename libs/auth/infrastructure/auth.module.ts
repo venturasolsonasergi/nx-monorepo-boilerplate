@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
 import type { AuthProvider } from '../application/auth-provider.port';
+import {
+  ACCOUNT_SUMMARY_READER,
+  type AccountSummaryReader,
+} from '../application/account-summary.reader';
 import { CLOCK, type Clock } from '../application/clock.port';
 import {
   IDENTITY_LOOKUP,
@@ -33,8 +37,11 @@ import { ConfirmPasswordResetUseCase } from '../application/use-cases/confirm-pa
 import { BeginOAuthUseCase } from '../application/use-cases/begin-oauth.use-case';
 import { CompleteOAuthUseCase } from '../application/use-cases/complete-oauth.use-case';
 import { ValidateSessionUseCase } from '../application/use-cases/validate-session.use-case';
+import { GetAccountSummaryUseCase } from '../application/use-cases/get-account-summary.use-case';
+import { ChangePasswordUseCase } from '../application/use-cases/change-password.use-case';
 import { AuthController } from './auth.controller';
 import { BetterAuthAdapter } from './better-auth.adapter';
+import { AccountSummaryPrismaReader } from './account-summary.reader.prisma';
 import { SmtpMailSender, createSmtpTransporter } from './mail/smtp-mail.sender';
 import { IdentityLookupPrismaAdapter } from './identity-lookup.prisma';
 import { RegistrationActivationPrismaAdapter } from './registration-activation.prisma';
@@ -85,6 +92,10 @@ import {
     },
     { provide: CLOCK, useClass: SystemClock },
     { provide: IDENTITY_LOOKUP, useClass: IdentityLookupPrismaAdapter },
+    {
+      provide: ACCOUNT_SUMMARY_READER,
+      useClass: AccountSummaryPrismaReader,
+    },
     { provide: VERIFICATION_MAILER, useClass: RegistrationMailer },
     {
       provide: REGISTRATION_ACTIVATION,
@@ -214,6 +225,18 @@ import {
       provide: ValidateSessionUseCase,
       useFactory: (provider: AuthProvider) =>
         new ValidateSessionUseCase(provider),
+      inject: [AUTH_PROVIDER],
+    },
+    {
+      provide: GetAccountSummaryUseCase,
+      useFactory: (provider: AuthProvider, reader: AccountSummaryReader) =>
+        new GetAccountSummaryUseCase(provider, reader),
+      inject: [AUTH_PROVIDER, ACCOUNT_SUMMARY_READER],
+    },
+    {
+      provide: ChangePasswordUseCase,
+      useFactory: (provider: AuthProvider) =>
+        new ChangePasswordUseCase(provider),
       inject: [AUTH_PROVIDER],
     },
     OriginValidationMiddleware,

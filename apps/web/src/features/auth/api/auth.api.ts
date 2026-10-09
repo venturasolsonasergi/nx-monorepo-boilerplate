@@ -40,6 +40,15 @@ export const passwordResetRequestResponseSchema = z.object({
   message: z.string(),
 });
 export const logoutResponseSchema = z.object({ status: z.literal('ok') });
+// Mirrors the auth OpenAPI AccountSummaryResponse.
+export const accountSummaryResponseSchema = z.object({
+  email: z.string().email(),
+  hasPassword: z.boolean(),
+  passwordUpdatedAt: z.string().nullable(),
+});
+export const changePasswordResponseSchema = z.object({
+  status: z.literal('ok'),
+});
 
 export type SignupResponse = z.infer<typeof signupResponseSchema>;
 export type ResendVerificationResponse = z.infer<
@@ -55,6 +64,11 @@ export interface Credentials {
 export interface PasswordResetConfirmation {
   token: string;
   password: string;
+}
+
+export interface PasswordChangeInput {
+  currentPassword: string;
+  newPassword: string;
 }
 
 // The only place in the feature that knows the auth HTTP contract with apps/api.
@@ -86,6 +100,18 @@ export const authApi = {
     ),
   confirmPasswordReset: (input: PasswordResetConfirmation) =>
     apiClient.post('/auth/reset-password/confirm', statusSchema, input),
+  // GET /auth/account discloses the session identity's email, whether a
+  // password credential exists, and when the password was last changed. A 401
+  // means the session is gone; any other failure is recoverable.
+  account: () => apiClient.get('/auth/account', accountSummaryResponseSchema),
+  // POST /auth/password/change revokes every session of the identity on
+  // success, including the caller's, and issues no replacement cookie.
+  changePassword: (input: PasswordChangeInput) =>
+    apiClient.post(
+      '/auth/password/change',
+      changePasswordResponseSchema,
+      input,
+    ),
   startOAuth: (provider: string) =>
     apiClient.post(`/auth/oauth/${provider}`, oauthStartSchema, {}),
   // POST /auth/refresh only succeeds for an active, verified browser session;

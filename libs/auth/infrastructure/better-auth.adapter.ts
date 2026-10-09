@@ -6,6 +6,7 @@ import { genericOAuth } from 'better-auth/plugins';
 import type {
   AuthProvider,
   AuthenticatedSession,
+  ChangePasswordInput,
   CompleteOAuthInput,
   OAuthCallbackResult,
   OAuthStartResult,
@@ -16,8 +17,10 @@ import type { RequestContext } from '../application/request-context';
 import {
   AuthProviderError,
   InvalidCredentialsError,
+  InvalidPasswordError,
   InvalidResetTokenError,
   InvalidSessionError,
+  NoPasswordCredentialError,
   RateLimitedError,
   UnsupportedProviderError,
   UntrustedRedirectError,
@@ -265,6 +268,50 @@ export class BetterAuthAdapter implements AuthProvider {
     }
 
     return session;
+  }
+
+  async changePassword(
+    input: ChangePasswordInput,
+    context: RequestContext,
+  ): Promise<string[]> {
+    const response = await this.request(
+      '/change-password',
+      {
+        method: 'POST',
+        body: {
+          currentPassword: input.currentPassword,
+          newPassword: input.newPassword,
+          revokeOtherSessions: true,
+        },
+        cookie: input.cookieHeader,
+      },
+      context,
+    );
+    this.assertProviderAvailable(response);
+
+    if (response.status === 401) {
+      throw new InvalidSessionError();
+    }
+
+    if (response.status >= 400) {
+      const data = await this.readJson<{ code?: string }>(response);
+      if (data?.code === 'INVALID_PASSWORD') {
+        throw new InvalidPasswordError('Current password is incorrect');
+      }
+
+      if (data?.code === 'CREDENTIAL_ACCOUNT_NOT_FOUND') {
+        throw new NoPasswordCredentialError();
+      }
+
+      throw new AuthProviderError(
+        `Auth provider failed with status ${response.status}`,
+      );
+    }
+
+    // Better Auth revoked every session and issued a fresh one for the caller;
+    // return the replacement cookie so the browser stays signed in on a rotated
+    // session while every other device is signed out.
+    return response.headers.getSetCookie();
   }
 
   async startOAuth(

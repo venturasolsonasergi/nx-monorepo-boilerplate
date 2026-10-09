@@ -13,6 +13,8 @@ import { RequestPasswordResetUseCase } from '../application/use-cases/request-pa
 import { ConfirmPasswordResetUseCase } from '../application/use-cases/confirm-password-reset.use-case';
 import { BeginOAuthUseCase } from '../application/use-cases/begin-oauth.use-case';
 import { CompleteOAuthUseCase } from '../application/use-cases/complete-oauth.use-case';
+import { GetAccountSummaryUseCase } from '../application/use-cases/get-account-summary.use-case';
+import { ChangePasswordUseCase } from '../application/use-cases/change-password.use-case';
 import {
   ActivationCommittedError,
   AuthProviderError,
@@ -44,6 +46,8 @@ describe('auth contract', () => {
   const confirmReset: AsyncMock = jest.fn();
   const beginOAuth: AsyncMock = jest.fn();
   const completeOAuth: AsyncMock = jest.fn();
+  const getAccountSummary: AsyncMock = jest.fn();
+  const changePassword: AsyncMock = jest.fn();
 
   const config = {
     secret: 'test-secret',
@@ -77,6 +81,8 @@ describe('auth contract', () => {
       confirmReset,
       beginOAuth,
       completeOAuth,
+      getAccountSummary,
+      changePassword,
     ]) {
       mock.mockReset();
     }
@@ -109,6 +115,14 @@ describe('auth contract', () => {
         },
         { provide: BeginOAuthUseCase, useValue: { execute: beginOAuth } },
         { provide: CompleteOAuthUseCase, useValue: { execute: completeOAuth } },
+        {
+          provide: GetAccountSummaryUseCase,
+          useValue: { execute: getAccountSummary },
+        },
+        {
+          provide: ChangePasswordUseCase,
+          useValue: { execute: changePassword },
+        },
         { provide: AUTH_CONFIG, useValue: config },
       ],
     }).compile();
@@ -199,7 +213,7 @@ describe('auth contract', () => {
 
     await request(app.getHttpServer())
       .post('/auth/signup/complete')
-      .send({ token: 'token-1', password: 'password123' })
+      .send({ token: 'token-1', password: 'Str0ng!Passphrase' })
       .expect(200)
       .expect({ userId: 'user-1', status: 'authenticated' })
       .expect((response) => {
@@ -214,7 +228,7 @@ describe('auth contract', () => {
 
     await request(app.getHttpServer())
       .post('/auth/signup/complete')
-      .send({ token: 'expired', password: 'password123' })
+      .send({ token: 'expired', password: 'Str0ng!Passphrase' })
       .expect(400);
   });
 
@@ -223,7 +237,7 @@ describe('auth contract', () => {
 
     await request(app.getHttpServer())
       .post('/auth/signup/complete')
-      .send({ token: 'token-1', password: 'password123' })
+      .send({ token: 'token-1', password: 'Str0ng!Passphrase' })
       .expect(409);
   });
 
@@ -234,7 +248,7 @@ describe('auth contract', () => {
 
     await request(app.getHttpServer())
       .post('/auth/signup/complete')
-      .send({ token: 'token-1', password: 'password123' })
+      .send({ token: 'token-1', password: 'Str0ng!Passphrase' })
       .expect(429)
       .expect('Retry-After', '9')
       .expect((response) => {
@@ -247,13 +261,57 @@ describe('auth contract', () => {
 
     await request(app.getHttpServer())
       .post('/auth/signup/complete')
-      .send({ token: 'token-1', password: 'password123' })
+      .send({ token: 'token-1', password: 'Str0ng!Passphrase' })
       .expect(429)
       .expect('Retry-After', '30')
       .expect((response) => {
         expect(response.body).toMatchObject({ statusCode: 429 });
         expect(response.body.accountActivated).toBeUndefined();
       });
+  });
+
+  it('rejects a weak password at signup completion without consuming the token', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/signup/complete')
+      .send({ token: 'token-1', password: 'weak' })
+      .expect(400)
+      .expect((response) => {
+        const details = response.body.details as Array<{
+          field: string;
+          message: string;
+        }>;
+        expect(details.length).toBeGreaterThan(0);
+        for (const detail of details) {
+          expect(detail.field).toBe('password');
+        }
+
+        const messages = details.map((detail) => detail.message).join(' ');
+        expect(messages).toContain('at least 12 characters');
+        expect(messages).toContain('uppercase');
+        expect(messages).toContain('digit');
+        expect(messages).toContain('special');
+      });
+
+    expect(completeSignUp).not.toHaveBeenCalled();
+  });
+
+  it('rejects a weak password at reset confirmation without consuming the token', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/reset-password/confirm')
+      .send({ token: 'reset-token', password: 'weak' })
+      .expect(400)
+      .expect((response) => {
+        const details = response.body.details as Array<{
+          field: string;
+          message: string;
+        }>;
+        expect(details.length).toBeGreaterThan(0);
+        for (const detail of details) {
+          expect(detail.field).toBe('password');
+        }
+      });
+
+    expect(confirmReset).not.toHaveBeenCalled();
   });
 
   it('retires the legacy password-free verification POST', async () => {
@@ -419,7 +477,7 @@ describe('auth contract', () => {
 
     await request(app.getHttpServer())
       .post('/auth/reset-password/confirm')
-      .send({ token: 'reset-token', password: 'newpassword123' })
+      .send({ token: 'reset-token', password: 'N3w!Passphrase' })
       .expect(200)
       .expect({ status: 'ok' });
   });
@@ -429,7 +487,7 @@ describe('auth contract', () => {
 
     await request(app.getHttpServer())
       .post('/auth/reset-password/confirm')
-      .send({ token: 'used', password: 'newpassword123' })
+      .send({ token: 'used', password: 'N3w!Passphrase' })
       .expect(400);
   });
 
@@ -498,5 +556,67 @@ describe('auth contract', () => {
         'Location',
         'http://localhost:4200/reset-password?token=reset-token',
       );
+  });
+
+  it('returns the account summary for the session identity', async () => {
+    getAccountSummary.mockResolvedValue({
+      email: 'ada@example.com',
+      hasPassword: true,
+      passwordUpdatedAt: new Date('2026-01-02T03:04:05.000Z'),
+    });
+
+    await request(app.getHttpServer())
+      .get('/auth/account')
+      .set('Cookie', 'better-auth.session_token=abc')
+      .expect(200)
+      .expect({
+        email: 'ada@example.com',
+        hasPassword: true,
+        passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
+      });
+
+    expect(getAccountSummary).toHaveBeenCalledWith(
+      'better-auth.session_token=abc',
+      expect.anything(),
+    );
+  });
+
+  it('returns the account summary for an identity without a password credential', async () => {
+    getAccountSummary.mockResolvedValue({
+      email: 'grace@example.com',
+      hasPassword: false,
+      passwordUpdatedAt: null,
+    });
+
+    await request(app.getHttpServer()).get('/auth/account').expect(200).expect({
+      email: 'grace@example.com',
+      hasPassword: false,
+      passwordUpdatedAt: null,
+    });
+  });
+
+  it('rejects an unauthenticated account summary request', async () => {
+    getAccountSummary.mockRejectedValue(new InvalidSessionError());
+
+    await request(app.getHttpServer()).get('/auth/account').expect(401);
+  });
+
+  it('does not leak storage names in the account summary', async () => {
+    getAccountSummary.mockResolvedValue({
+      email: 'ada@example.com',
+      hasPassword: true,
+      passwordUpdatedAt: new Date('2026-01-02T03:04:05.000Z'),
+    });
+
+    await request(app.getHttpServer())
+      .get('/auth/account')
+      .expect(200)
+      .expect((response) => {
+        const body = JSON.stringify(response.body);
+        expect(body).not.toMatch(/auth_users|auth_accounts|password_hash/i);
+        expect(
+          Object.keys(response.body as Record<string, unknown>).sort(),
+        ).toEqual(['email', 'hasPassword', 'passwordUpdatedAt']);
+      });
   });
 });

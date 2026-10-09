@@ -80,7 +80,7 @@ test.describe('authentication entry points', () => {
       }),
     );
     await page.goto('/reset-password?token=abc');
-    await page.getByLabel('Nueva contraseña').fill('password123');
+    await page.getByLabel('Nueva contraseña').fill('N3w!Passphrase');
     await page.getByRole('button', { name: 'Cambiar contraseña' }).click();
     await expect(
       page.getByText('El enlace no es válido o ha caducado.'),

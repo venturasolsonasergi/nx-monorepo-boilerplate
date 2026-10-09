@@ -6,6 +6,7 @@ import type { App } from 'supertest/types';
 import { CreateProfileUseCase } from '../application/create-profile.use-case';
 import { GetCurrentProfileUseCase } from '../application/get-current-profile.use-case';
 import { GetUserSettingsUseCase } from '../application/get-user-settings.use-case';
+import { UpdateProfileUseCase } from '../application/update-profile.use-case';
 import { UpdateUserSettingsUseCase } from '../application/update-user-settings.use-case';
 import {
   ProfileAlreadyExistsError,
@@ -32,6 +33,17 @@ describe('users contract', () => {
   const getSettingsExecute =
     jest.fn<(authUserId: string) => Promise<unknown>>();
 
+  const updateExecute =
+    jest.fn<
+      (input: {
+        authUserId: string;
+        name: string;
+        surname: string;
+        address: string;
+        phone: string;
+      }) => Promise<unknown>
+    >();
+
   const updateSettingsExecute =
     jest.fn<
       (input: { authUserId: string; language: string }) => Promise<unknown>
@@ -41,6 +53,7 @@ describe('users contract', () => {
     execute.mockReset();
     getCurrentExecute.mockReset();
     getSettingsExecute.mockReset();
+    updateExecute.mockReset();
     updateSettingsExecute.mockReset();
     const module = await Test.createTestingModule({
       controllers: [UsersController],
@@ -53,6 +66,10 @@ describe('users contract', () => {
         {
           provide: GetUserSettingsUseCase,
           useValue: { execute: getSettingsExecute },
+        },
+        {
+          provide: UpdateProfileUseCase,
+          useValue: { execute: updateExecute },
         },
         {
           provide: UpdateUserSettingsUseCase,
@@ -411,6 +428,226 @@ describe('users contract', () => {
       authUserId: 'auth-user-1',
       language: 'en',
     });
+  });
+
+  it('updates the caller profile from PATCH /users/me and the update is visible on GET /users/me', async () => {
+    updateExecute.mockResolvedValue({
+      id: 1,
+      authUserId: 'auth-user-1',
+      name: 'Grace',
+      surname: 'Hopper',
+      address: '9 Harbor Road',
+      phone: '555-0199',
+    });
+    getCurrentExecute.mockResolvedValue({
+      id: 1,
+      authUserId: 'auth-user-1',
+      name: 'Grace',
+      surname: 'Hopper',
+      address: '9 Harbor Road',
+      phone: '555-0199',
+    });
+
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({
+        name: ' Grace ',
+        surname: ' Hopper ',
+        address: ' 9 Harbor Road ',
+        phone: '555-0199',
+      })
+      .expect(200)
+      .expect({
+        id: 1,
+        authUserId: 'auth-user-1',
+        name: 'Grace',
+        surname: 'Hopper',
+        address: '9 Harbor Road',
+        phone: '555-0199',
+      });
+
+    expect(updateExecute).toHaveBeenCalledWith({
+      authUserId: 'auth-user-1',
+      name: 'Grace',
+      surname: 'Hopper',
+      address: '9 Harbor Road',
+      phone: '555-0199',
+    });
+
+    await request(app.getHttpServer())
+      .get('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .expect(200)
+      .expect({
+        id: 1,
+        authUserId: 'auth-user-1',
+        name: 'Grace',
+        surname: 'Hopper',
+        address: '9 Harbor Road',
+        phone: '555-0199',
+      });
+  });
+
+  it('does not require email verification to update the profile', async () => {
+    updateExecute.mockResolvedValue({
+      id: 1,
+      authUserId: 'auth-user-1',
+      name: 'Grace',
+      surname: 'Hopper',
+      address: '9 Harbor Road',
+      phone: '555-0199',
+    });
+
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .set('x-email-verified', 'false')
+      .send({
+        name: 'Grace',
+        surname: 'Hopper',
+        address: '9 Harbor Road',
+        phone: '555-0199',
+      })
+      .expect(200);
+  });
+
+  it('returns 404 when the identity has no profile to update', async () => {
+    updateExecute.mockRejectedValue(new ProfileNotFoundError());
+
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({
+        name: 'Grace',
+        surname: 'Hopper',
+        address: '9 Harbor Road',
+        phone: '555-0199',
+      })
+      .expect(404)
+      .expect({
+        statusCode: 404,
+        message: 'Profile not found',
+        error: 'Not Found',
+      });
+  });
+
+  it('rejects an empty update field with validation details and no modification', async () => {
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({
+        name: '   ',
+        surname: 'Hopper',
+        address: '9 Harbor Road',
+        phone: '555-0199',
+      })
+      .expect(400)
+      .expect((response) => {
+        const body = response.body as {
+          message: string;
+          details: Array<{ field: string; code: string; message: string }>;
+        };
+
+        expect(body.message).toBe('Validation failed');
+        expect(body.details).toEqual([
+          {
+            field: 'name',
+            code: 'too_small',
+            message: 'name cannot be empty',
+          },
+        ]);
+      });
+
+    expect(updateExecute).not.toHaveBeenCalled();
+  });
+
+  it('rejects identity-bearing and unrecognized update fields', async () => {
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({
+        name: 'Grace',
+        surname: 'Hopper',
+        address: '9 Harbor Road',
+        phone: '555-0199',
+        authUserId: 'forged',
+        email: 'grace@example.com',
+      })
+      .expect(400)
+      .expect((response) => {
+        const body = response.body as {
+          message: string;
+          details: Array<{ field: string; code: string }>;
+        };
+
+        expect(body.message).toBe('Validation failed');
+        expect(body.details).toEqual(
+          expect.arrayContaining([
+            {
+              field: 'authUserId',
+              code: 'unrecognized_keys',
+              message: 'authUserId is not allowed',
+            },
+            {
+              field: 'email',
+              code: 'unrecognized_keys',
+              message: 'email is not allowed',
+            },
+          ]),
+        );
+      });
+
+    expect(updateExecute).not.toHaveBeenCalled();
+  });
+
+  it('rejects a profile update without an active session', async () => {
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .send({
+        name: 'Grace',
+        surname: 'Hopper',
+        address: '9 Harbor Road',
+        phone: '555-0199',
+      })
+      .expect(401)
+      .expect({
+        statusCode: 401,
+        message: 'Invalid session',
+        error: 'Unauthorized',
+      });
+
+    expect(updateExecute).not.toHaveBeenCalled();
+  });
+
+  it('does not leak storage names in the updated profile response', async () => {
+    updateExecute.mockResolvedValue({
+      id: 1,
+      authUserId: 'auth-user-1',
+      name: 'Grace',
+      surname: 'Hopper',
+      address: '9 Harbor Road',
+      phone: '555-0199',
+    });
+
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({
+        name: 'Grace',
+        surname: 'Hopper',
+        address: '9 Harbor Road',
+        phone: '555-0199',
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(
+          Object.keys(response.body as Record<string, unknown>).sort(),
+        ).toEqual(['address', 'authUserId', 'id', 'name', 'phone', 'surname']);
+        expect(JSON.stringify(response.body)).not.toMatch(
+          /user_profiles|auth_user_id/i,
+        );
+      });
   });
 
   it('rejects an unsupported language with validation details', async () => {

@@ -120,6 +120,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+    patch:
+      operationId: updateCurrentProfile
+      summary: Update the authenticated caller's own profile
+      description: >
+        Replaces the name, surname, address, and phone of the profile linked to
+        the caller's session-derived identity with the submitted values, using
+        the same field validation as profile creation (trimmed, non-empty
+        fields, no unrecognized or identity-bearing properties). The identity
+        is resolved exclusively from the session cookie; no caller-supplied
+        identifier is accepted and email verification is not required for this
+        update. A rejected request leaves the profile unchanged, and a caller
+        whose identity owns no profile receives 404 without a profile being
+        created.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProfileRequest'
+      responses:
+        '200':
+          description: The updated caller's profile
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          description: >
+            Invalid request: a missing or empty required field, an identity
+            field (email or authUserId), or an unrecognized property
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Missing or invalid session
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: >
+            The authenticated identity has no profile; nothing is created
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
   /users/me/settings:
     get:
       operationId: getUserSettings

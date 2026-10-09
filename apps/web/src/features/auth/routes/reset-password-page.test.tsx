@@ -64,7 +64,7 @@ describe('ResetPasswordPage', () => {
     render(<ResetPasswordPage />);
 
     fireEvent.change(screen.getByLabelText('Nueva contraseña'), {
-      target: { value: 'password123' },
+      target: { value: 'N3w!Passphrase' },
     });
     submitForm();
 
@@ -84,7 +84,7 @@ describe('ResetPasswordPage', () => {
     render(<ResetPasswordPage />);
 
     fireEvent.change(screen.getByLabelText('Nueva contraseña'), {
-      target: { value: 'password123' },
+      target: { value: 'N3w!Passphrase' },
     });
     submitForm();
 
@@ -101,7 +101,7 @@ describe('ResetPasswordPage', () => {
     render(<ResetPasswordPage />);
 
     fireEvent.change(screen.getByLabelText('Nueva contraseña'), {
-      target: { value: 'password123' },
+      target: { value: 'N3w!Passphrase' },
     });
     submitForm();
 
@@ -115,5 +115,20 @@ describe('ResetPasswordPage', () => {
     expect(
       screen.queryByText('El enlace no es válido o ha caducado.'),
     ).toBeNull();
+  });
+
+  it('refuses to submit a password that does not satisfy the policy', () => {
+    openAt('?token=abc');
+    render(<ResetPasswordPage />);
+
+    fireEvent.change(screen.getByLabelText('Nueva contraseña'), {
+      target: { value: 'password123' },
+    });
+    submitForm();
+
+    expect(confirmPasswordReset).not.toHaveBeenCalled();
+    expect(
+      screen.getByLabelText('Requisitos de la contraseña'),
+    ).toBeInTheDocument();
   });
 });

@@ -60,7 +60,10 @@ describe('CompleteSignUpUseCase', () => {
     const { useCase } = build({});
 
     await expect(
-      useCase.execute({ token: 'token-1', password: 'password123' }, CONTEXT),
+      useCase.execute(
+        { token: 'token-1', password: 'Str0ng!Passphrase' },
+        CONTEXT,
+      ),
     ).resolves.toEqual({
       userId: 'user-1',
       status: 'authenticated',
@@ -83,7 +86,10 @@ describe('CompleteSignUpUseCase', () => {
     const { useCase, activate } = build({ allowed: false });
 
     await expect(
-      useCase.execute({ token: 'token-1', password: 'password123' }, CONTEXT),
+      useCase.execute(
+        { token: 'token-1', password: 'Str0ng!Passphrase' },
+        CONTEXT,
+      ),
     ).rejects.toBeInstanceOf(SourceBlockedError);
 
     expect(activate).not.toHaveBeenCalled();
@@ -97,7 +103,10 @@ describe('CompleteSignUpUseCase', () => {
     });
 
     await expect(
-      useCase.execute({ token: 'expired', password: 'password123' }, CONTEXT),
+      useCase.execute(
+        { token: 'expired', password: 'Str0ng!Passphrase' },
+        CONTEXT,
+      ),
     ).rejects.toBeInstanceOf(InvalidVerificationTokenError);
 
     expect(login).not.toHaveBeenCalled();
@@ -111,7 +120,10 @@ describe('CompleteSignUpUseCase', () => {
     });
 
     await expect(
-      useCase.execute({ token: 'token-1', password: 'password123' }, CONTEXT),
+      useCase.execute(
+        { token: 'token-1', password: 'Str0ng!Passphrase' },
+        CONTEXT,
+      ),
     ).rejects.toBeInstanceOf(ActivationCommittedError);
   });
 });

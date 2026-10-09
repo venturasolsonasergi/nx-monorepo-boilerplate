@@ -1,8 +1,10 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { isPasswordPolicyConforming } from '@app/shared/domain/password-policy';
 import { Button } from '../../../shared/ui/button';
 import { Input } from '../../../shared/ui/input';
+import { PasswordRuleChecklist } from '../../../shared/ui/password-rule-checklist';
 import { authApi } from '../api/auth.api';
 import { resetErrorMessage } from '../lib/auth-messages';
 
@@ -17,9 +19,13 @@ export default function ResetPasswordPage() {
     'idle' | 'submitting' | 'done' | 'error'
   >('idle');
   const [error, setError] = useState<unknown>(null);
+  const policyMet = isPasswordPolicyConforming(password);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!policyMet) {
+      return;
+    }
     setStatus('submitting');
     setError(null);
 
@@ -69,13 +75,13 @@ export default function ResetPasswordPage() {
           placeholder={t('reset.newPassword')}
           autoComplete="new-password"
           value={password}
-          minLength={8}
           onChange={(event: ChangeEvent<HTMLInputElement>) =>
             setPassword(event.target.value)
           }
           required
         />
-        <Button type="submit" disabled={status === 'submitting'}>
+        <PasswordRuleChecklist password={password} />
+        <Button type="submit" disabled={status === 'submitting' || !policyMet}>
           {status === 'submitting' ? t('reset.saving') : t('reset.submit')}
         </Button>
       </form>

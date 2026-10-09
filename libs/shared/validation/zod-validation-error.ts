@@ -25,7 +25,10 @@ export function formatZodValidationErrors(
       {
         field,
         code,
-        message: getValidationMessage(field, code),
+        message:
+          issue.code === 'custom'
+            ? issue.message
+            : getValidationMessage(field, code),
       },
     ];
   });

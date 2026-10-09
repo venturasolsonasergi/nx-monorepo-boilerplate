@@ -6,7 +6,9 @@ import {
 } from '../domain/profile.entity';
 import {
   ProfileAlreadyExistsError,
+  ProfileNotFoundError,
   type ProfileRepository,
+  type ProfileUpdateData,
 } from '../application/profile.repository';
 import { PrismaService } from './prisma/prisma.service';
 
@@ -64,6 +66,32 @@ export class UsersPrismaRepository implements ProfileRepository {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if ((error as { code?: string }).code === 'P2002') {
           throw new ProfileAlreadyExistsError();
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  async updateByAuthUserId(
+    authUserId: string,
+    data: ProfileUpdateData,
+  ): Promise<ProfileEntity> {
+    try {
+      const record = await this.prisma.userProfile.update({
+        where: { auth_user_id: authUserId },
+        data: {
+          name: data.name,
+          surname: data.surname,
+          address: data.address,
+          phone: data.phone,
+        },
+      });
+      return toProfileEntity(record);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if ((error as { code?: string }).code === 'P2025') {
+          throw new ProfileNotFoundError();
         }
       }
 

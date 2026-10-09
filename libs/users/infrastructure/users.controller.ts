@@ -17,6 +17,7 @@ import { z } from 'zod';
 import { CreateProfileUseCase } from '../application/create-profile.use-case';
 import { GetCurrentProfileUseCase } from '../application/get-current-profile.use-case';
 import { GetUserSettingsUseCase } from '../application/get-user-settings.use-case';
+import { UpdateProfileUseCase } from '../application/update-profile.use-case';
 import { UpdateUserSettingsUseCase } from '../application/update-user-settings.use-case';
 import {
   ProfileAlreadyExistsError,
@@ -55,6 +56,8 @@ export class UsersController {
     private readonly getCurrentProfileUseCase: GetCurrentProfileUseCase,
     @Inject(GetUserSettingsUseCase)
     private readonly getUserSettingsUseCase: GetUserSettingsUseCase,
+    @Inject(UpdateProfileUseCase)
+    private readonly updateProfileUseCase: UpdateProfileUseCase,
     @Inject(UpdateUserSettingsUseCase)
     private readonly updateUserSettingsUseCase: UpdateUserSettingsUseCase,
   ) {}
@@ -72,6 +75,39 @@ export class UsersController {
 
     try {
       return await this.getCurrentProfileUseCase.execute(request.authUserId);
+    } catch (error) {
+      if (error instanceof ProfileNotFoundError) {
+        throw new NotFoundException('Profile not found');
+      }
+
+      throw error;
+    }
+  }
+
+  @Patch('me')
+  async updateCurrentProfile(
+    @Body() body: unknown,
+    @Req() request: SessionRequest,
+  ) {
+    const parsedBody = createProfileSchema.safeParse(body);
+    if (!parsedBody.success) {
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Validation failed',
+        details: formatZodValidationErrors(parsedBody.error),
+      });
+    }
+
+    if (!request.authUserId) {
+      throw new UnauthorizedException('Invalid session');
+    }
+
+    try {
+      return await this.updateProfileUseCase.execute({
+        ...parsedBody.data,
+        authUserId: request.authUserId,
+      });
     } catch (error) {
       if (error instanceof ProfileNotFoundError) {
         throw new NotFoundException('Profile not found');

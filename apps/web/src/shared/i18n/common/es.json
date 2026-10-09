@@ -26,6 +26,19 @@
   "workspace": {
     "defaultTitle": "Panel"
   },
+  "passwordRules": {
+    "title": "Requisitos de la contraseña",
+    "rules": {
+      "min_length": "Al menos {{min}} caracteres",
+      "max_length": "Como máximo {{max}} caracteres",
+      "lowercase": "Una letra minúscula",
+      "uppercase": "Una letra mayúscula",
+      "digit": "Un dígito",
+      "special": "Un carácter especial"
+    },
+    "met": "cumplido",
+    "unmet": "pendiente"
+  },
   "authErrors": {
     "loginInvalidCredentials": "Correo o contraseña no válidos.",
     "loginThrottled": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",

@@ -8,6 +8,17 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/users/me/settings', (route) =>
     route.fulfill({ status: 401, ...json({}) }),
   );
+  // The settings page discloses the account summary; keep it deterministic.
+  await page.route('**/auth/account', (route) =>
+    route.fulfill({
+      status: 200,
+      ...json({
+        email: 'a@example.com',
+        hasPassword: true,
+        passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
+      }),
+    }),
+  );
 });
 
 async function openUserMenu(page: Page) {

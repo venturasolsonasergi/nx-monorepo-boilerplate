@@ -4,6 +4,8 @@ export const sessionQueryKey = ['auth', 'session'] as const;
 
 export const publicConfigQueryKey = ['auth', 'public-config'] as const;
 
+export const accountQueryKey = ['auth', 'account'] as const;
+
 export const profileQueryPrefix = ['users', 'me'] as const;
 
 export const profileQueryKey = (userId: string) =>

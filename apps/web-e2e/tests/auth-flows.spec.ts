@@ -91,7 +91,7 @@ test.describe('login', () => {
 
     await page.goto('/login');
     await page.getByLabel('Correo electrónico').fill('a@example.com');
-    await page.getByLabel('Contraseña').fill('password123');
+    await page.getByLabel('Contraseña').fill('Str0ng!Passphrase');
     await page.getByRole('button', { name: 'Acceder' }).click();
 
     await expect(page).toHaveURL(/\/es\/dashboard$/);
@@ -231,7 +231,9 @@ test.describe('complete signup', () => {
     );
 
     await page.goto('/complete-signup?token=token-1');
-    await page.getByLabel('Contraseña', { exact: true }).fill('password123');
+    await page
+      .getByLabel('Contraseña', { exact: true })
+      .fill('Str0ng!Passphrase');
     await page.getByRole('button', { name: 'Activar cuenta' }).click();
 
     await expect(page).toHaveURL(/\/es\/settings$/);
@@ -248,7 +250,9 @@ test.describe('complete signup', () => {
     );
 
     await page.goto('/complete-signup?token=expired');
-    await page.getByLabel('Contraseña', { exact: true }).fill('password123');
+    await page
+      .getByLabel('Contraseña', { exact: true })
+      .fill('Str0ng!Passphrase');
     await page.getByRole('button', { name: 'Activar cuenta' }).click();
 
     await expect(
@@ -398,7 +402,7 @@ test.describe('logout and user switch', () => {
 
     await page.goto('/login');
     await page.getByLabel('Correo electrónico').fill('a@example.com');
-    await page.getByLabel('Contraseña').fill('password123');
+    await page.getByLabel('Contraseña').fill('Str0ng!Passphrase');
     await page.getByRole('button', { name: 'Acceder' }).click();
     await expect(
       page.getByRole('heading', { name: 'Hola, Ana García' }),
@@ -413,7 +417,7 @@ test.describe('logout and user switch', () => {
 
     await page.goto('/login');
     await page.getByLabel('Correo electrónico').fill('b@example.com');
-    await page.getByLabel('Contraseña').fill('password123');
+    await page.getByLabel('Contraseña').fill('Str0ng!Passphrase');
     await page.getByRole('button', { name: 'Acceder' }).click();
 
     await expect(

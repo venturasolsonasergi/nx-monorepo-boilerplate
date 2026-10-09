@@ -7,7 +7,9 @@ import {
 import {
   AuthProviderError,
   InvalidCredentialsError,
+  InvalidPasswordError,
   InvalidSessionError,
+  NoPasswordCredentialError,
   RateLimitedError,
 } from '../application/auth.errors';
 import type { AuthConfig } from '../infrastructure/auth.config';
@@ -188,6 +190,124 @@ describe('BetterAuthAdapter login/refresh classification', () => {
 
     await expect(adapter.refresh('cookie', CONTEXT)).rejects.toBeInstanceOf(
       InvalidSessionError,
+    );
+  });
+});
+
+describe('BetterAuthAdapter changePassword', () => {
+  const INPUT = {
+    cookieHeader: 'better-auth.session_token=old',
+    currentPassword: 'Current!Pass1',
+    newPassword: 'New!Passphrase2',
+  };
+
+  function changePasswordHandler(
+    changeResponse: () => Response,
+  ): BetterAuthHandler {
+    return {
+      handler: () => Promise.resolve(changeResponse()),
+    };
+  }
+
+  it('returns the replacement session cookie that keeps the caller signed in', async () => {
+    const requests: string[] = [];
+    const handler: BetterAuthHandler = {
+      handler: async (request: Request) => {
+        requests.push(new URL(request.url).pathname);
+        expect(request.headers.get('cookie')).toBe(INPUT.cookieHeader);
+        const body = (await request.json()) as Record<string, unknown>;
+        expect(body).toEqual({
+          currentPassword: INPUT.currentPassword,
+          newPassword: INPUT.newPassword,
+          revokeOtherSessions: true,
+        });
+
+        return new Response(JSON.stringify({ token: 'replacement' }), {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+            'set-cookie':
+              'better-auth.session_token=replacement; Path=/; HttpOnly',
+          },
+        });
+      },
+    };
+    const adapter = adapterWith(handler);
+
+    await expect(adapter.changePassword(INPUT, CONTEXT)).resolves.toEqual([
+      'better-auth.session_token=replacement; Path=/; HttpOnly',
+    ]);
+    expect(requests).toEqual(['/auth/change-password']);
+  });
+
+  it('maps a wrong current password to InvalidPasswordError', async () => {
+    const adapter = adapterWith(
+      changePasswordHandler(
+        () =>
+          new Response(
+            JSON.stringify({ code: 'INVALID_PASSWORD', message: 'nope' }),
+            { status: 400, headers: { 'content-type': 'application/json' } },
+          ),
+      ),
+    );
+
+    await expect(adapter.changePassword(INPUT, CONTEXT)).rejects.toBeInstanceOf(
+      InvalidPasswordError,
+    );
+  });
+
+  it('maps a missing credential account to NoPasswordCredentialError', async () => {
+    const adapter = adapterWith(
+      changePasswordHandler(
+        () =>
+          new Response(
+            JSON.stringify({
+              code: 'CREDENTIAL_ACCOUNT_NOT_FOUND',
+              message: 'no credential',
+            }),
+            { status: 400, headers: { 'content-type': 'application/json' } },
+          ),
+      ),
+    );
+
+    await expect(adapter.changePassword(INPUT, CONTEXT)).rejects.toBeInstanceOf(
+      NoPasswordCredentialError,
+    );
+  });
+
+  it('maps an unauthenticated change to InvalidSessionError', async () => {
+    const adapter = adapterWith(
+      changePasswordHandler(() => new Response(null, { status: 401 })),
+    );
+
+    await expect(adapter.changePassword(INPUT, CONTEXT)).rejects.toBeInstanceOf(
+      InvalidSessionError,
+    );
+  });
+
+  it('maps a rate-limited change to RateLimitedError', async () => {
+    const adapter = adapterWith(
+      changePasswordHandler(
+        () =>
+          new Response(null, {
+            status: 429,
+            headers: { 'x-retry-after': '15' },
+          }),
+      ),
+    );
+
+    await expect(adapter.changePassword(INPUT, CONTEXT)).rejects.toBeInstanceOf(
+      RateLimitedError,
+    );
+  });
+
+  it('maps a change service failure to AuthProviderError', async () => {
+    const adapter = adapterWith(
+      changePasswordHandler(() => new Response(null, { status: 500 })),
+    );
+
+    await expect(adapter.changePassword(INPUT, CONTEXT)).rejects.toBeInstanceOf(
+      AuthProviderError,
     );
   });
 });

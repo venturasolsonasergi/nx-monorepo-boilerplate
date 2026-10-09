@@ -5,6 +5,7 @@ import { UserSettingsPrismaRepository } from './user-settings.repository.prisma'
 import { CreateProfileUseCase } from '../application/create-profile.use-case';
 import { GetCurrentProfileUseCase } from '../application/get-current-profile.use-case';
 import { GetUserSettingsUseCase } from '../application/get-user-settings.use-case';
+import { UpdateProfileUseCase } from '../application/update-profile.use-case';
 import { UpdateUserSettingsUseCase } from '../application/update-user-settings.use-case';
 import { PrismaService } from './prisma/prisma.service';
 
@@ -24,6 +25,12 @@ import { PrismaService } from './prisma/prisma.service';
       provide: GetCurrentProfileUseCase,
       useFactory: (repository: UsersPrismaRepository) =>
         new GetCurrentProfileUseCase(repository),
+      inject: [UsersPrismaRepository],
+    },
+    {
+      provide: UpdateProfileUseCase,
+      useFactory: (repository: UsersPrismaRepository) =>
+        new UpdateProfileUseCase(repository),
       inject: [UsersPrismaRepository],
     },
     {

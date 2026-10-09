@@ -1,13 +1,13 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { isPasswordPolicyConforming } from '@app/shared/domain/password-policy';
 import { Button } from '../../../shared/ui/button';
 import { Input } from '../../../shared/ui/input';
+import { PasswordRuleChecklist } from '../../../shared/ui/password-rule-checklist';
 import { errorBodyField } from '../../../shared/lib/api-client';
 import { completeSignupErrorMessage } from '../lib/auth-messages';
 import { useCompleteSignup } from '../hooks/use-complete-signup';
-
-const MIN_PASSWORD_LENGTH = 8;
 
 export default function CompleteSignupPage() {
   const { t } = useTranslation('auth');
@@ -16,6 +16,7 @@ export default function CompleteSignupPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const complete = useCompleteSignup();
+  const policyMet = isPasswordPolicyConforming(password);
 
   if (!token) {
     return (
@@ -35,6 +36,9 @@ export default function CompleteSignupPage() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!policyMet) {
+      return;
+    }
     complete.mutate({ token, password });
   }
 
@@ -72,7 +76,6 @@ export default function CompleteSignupPage() {
             id="complete-password"
             type={showPassword ? 'text' : 'password'}
             autoComplete="new-password"
-            minLength={MIN_PASSWORD_LENGTH}
             value={password}
             onChange={(event: ChangeEvent<HTMLInputElement>) =>
               setPassword(event.target.value)
@@ -89,7 +92,8 @@ export default function CompleteSignupPage() {
             {showPassword ? t('completeSignup.hide') : t('completeSignup.show')}
           </Button>
         </div>
-        <Button type="submit" disabled={complete.isPending}>
+        <PasswordRuleChecklist password={password} />
+        <Button type="submit" disabled={complete.isPending || !policyMet}>
           {complete.isPending
             ? t('completeSignup.activating')
             : t('completeSignup.submit')}

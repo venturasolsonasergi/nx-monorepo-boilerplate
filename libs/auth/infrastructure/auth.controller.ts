@@ -19,7 +19,7 @@ import {
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { formatZodValidationErrors } from '@app/shared/validation/zod-validation-error';
-import { MIN_PASSWORD_LENGTH } from '../domain/password.vo';
+import { validatePassword } from '@app/shared/domain/password-policy';
 import { StartRegistrationUseCase } from '../application/use-cases/start-registration.use-case';
 import { ResendVerificationUseCase } from '../application/use-cases/resend-verification.use-case';
 import { CompleteSignUpUseCase } from '../application/use-cases/complete-sign-up.use-case';
@@ -30,6 +30,8 @@ import { RequestPasswordResetUseCase } from '../application/use-cases/request-pa
 import { ConfirmPasswordResetUseCase } from '../application/use-cases/confirm-password-reset.use-case';
 import { BeginOAuthUseCase } from '../application/use-cases/begin-oauth.use-case';
 import { CompleteOAuthUseCase } from '../application/use-cases/complete-oauth.use-case';
+import { GetAccountSummaryUseCase } from '../application/use-cases/get-account-summary.use-case';
+import { ChangePasswordUseCase } from '../application/use-cases/change-password.use-case';
 import {
   ActivationCommittedError,
   AuthProviderError,
@@ -39,6 +41,7 @@ import {
   InvalidResetTokenError,
   InvalidSessionError,
   InvalidVerificationTokenError,
+  NoPasswordCredentialError,
   RateLimitedError,
   RegistrationConflictError,
   SourceBlockedError,
@@ -66,7 +69,7 @@ const resendVerificationSchema = z
 const completeSignUpSchema = z
   .object({
     token: z.string().trim().min(1),
-    password: z.string().min(MIN_PASSWORD_LENGTH),
+    password: passwordPolicySchema(),
   })
   .strict();
 
@@ -86,9 +89,24 @@ const requestResetSchema = z
 const confirmResetSchema = z
   .object({
     token: z.string().trim().min(1),
-    password: z.string().min(MIN_PASSWORD_LENGTH),
+    password: passwordPolicySchema(),
   })
   .strict();
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1),
+    newPassword: passwordPolicySchema(),
+  })
+  .strict();
+
+function passwordPolicySchema() {
+  return z.string().superRefine((value, ctx) => {
+    for (const violation of validatePassword(value)) {
+      ctx.addIssue({ code: 'custom', message: violation.message });
+    }
+  });
+}
 
 @Controller('auth')
 export class AuthController {
@@ -111,12 +129,70 @@ export class AuthController {
     private readonly beginOAuthUseCase: BeginOAuthUseCase,
     @Inject(CompleteOAuthUseCase)
     private readonly completeOAuthUseCase: CompleteOAuthUseCase,
+    @Inject(GetAccountSummaryUseCase)
+    private readonly getAccountSummaryUseCase: GetAccountSummaryUseCase,
+    @Inject(ChangePasswordUseCase)
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
     @Inject(AUTH_CONFIG) private readonly config: AuthConfig,
   ) {}
 
   @Get('public-config')
   publicConfig() {
     return { supportEmail: this.config.supportEmail };
+  }
+
+  @Get('account')
+  @HttpCode(200)
+  async account(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    try {
+      return await this.getAccountSummaryUseCase.execute(
+        readCookieHeader(request),
+        this.contextFrom(request),
+      );
+    } catch (error) {
+      if (error instanceof InvalidSessionError) {
+        throw new UnauthorizedException('Invalid session');
+      }
+
+      this.rethrowProviderFailure(response, error);
+    }
+  }
+
+  @Post('password/change')
+  @HttpCode(200)
+  async changePassword(
+    @Body() body: unknown,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const input = this.parse(changePasswordSchema, body);
+
+    try {
+      const result = await this.changePasswordUseCase.execute(
+        input,
+        readCookieHeader(request),
+        this.contextFrom(request),
+      );
+      this.applyCookies(response, result.setCookie);
+      return { status: result.status };
+    } catch (error) {
+      if (error instanceof InvalidSessionError) {
+        throw new UnauthorizedException('Invalid session');
+      }
+
+      if (error instanceof InvalidPasswordError) {
+        throw new BadRequestException(this.incorrectCurrentPassword());
+      }
+
+      if (error instanceof NoPasswordCredentialError) {
+        throw new BadRequestException(this.noPasswordCredential());
+      }
+
+      this.rethrowProviderFailure(response, error);
+    }
   }
 
   @Post('signup')
@@ -536,6 +612,36 @@ export class AuthController {
           field: 'token',
           code: 'invalid_format',
           message: 'token is invalid or expired',
+        },
+      ],
+    };
+  }
+
+  private incorrectCurrentPassword() {
+    return {
+      statusCode: 400,
+      message: 'Validation failed',
+      error: 'Bad Request',
+      details: [
+        {
+          field: 'currentPassword',
+          code: 'invalid_format',
+          message: 'current password is incorrect',
+        },
+      ],
+    };
+  }
+
+  private noPasswordCredential() {
+    return {
+      statusCode: 400,
+      message: 'Validation failed',
+      error: 'Bad Request',
+      details: [
+        {
+          field: 'currentPassword',
+          code: 'invalid_format',
+          message: 'no password credential exists for this identity',
         },
       ],
     };

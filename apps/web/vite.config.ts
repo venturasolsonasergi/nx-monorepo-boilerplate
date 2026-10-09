@@ -30,6 +30,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(dirname, 'src'),
+      '@app/shared/domain': path.resolve(
+        dirname,
+        '..',
+        '..',
+        'libs',
+        'shared',
+        'domain',
+      ),
     },
   },
   server: {

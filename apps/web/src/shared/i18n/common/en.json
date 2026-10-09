@@ -26,6 +26,19 @@
   "workspace": {
     "defaultTitle": "Dashboard"
   },
+  "passwordRules": {
+    "title": "Password requirements",
+    "rules": {
+      "min_length": "At least {{min}} characters",
+      "max_length": "At most {{max}} characters",
+      "lowercase": "A lowercase letter",
+      "uppercase": "An uppercase letter",
+      "digit": "A digit",
+      "special": "A special character"
+    },
+    "met": "met",
+    "unmet": "unmet"
+  },
   "authErrors": {
     "loginInvalidCredentials": "Invalid email or password.",
     "loginThrottled": "Too many attempts. Wait a moment and try again.",

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  accountSummaryResponseSchema,
+  changePasswordResponseSchema,
   loginResponseSchema,
   logoutResponseSchema,
   passwordResetRequestResponseSchema,
@@ -78,5 +80,45 @@ describe('auth response schemas', () => {
     expect(logoutResponseSchema.parse({ status: 'ok' })).toEqual({
       status: 'ok',
     });
+  });
+
+  it('accepts an account summary with or without a password credential', () => {
+    expect(
+      accountSummaryResponseSchema.parse({
+        email: 'ada@example.com',
+        hasPassword: true,
+        passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
+      }),
+    ).toEqual({
+      email: 'ada@example.com',
+      hasPassword: true,
+      passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
+    });
+
+    expect(
+      accountSummaryResponseSchema.parse({
+        email: 'ada@example.com',
+        hasPassword: false,
+        passwordUpdatedAt: null,
+      }),
+    ).toEqual({
+      email: 'ada@example.com',
+      hasPassword: false,
+      passwordUpdatedAt: null,
+    });
+
+    expect(() =>
+      accountSummaryResponseSchema.parse({
+        email: 'ada@example.com',
+        hasPassword: true,
+      }),
+    ).toThrow();
+  });
+
+  it('accepts the change-password response', () => {
+    expect(changePasswordResponseSchema.parse({ status: 'ok' })).toEqual({
+      status: 'ok',
+    });
+    expect(() => changePasswordResponseSchema.parse({})).toThrow();
   });
 });

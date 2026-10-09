@@ -22,15 +22,19 @@ The web client SHALL determine whether a browser session is active by calling `P
 - **THEN** the client exposes an unknown session state, does not treat the caller as authenticated, and does not present the caller as signed out
 
 ### Requirement: Present the password reset flow
-The `/reset-password` route SHALL read the `token` query parameter, SHALL refuse to render the reset form when the token is missing, and SHALL submit a new password to `POST /auth/reset-password/confirm`. It SHALL label the password field accessibly, SHALL report success or failure inline, and SHALL offer a link to `/login` once the password has been updated. It SHALL distinguish an invalid or expired link (`400`) from a network failure and SHALL NOT present a network failure as an invalid link.
+The `/reset-password` route SHALL read the `token` query parameter, SHALL refuse to render the reset form when the token is missing, and SHALL submit a new password to `POST /auth/reset-password/confirm`. It SHALL label the password field accessibly, SHALL present the password policy as a rule checklist on the new-password field that marks each rule met or unmet as the user types, SHALL refuse to submit a password that does not satisfy the policy, SHALL report success or failure inline, and SHALL offer a link to `/login` once the password has been updated. It SHALL distinguish an invalid or expired link (`400`) from a network failure and SHALL NOT present a network failure as an invalid link.
 
 #### Scenario: Missing reset token
 - **WHEN** the browser opens `/reset-password` without a `token` value
 - **THEN** the page shows a missing-token message and does not render the password form
 
 #### Scenario: Reset accepted
-- **WHEN** the browser opens `/reset-password` with a token, the user submits a password meeting the field's minimum length, and `POST /auth/reset-password/confirm` succeeds
+- **WHEN** the browser opens `/reset-password` with a token, the user submits a password that satisfies the password policy, and `POST /auth/reset-password/confirm` succeeds
 - **THEN** the page replaces the form with a confirmation that the password was updated and offers a link to `/login`
+
+#### Scenario: Checklist reflects the typed password
+- **WHEN** the user types a new password in the reset form that satisfies some but not all policy rules
+- **THEN** each satisfied rule is marked met and each unsatisfied rule remains marked unmet, and submission is refused until every rule is met
 
 #### Scenario: Reset rejected
 - **WHEN** `POST /auth/reset-password/confirm` fails with `400` for a submitted token and password
@@ -145,7 +149,7 @@ The pending state SHALL call `POST /auth/verification/resend` with credentials i
 - **THEN** an inline recoverable message appears without changing the registration deadline or claiming sending succeeded
 
 ### Requirement: Complete signup with a password
-The `/complete-signup` route SHALL read the registration token supplied by the email return path and present a single password field with a show/hide control. It SHALL refuse to submit without a token or a valid password and SHALL call `POST /auth/signup/complete` with credentials included. On authenticated success it SHALL update session state, clear previous private caches and token-bearing browser URLs, and navigate to `/settings` so the caller completes the profile in the same flow. Invalid, expired, superseded, or consumed tokens SHALL show a safe link error with a restart action. Rate limits and network/service failures SHALL show recoverable messages. If the API reports that activation committed but session issuance failed, the page SHALL offer normal login with the chosen password rather than another registration. No password or token SHALL be persisted in browser storage or logs.
+The `/complete-signup` route SHALL read the registration token supplied by the email return path and present a single password field with a show/hide control. It SHALL present the password policy as a rule checklist on the password field that marks each rule met or unmet as the user types, SHALL refuse to submit without a token or a password that satisfies the policy, and SHALL call `POST /auth/signup/complete` with credentials included. On authenticated success it SHALL update session state, clear previous private caches and token-bearing browser URLs, and navigate to `/settings` so the caller completes the profile in the same flow. Invalid, expired, superseded, or consumed tokens SHALL show a safe link error with a restart action. Rate limits and network/service failures SHALL show recoverable messages. If the API reports that activation committed but session issuance failed, the page SHALL offer normal login with the chosen password rather than another registration. No password or token SHALL be persisted in browser storage or logs.
 
 #### Scenario: Missing token
 - **WHEN** `/complete-signup` has no token
@@ -154,6 +158,10 @@ The `/complete-signup` route SHALL read the registration token supplied by the e
 #### Scenario: Password can be shown or hidden
 - **WHEN** the user toggles the password visibility control
 - **THEN** the single password field switches between masked and visible without changing its value
+
+#### Scenario: Checklist reflects the typed password
+- **WHEN** the user types a password that satisfies some but not all policy rules
+- **THEN** each satisfied rule is marked met and each unsatisfied rule remains marked unmet, and completion is refused until every rule is met
 
 #### Scenario: Activation and authenticated continuation
 - **WHEN** completion succeeds with the session cookie

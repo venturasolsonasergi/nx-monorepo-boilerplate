@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useSessionState } from '../../auth';
 import {
+  ApiError,
   isNotFoundError,
   isUnauthenticatedError,
 } from '../../../shared/lib/api-client';
@@ -13,9 +14,10 @@ import {
   validateReturnToSearch,
 } from '../../../shared/lib/return-to';
 import { LanguagePreference } from '../components/language-preference';
+import { AccountSecuritySection } from '../components/account-security';
 import { Button } from '../../../shared/ui/button';
 import { Spinner } from '../../../shared/ui/spinner';
-import { ProfileView, useProfile } from '../../users';
+import { ProfileView, useProfile, useUpdateProfile } from '../../users';
 import type { Profile } from '../../users';
 import { ProfileForm } from '../components/profile-form';
 import { useCompleteProfile } from '../hooks/use-complete-profile';
@@ -115,10 +117,20 @@ function SettingsSection({
 
 function SettingsContent({ profile }: { profile: Profile }) {
   const { t } = useTranslation('settings');
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <main className={PAGE}>
+        <EditProfile profile={profile} onDone={() => setEditing(false)} />
+      </main>
+    );
+  }
 
   return (
     <main className={PAGE}>
-      <ProfileView profile={profile} />
+      <ProfileView profile={profile} onEdit={() => setEditing(true)} />
+      <AccountSecuritySection />
       <section aria-labelledby="settings-language">
         <h2 id="settings-language" className="text-lg font-semibold">
           {t('languageTitle')}
@@ -128,6 +140,81 @@ function SettingsContent({ profile }: { profile: Profile }) {
         </div>
       </section>
     </main>
+  );
+}
+
+// Swaps the read-only display for the pre-filled profile form. Saving submits
+// PATCH /users/me; cancelling returns to the display without any request.
+export function EditProfile({
+  profile,
+  onDone,
+}: {
+  profile: Profile;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation('settings');
+  const { t: tCommon } = useTranslation('common');
+  const update = useUpdateProfile(profile.authUserId);
+
+  useEffect(() => {
+    if (update.isSuccess) {
+      onDone();
+    }
+  }, [update.isSuccess, onDone]);
+
+  const fieldErrors = updateFieldErrors(update.error);
+  const recoverable = update.isError && fieldErrors.length === 0;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <h1 className="text-lg font-semibold">{t('edit')}</h1>
+      {recoverable ? (
+        <p role="alert" className="text-sm text-destructive">
+          {update.error instanceof ApiError
+            ? t('updateFailed')
+            : tCommon('authErrors.network')}
+        </p>
+      ) : null}
+      <ProfileForm
+        initialValues={{
+          name: profile.name,
+          surname: profile.surname,
+          address: profile.address,
+          phone: profile.phone,
+        }}
+        isSubmitting={update.isPending}
+        submitLabel={t('save')}
+        showLanguage={false}
+        fieldErrors={fieldErrors}
+        onCancel={onDone}
+        onSubmit={(input) =>
+          update.mutate({
+            name: input.name,
+            surname: input.surname,
+            address: input.address,
+            phone: input.phone,
+          })
+        }
+      />
+    </div>
+  );
+}
+
+// The 400 shape identifies each offending field; the form renders the inline
+// message next to it. Any other failure is recoverable, not per-field.
+function updateFieldErrors(error: unknown): string[] {
+  if (!(error instanceof ApiError) || error.status !== 400) {
+    return [];
+  }
+
+  const details = (error.body as { details?: Array<{ field?: string }> })
+    ?.details;
+  return Array.from(
+    new Set(
+      (details ?? [])
+        .map((detail) => detail.field)
+        .filter((field): field is string => typeof field === 'string'),
+    ),
   );
 }
 
