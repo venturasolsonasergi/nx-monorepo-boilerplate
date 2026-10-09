@@ -8,7 +8,8 @@
     "login": "Accedeix",
     "profile": "El meu perfil",
     "dashboard": "Tauler",
-    "logout": "Tanca la sessió"
+    "logout": "Tanca la sessió",
+    "toggleTheme": "Canvia el tema"
   },
   "account": {
     "session": "Sessió",

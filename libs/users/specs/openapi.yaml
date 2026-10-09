@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Users Service API
-  version: 0.5.0
+  version: 0.6.0
   x-spec-id: create-profile
   description: >
     Creates a business profile for the authenticated, email-verified identity.
@@ -226,8 +226,11 @@ paths:
       description: >
         Applies only the fields present in the request to the settings linked to
         the caller's session-derived identity, creating them when none exist.
-        The identity is resolved exclusively from the session cookie; no
-        caller-supplied identifier is accepted.
+        When the request omits theme while creating settings, the created
+        settings have theme set to system. A theme outside the supported set is
+        rejected with 400 and nothing is persisted. The identity is resolved
+        exclusively from the session cookie; no caller-supplied identifier is
+        accepted.
       security:
         - sessionCookie: []
       requestBody:
@@ -455,10 +458,14 @@ components:
       type: object
       required:
         - language
+        - theme
       properties:
         language:
           type: string
           enum: [es, en, ca]
+        theme:
+          type: string
+          enum: [light, dark, system]
     UpdateUserSettingsRequest:
       type: object
       additionalProperties: false
@@ -468,3 +475,6 @@ components:
         language:
           type: string
           enum: [es, en, ca]
+        theme:
+          type: string
+          enum: [light, dark, system]

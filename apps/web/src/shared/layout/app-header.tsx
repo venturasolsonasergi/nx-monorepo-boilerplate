@@ -10,6 +10,7 @@ import {
 import { Spinner } from '../ui/spinner';
 import { Wordmark } from '../ui/wordmark';
 import { LanguageSwitcher } from './language-switcher';
+import { ThemeToggle } from './theme-toggle';
 import { AccountMenuItems } from './account/account-menu-items';
 import { useAccount } from './account/use-account';
 
@@ -27,6 +28,7 @@ export function AppHeader() {
       </Link>
       <div className="flex items-center gap-3">
         {state !== 'authenticated' ? <LanguageSwitcher /> : null}
+        {state !== 'authenticated' ? <ThemeToggle /> : null}
         {logout.isError ? (
           <div
             role="alert"

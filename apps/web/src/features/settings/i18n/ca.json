@@ -28,6 +28,14 @@
     "en": "English",
     "ca": "Català"
   },
+  "themeTitle": "Tema",
+  "themeDescription": "Tria l'aspecte de la interfície. Sistema segueix la configuració del teu dispositiu.",
+  "theme": "Tema",
+  "themes": {
+    "light": "Clar",
+    "dark": "Fosc",
+    "system": "Sistema"
+  },
   "accountSecurity": {
     "title": "Seguretat del compte",
     "email": "Correu electrònic",

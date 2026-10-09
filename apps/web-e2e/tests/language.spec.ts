@@ -20,6 +20,16 @@ async function routeAuthenticated(page: Page) {
       ...json({ userId: 'A', status: 'authenticated' }),
     }),
   );
+  await page.route('**/auth/account', (route) =>
+    route.fulfill({
+      status: 200,
+      ...json({
+        email: 'a@example.com',
+        hasPassword: true,
+        passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
+      }),
+    }),
+  );
 }
 
 test.describe('language preference', () => {
@@ -31,9 +41,15 @@ test.describe('language preference', () => {
     await page.route('**/users/me/settings', (route) => {
       if (route.request().method() === 'PATCH') {
         calls.push('settings');
-        return route.fulfill({ status: 200, ...json({ language: 'ca' }) });
+        return route.fulfill({
+          status: 200,
+          ...json({ language: 'ca', theme: 'system' }),
+        });
       }
-      return route.fulfill({ status: 200, ...json({ language: 'es' }) });
+      return route.fulfill({
+        status: 200,
+        ...json({ language: 'es', theme: 'system' }),
+      });
     });
     await page.route('**/users/me', (route) =>
       route.fulfill({ status: 404, ...json({}) }),
@@ -63,7 +79,10 @@ test.describe('language preference', () => {
   }) => {
     await routeAuthenticated(page);
     await page.route('**/users/me/settings', (route) =>
-      route.fulfill({ status: 200, ...json({ language: 'en' }) }),
+      route.fulfill({
+        status: 200,
+        ...json({ language: 'en', theme: 'system' }),
+      }),
     );
     await page.route('**/users/me', (route) =>
       route.fulfill({ status: 200, ...json(profileA) }),
@@ -79,7 +98,10 @@ test.describe('language preference', () => {
   }) => {
     await routeAuthenticated(page);
     await page.route('**/users/me/settings', (route) =>
-      route.fulfill({ status: 200, ...json({ language: 'es' }) }),
+      route.fulfill({
+        status: 200,
+        ...json({ language: 'es', theme: 'system' }),
+      }),
     );
     await page.route('**/users/me', (route) =>
       route.fulfill({ status: 200, ...json(profileA) }),
@@ -104,9 +126,15 @@ test.describe('language preference', () => {
     await page.route('**/users/me/settings', (route) => {
       if (route.request().method() === 'PATCH') {
         patched = route.request().postDataJSON();
-        return route.fulfill({ status: 200, ...json({ language: 'en' }) });
+        return route.fulfill({
+          status: 200,
+          ...json({ language: 'en', theme: 'system' }),
+        });
       }
-      return route.fulfill({ status: 200, ...json({ language: 'es' }) });
+      return route.fulfill({
+        status: 200,
+        ...json({ language: 'es', theme: 'system' }),
+      });
     });
     await page.route('**/users/me', (route) =>
       route.fulfill({ status: 200, ...json(profileA) }),

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T11:16:08.097Z",
+  "generatedAt": "2026-10-09T15:59:25.312Z",
   "nodes": [
     "apps\\api\\src\\app.controller.spec.ts",
     "apps\\api\\src\\app.controller.ts",
@@ -73,6 +73,9 @@
     "apps\\web\\src\\shared\\lib\\use-mobile.ts",
     "apps\\web\\src\\shared\\lib\\workspace-title.test.ts",
     "apps\\web\\src\\shared\\lib\\workspace-title.ts",
+    "apps\\web\\src\\shared\\theming\\index.ts",
+    "apps\\web\\src\\shared\\theming\\theme.test.ts",
+    "apps\\web\\src\\shared\\theming\\theme.ts",
     "apps\\web\\src\\test-setup.ts",
     "apps\\web\\src\\vite-env.d.ts",
     "apps\\web\\vite.config.ts",
@@ -88,6 +91,7 @@
     "apps\\web-e2e\\tests\\password-checklist.spec.ts",
     "apps\\web-e2e\\tests\\profile-edit.spec.ts",
     "apps\\web-e2e\\tests\\return-to.spec.ts",
+    "apps\\web-e2e\\tests\\theming.spec.ts",
     "apps\\web-e2e\\tests\\web-smoke.spec.ts",
     "libs\\auth\\application\\account-summary.reader.ts",
     "libs\\auth\\application\\auth-provider.port.ts",
@@ -190,6 +194,7 @@
     "libs\\users\\domain\\profile.domain-service.ts",
     "libs\\users\\domain\\profile.entity.ts",
     "libs\\users\\domain\\supported-language.vo.ts",
+    "libs\\users\\domain\\supported-theme.vo.ts",
     "libs\\users\\domain\\user-settings.entity.ts",
     "libs\\users\\infrastructure\\prisma\\generated\\client\\client.d.ts",
     "libs\\users\\infrastructure\\prisma\\generated\\client\\default.d.ts",
@@ -207,6 +212,7 @@
     "libs\\users\\infrastructure\\users.repository.prisma.ts",
     "libs\\users\\tests\\get-current-profile.use-case.spec.ts",
     "libs\\users\\tests\\update-profile.use-case.spec.ts",
+    "libs\\users\\tests\\user-settings.entity.spec.ts",
     "libs\\users\\tests\\user-settings.use-case.spec.ts",
     "libs\\users\\tests\\users.contract.spec.ts"
   ],

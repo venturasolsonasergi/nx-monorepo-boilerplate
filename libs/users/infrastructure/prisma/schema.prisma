@@ -22,6 +22,7 @@ model UserSettings {
   id           Int    @id(map: "user_settings_pkey") @default(autoincrement())
   auth_user_id String @unique(map: "user_settings_auth_user_id_key")
   language     String
+  theme        String @default("system")
 
   @@map("user_settings")
 }

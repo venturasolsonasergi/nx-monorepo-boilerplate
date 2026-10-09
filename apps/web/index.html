@@ -4,6 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web</title>
+    <script>
+      // Applies the cached theme before first paint so a dark preference never
+      // flashes light. Kept dependency-free and in sync with
+      // apps/web/src/shared/theming/theme.ts (same storage key and rules).
+      (function () {
+        try {
+          var key = 'nx.theme';
+          var preference = window.localStorage.getItem(key);
+          if (
+            preference !== 'light' &&
+            preference !== 'dark' &&
+            preference !== 'system'
+          ) {
+            preference = 'system';
+          }
+          var dark =
+            preference === 'dark' ||
+            (preference === 'system' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
+        } catch (error) {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

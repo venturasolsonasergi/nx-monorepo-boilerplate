@@ -14,6 +14,7 @@ import {
   validateReturnToSearch,
 } from '../../../shared/lib/return-to';
 import { LanguagePreference } from '../components/language-preference';
+import { ThemePreference } from '../components/theme-preference';
 import { AccountSecuritySection } from '../components/account-security';
 import { Button } from '../../../shared/ui/button';
 import { Spinner } from '../../../shared/ui/spinner';
@@ -137,6 +138,14 @@ function SettingsContent({ profile }: { profile: Profile }) {
         </h2>
         <div className="mt-3">
           <LanguagePreference />
+        </div>
+      </section>
+      <section aria-labelledby="settings-theme">
+        <h2 id="settings-theme" className="text-lg font-semibold">
+          {t('themeTitle')}
+        </h2>
+        <div className="mt-3">
+          <ThemePreference />
         </div>
       </section>
     </main>

@@ -1,5 +1,5 @@
 import { apiClient } from '../../../shared/lib/api-client';
-import { userSettingsSchema, type UserSettings } from './settings.schema';
+import { userSettingsSchema, type UpdateUserSettings } from './settings.schema';
 
 const SETTINGS_PATH = '/users/me/settings';
 
@@ -8,6 +8,6 @@ const SETTINGS_PATH = '/users/me/settings';
 // the provided fields for the caller's session-derived identity.
 export const settingsApi = {
   get: () => apiClient.get(SETTINGS_PATH, userSettingsSchema),
-  update: (input: UserSettings) =>
+  update: (input: UpdateUserSettings) =>
     apiClient.patch(SETTINGS_PATH, userSettingsSchema, input),
 };

@@ -1,9 +1,11 @@
 import type { UserSettingsRepository } from './user-settings.repository';
 import { UserSettingsNotFoundError } from './user-settings.repository';
 import type { SupportedLanguageCode } from '../domain/supported-language.vo';
+import type { SupportedThemeCode } from '../domain/supported-theme.vo';
 
 export interface UserSettingsOutput {
   language: SupportedLanguageCode;
+  theme: SupportedThemeCode;
 }
 
 export class GetUserSettingsUseCase {
@@ -16,6 +18,9 @@ export class GetUserSettingsUseCase {
       throw new UserSettingsNotFoundError();
     }
 
-    return { language: settings.props.language };
+    return {
+      language: settings.props.language,
+      theme: settings.props.theme,
+    };
   }
 }

@@ -46,7 +46,11 @@ describe('users contract', () => {
 
   const updateSettingsExecute =
     jest.fn<
-      (input: { authUserId: string; language: string }) => Promise<unknown>
+      (input: {
+        authUserId: string;
+        language: string;
+        theme?: string;
+      }) => Promise<unknown>
     >();
 
   beforeEach(async () => {
@@ -365,13 +369,13 @@ describe('users contract', () => {
   });
 
   it('returns the authenticated caller settings from GET /users/me/settings', async () => {
-    getSettingsExecute.mockResolvedValue({ language: 'ca' });
+    getSettingsExecute.mockResolvedValue({ language: 'ca', theme: 'dark' });
 
     await request(app.getHttpServer())
       .get('/users/me/settings')
       .set('x-auth-user-id', 'auth-user-1')
       .expect(200)
-      .expect({ language: 'ca' });
+      .expect({ language: 'ca', theme: 'dark' });
 
     expect(getSettingsExecute).toHaveBeenCalledWith('auth-user-1');
   });
@@ -404,7 +408,7 @@ describe('users contract', () => {
   });
 
   it('uses only the session identity when another identifier is supplied for settings', async () => {
-    getSettingsExecute.mockResolvedValue({ language: 'en' });
+    getSettingsExecute.mockResolvedValue({ language: 'en', theme: 'system' });
 
     await request(app.getHttpServer())
       .get('/users/me/settings?authUserId=forged')
@@ -415,19 +419,82 @@ describe('users contract', () => {
   });
 
   it('updates the caller settings from PATCH /users/me/settings', async () => {
-    updateSettingsExecute.mockResolvedValue({ language: 'en' });
+    updateSettingsExecute.mockResolvedValue({
+      language: 'en',
+      theme: 'system',
+    });
 
     await request(app.getHttpServer())
       .patch('/users/me/settings')
       .set('x-auth-user-id', 'auth-user-1')
       .send({ language: 'en' })
       .expect(200)
-      .expect({ language: 'en' });
+      .expect({ language: 'en', theme: 'system' });
 
     expect(updateSettingsExecute).toHaveBeenCalledWith({
       authUserId: 'auth-user-1',
       language: 'en',
     });
+  });
+
+  it('persists a supported theme and returns the resulting settings', async () => {
+    updateSettingsExecute.mockResolvedValue({
+      language: 'en',
+      theme: 'dark',
+    });
+
+    await request(app.getHttpServer())
+      .patch('/users/me/settings')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({ language: 'en', theme: 'dark' })
+      .expect(200)
+      .expect({ language: 'en', theme: 'dark' });
+
+    expect(updateSettingsExecute).toHaveBeenCalledWith({
+      authUserId: 'auth-user-1',
+      language: 'en',
+      theme: 'dark',
+    });
+  });
+
+  it('defaults the created theme to system when the request omits theme', async () => {
+    updateSettingsExecute.mockResolvedValue({
+      language: 'ca',
+      theme: 'system',
+    });
+
+    await request(app.getHttpServer())
+      .patch('/users/me/settings')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({ language: 'ca' })
+      .expect(200)
+      .expect({ language: 'ca', theme: 'system' });
+
+    expect(updateSettingsExecute).toHaveBeenCalledWith({
+      authUserId: 'auth-user-1',
+      language: 'ca',
+    });
+  });
+
+  it('rejects an unsupported theme with validation details and persists nothing', async () => {
+    await request(app.getHttpServer())
+      .patch('/users/me/settings')
+      .set('x-auth-user-id', 'auth-user-1')
+      .send({ language: 'en', theme: 'sepia' })
+      .expect(400)
+      .expect((response) => {
+        const body = response.body as {
+          message: string;
+          details: Array<{ field: string }>;
+        };
+
+        expect(body.message).toBe('Validation failed');
+        expect(body.details).toEqual(
+          expect.arrayContaining([expect.objectContaining({ field: 'theme' })]),
+        );
+      });
+
+    expect(updateSettingsExecute).not.toHaveBeenCalled();
   });
 
   it('updates the caller profile from PATCH /users/me and the update is visible on GET /users/me', async () => {

@@ -25,6 +25,7 @@ import {
 } from '../application/profile.repository';
 import { UserSettingsNotFoundError } from '../application/user-settings.repository';
 import { SUPPORTED_LANGUAGES } from '../domain/supported-language.vo';
+import { SUPPORTED_THEMES } from '../domain/supported-theme.vo';
 import { formatZodValidationErrors } from '@app/shared/validation/zod-validation-error';
 
 const createProfileSchema = z
@@ -39,6 +40,7 @@ const createProfileSchema = z
 const updateUserSettingsSchema = z
   .object({
     language: z.enum(SUPPORTED_LANGUAGES),
+    theme: z.enum(SUPPORTED_THEMES).optional(),
   })
   .strict();
 
@@ -155,7 +157,7 @@ export class UsersController {
 
     return this.updateUserSettingsUseCase.execute({
       authUserId: request.authUserId,
-      language: parsedBody.data.language,
+      ...parsedBody.data,
     });
   }
 

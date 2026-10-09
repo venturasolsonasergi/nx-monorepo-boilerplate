@@ -7,6 +7,7 @@ interface UserSettingsRow {
   id: number;
   auth_user_id: string;
   language: string;
+  theme: string;
 }
 
 function toUserSettingsEntity(row: UserSettingsRow): UserSettingsEntity {
@@ -14,6 +15,7 @@ function toUserSettingsEntity(row: UserSettingsRow): UserSettingsEntity {
     id: row.id,
     authUserId: row.auth_user_id,
     language: row.language,
+    theme: row.theme,
   });
 }
 
@@ -34,10 +36,14 @@ export class UserSettingsPrismaRepository implements UserSettingsRepository {
   async upsert(entity: UserSettingsEntity): Promise<UserSettingsEntity> {
     const record = await this.prisma.userSettings.upsert({
       where: { auth_user_id: entity.props.authUserId },
-      update: { language: entity.props.language },
+      update: {
+        language: entity.props.language,
+        theme: entity.props.theme,
+      },
       create: {
         auth_user_id: entity.props.authUserId,
         language: entity.props.language,
+        theme: entity.props.theme,
       },
     });
 

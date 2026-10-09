@@ -8,7 +8,8 @@
     "login": "Sign in",
     "profile": "My profile",
     "dashboard": "Dashboard",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "toggleTheme": "Toggle theme"
   },
   "account": {
     "session": "Session",

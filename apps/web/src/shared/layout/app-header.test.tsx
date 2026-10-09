@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -57,15 +57,34 @@ vi.mock('../../features/users/hooks/use-profile', () => ({
   useProfile: vi.fn(),
 }));
 
+vi.mock('../theming', () => ({
+  useTheme: vi.fn(),
+}));
+
 import { useLogout } from '../../features/auth/hooks/use-logout';
 import { useSessionState } from '../../features/auth/hooks/use-session';
 import type { SessionStatus } from '../../features/auth/hooks/use-session';
 import { useProfile } from '../../features/users/hooks/use-profile';
+import { useTheme } from '../theming';
 import { AppHeader } from './app-header';
 
 const mockSessionState = vi.mocked(useSessionState);
 const mockLogout = vi.mocked(useLogout);
 const mockProfile = vi.mocked(useProfile);
+const mockTheme = vi.mocked(useTheme);
+
+let setThemeMock: ReturnType<typeof vi.fn>;
+
+function withTheme(
+  resolvedTheme: 'light' | 'dark' = 'light',
+  preference: 'light' | 'dark' | 'system' = 'system',
+) {
+  mockTheme.mockReturnValue({
+    preference,
+    resolvedTheme,
+    setTheme: setThemeMock,
+  });
+}
 
 function withState(state: SessionStatus['state']) {
   mockSessionState.mockReturnValue({
@@ -107,6 +126,8 @@ function renderHeader() {
 }
 
 beforeEach(() => {
+  setThemeMock = vi.fn();
+  withTheme();
   withLogout();
   withProfile();
 });
@@ -116,6 +137,7 @@ afterEach(() => {
   mockSessionState.mockReset();
   mockLogout.mockReset();
   mockProfile.mockReset();
+  mockTheme.mockReset();
 });
 
 describe('AppHeader', () => {
@@ -195,5 +217,42 @@ describe('AppHeader', () => {
     renderHeader();
 
     expect(screen.queryByRole('combobox')).toBeNull();
+  });
+
+  it('shows the theme toggle when no session is active', () => {
+    withState('unauthenticated');
+    renderHeader();
+
+    expect(
+      screen.getByRole('button', { name: 'Cambiar tema' }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the theme toggle when authenticated', () => {
+    withState('authenticated');
+    withProfile({ name: 'Ana', surname: 'García' });
+    renderHeader();
+
+    expect(screen.queryByRole('button', { name: 'Cambiar tema' })).toBeNull();
+  });
+
+  it('toggles from light to dark and caches the choice', () => {
+    withState('unauthenticated');
+    withTheme('light');
+    renderHeader();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar tema' }));
+
+    expect(setThemeMock).toHaveBeenCalledWith('dark');
+  });
+
+  it('toggles from dark back to light', () => {
+    withState('unauthenticated');
+    withTheme('dark');
+    renderHeader();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar tema' }));
+
+    expect(setThemeMock).toHaveBeenCalledWith('light');
   });
 });
