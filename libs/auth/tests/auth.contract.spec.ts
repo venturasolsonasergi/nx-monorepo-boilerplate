@@ -314,16 +314,6 @@ describe('auth contract', () => {
     expect(confirmReset).not.toHaveBeenCalled();
   });
 
-  it('retires the legacy password-free verification POST', async () => {
-    await request(app.getHttpServer())
-      .post('/auth/verify-email')
-      .send({ token: 'token-1' })
-      .expect(410)
-      .expect((response) => {
-        expect(response.body).toMatchObject({ statusCode: 410 });
-      });
-  });
-
   it('redirects the activation link to the safe password-entry route', async () => {
     await request(app.getHttpServer())
       .get(

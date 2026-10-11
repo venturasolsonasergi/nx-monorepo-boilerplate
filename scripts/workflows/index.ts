@@ -4,18 +4,20 @@ import {
   validateDomainPurity,
   checkDomainInvariants,
   checkPackageVersions,
+  verifyOpenApiArtifact,
 } from '../commands';
 import { runCommand } from '../utils/runtime';
 
-export function verify(service?: string): void {
+export async function verify(service?: string): Promise<void> {
   validateArchitecture();
   validateDomainPurity();
   checkDomainInvariants();
   checkPackageVersions();
+  await verifyOpenApiArtifact();
   runContractTests(service);
 }
 
-export function codeReview(service?: string): void {
+export async function codeReview(service?: string): Promise<void> {
   runCommand('pnpm', ['lint']);
-  verify(service);
+  await verify(service);
 }

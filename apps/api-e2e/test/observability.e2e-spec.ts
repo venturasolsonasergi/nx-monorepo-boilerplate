@@ -231,7 +231,7 @@ describe('Operational logging (e2e)', () => {
       });
       expect(records[0].err?.stack).toContain('unexpected failure');
 
-      await request(app.getHttpServer()).get('/').expect(200);
+      await request(app.getHttpServer()).get('/orders/health').expect(200);
     });
 
     it('keeps the owning module and base route on middleware rejections', async () => {

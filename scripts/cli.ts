@@ -15,7 +15,7 @@ import { parsePassThroughArgs, parseServiceArg } from './utils/services';
 const command = process.argv[2];
 const args = process.argv.slice(3);
 
-const handlers: Record<string, () => void> = {
+const handlers: Record<string, () => void | Promise<void>> = {
   'validate:architecture': validateArchitecture,
   'validate:domain': validateDomainPurity,
   'check:domain-invariants': checkDomainInvariants,
@@ -30,7 +30,7 @@ const handlers: Record<string, () => void> = {
   'archive:architecture': archiveArchitecture,
 };
 
-function main(): void {
+async function main(): Promise<void> {
   const handler = command ? handlers[command] : undefined;
   if (!handler) {
     throw new Error(
@@ -38,13 +38,11 @@ function main(): void {
     );
   }
 
-  handler();
+  await handler();
 }
 
-try {
-  main();
-} catch (error) {
+main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   console.error(message);
   process.exit(1);
-}
+});

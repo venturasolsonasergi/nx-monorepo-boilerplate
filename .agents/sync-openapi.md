@@ -21,10 +21,12 @@ to determine the contract changes.
 
 ## Validate and report
 
-Run `pnpm run validate:openapi -- --service <service>`. Report the exact contract
-changes and validation result. If a requirement cannot be represented or conflicts
-with the existing API, stop and ask the user to revise the change artifacts before
-proceeding.
+Run `pnpm run validate:openapi -- --service <service>`, then run
+`pnpm openapi:merge` to refresh the merged `apps/api/openapi.json` document so the
+`verify` freshness gate stays satisfied after any service contract sync. Report the
+exact contract changes and validation result. If a requirement cannot be represented
+or conflicts with the existing API, stop and ask the user to revise the change
+artifacts before proceeding.
 
 Do not start implementation. Phase 1 still requires explicit user approval of
 the OpenSpec artifacts and synchronized OpenAPI contract.

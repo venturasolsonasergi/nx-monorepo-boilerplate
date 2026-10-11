@@ -3,5 +3,6 @@ dist
 .env
 .nx
 libs/*/infrastructure/prisma/generated
+apps/api/openapi.json
 playwright-report
 test-results

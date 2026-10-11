@@ -9,6 +9,7 @@
     "format": "prettier --write \"apps/**/*.{ts,tsx}\" \"libs/**/*.ts\"",
     "lint": "eslint \"{apps,libs,scripts}/**/*.{ts,tsx}\"",
     "validate:openapi": "node scripts/validate-openapi.mjs",
+    "openapi:merge": "tsx ./scripts/openapi/merge-cli.ts",
     "validate:architecture": "tsx ./scripts/cli.ts validate:architecture",
     "validate:domain": "tsx ./scripts/cli.ts validate:domain",
     "check:domain-invariants": "tsx ./scripts/cli.ts check:domain-invariants",
@@ -21,13 +22,13 @@
     "precode_review": "pnpm prisma:generate",
     "code_review": "tsx ./scripts/cli.ts code_review",
     "archive:architecture": "tsx ./scripts/cli.ts archive:architecture",
-    "preapi:build": "pnpm prisma:generate",
-    "api:build": "nest build && tsc-alias -p tsconfig.build.json && node scripts/copy-prisma-clients.mjs",
-    "preapi:start": "pnpm prisma:generate",
+    "preapi:build": "pnpm prisma:generate && pnpm openapi:merge",
+    "api:build": "nest build && tsc-alias -p tsconfig.build.json && node scripts/copy-prisma-clients.mjs && node scripts/copy-openapi.mjs",
+    "preapi:start": "pnpm prisma:generate && pnpm openapi:merge",
     "api:start": "tsx apps/api/src/main.ts",
-    "preapi:start:dev": "pnpm prisma:generate",
+    "preapi:start:dev": "pnpm prisma:generate && pnpm openapi:merge",
     "api:start:dev": "tsx watch apps/api/src/main.ts",
-    "preapi:start:debug": "pnpm prisma:generate",
+    "preapi:start:debug": "pnpm prisma:generate && pnpm openapi:merge",
     "api:start:debug": "tsx watch --inspect apps/api/src/main.ts",
     "api:start:prod": "node -r tsconfig-paths/register dist/apps/api/src/main",
     "preapi:test": "pnpm prisma:generate",
@@ -59,6 +60,7 @@
     "@radix-ui/react-dropdown-menu": "~2.1.24",
     "@radix-ui/react-slot": "~1.3.3",
     "@radix-ui/react-tooltip": "~1.3.0",
+    "@scalar/nestjs-api-reference": "~1.2.28",
     "@tanstack/react-query": "~5.104.0",
     "@tanstack/react-router": "~1.170.41",
     "better-auth": "~1.7.7",
@@ -130,7 +132,8 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "~8.71.0",
     "vite": "~8.3.1",
-    "vitest": "~5.0.3"
+    "vitest": "~5.0.3",
+    "yaml": "~2.9.1"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -140,7 +143,8 @@
     ],
     "roots": [
       "<rootDir>/apps",
-      "<rootDir>/libs"
+      "<rootDir>/libs",
+      "<rootDir>/scripts"
     ],
     "moduleNameMapper": {
       "^@app/api/(.*)$": "<rootDir>/apps/api/src/$1",

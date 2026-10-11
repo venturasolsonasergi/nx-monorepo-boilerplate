@@ -38,7 +38,7 @@ The auth service SHALL accept only a valid email at `POST /auth/signup`, normali
 - **THEN** a new registration starts with a new deadline and every link from the previous registration remains unusable
 
 ### Requirement: Verify an email address
-The auth service SHALL complete email/password registration only when `POST /auth/signup/complete` receives a valid, unexpired, single-use registration token and a valid password. It SHALL bind the token to the current registration, establish the verified identity and credential with the submitted password, consume the token, and issue an authenticated HTTP-only session cookie on success. Identity and credential persistence and token consumption SHALL be atomic. `GET /auth/verify-email` SHALL only redirect to the approved web password-entry route and SHALL NOT consume a token, verify an identity, or create a session. The former password-free `POST /auth/verify-email` SHALL return `410` without activating an identity or issuing a session. Completion SHALL NOT create a business profile.
+The auth service SHALL complete email/password registration only when `POST /auth/signup/complete` receives a valid, unexpired, single-use registration token and a valid password. It SHALL bind the token to the current registration, establish the verified identity and credential with the submitted password, consume the token, and issue an authenticated HTTP-only session cookie on success. Identity and credential persistence and token consumption SHALL be atomic. `GET /auth/verify-email` SHALL only redirect to the approved web password-entry route and SHALL NOT consume a token, verify an identity, or create a session. Completion SHALL NOT create a business profile.
 
 #### Scenario: Email link opens the password form
 - **WHEN** a browser or mail-link scanner follows the activation link to `GET /auth/verify-email`
@@ -67,10 +67,6 @@ The auth service SHALL complete email/password registration only when `POST /aut
 #### Scenario: Account activation commits but session issuance fails
 - **WHEN** activation commits but an operational failure prevents issuing the session
 - **THEN** the response reports the operational failure and that activation completed, does not claim the browser is authenticated, and the owner can log in with the established password without another signup
-
-#### Scenario: Legacy verification cannot bypass password activation
-- **WHEN** an old token is submitted to the former `POST /auth/verify-email` endpoint
-- **THEN** the endpoint returns `410` and does not verify the account, change a credential, or issue a session
 
 ### Requirement: Log in with verified credentials
 The auth service SHALL issue a browser session for valid email/password credentials only when the identity's email is verified; session cookies SHALL be HTTP-only and protected in production transport. It SHALL reject unverified identities before creating a session. Invalid credentials and unverified identities SHALL return a non-disclosing `401`. Rate limits SHALL return `429` with a retry interval, and operational failures SHALL remain non-`401` errors rather than being reported as invalid credentials.

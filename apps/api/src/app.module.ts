@@ -1,8 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER, HttpAdapterHost } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from '@app/auth/infrastructure/auth.module';
 import { OriginValidationMiddleware } from '@app/auth/infrastructure/origin-validation.middleware';
 import { SessionValidationMiddleware } from '@app/auth/infrastructure/session-validation.middleware';
@@ -18,9 +16,7 @@ import { OperationalExceptionFilter } from './platform/observability/operational
     UsersModule,
     OrdersModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     {
       provide: APP_FILTER,
       useFactory: (adapterHost: HttpAdapterHost) =>

@@ -1,4 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
+import { configureDocs } from './platform/docs/configure-docs';
 
 export function collectTrustedOrigins(
   env: NodeJS.ProcessEnv = process.env,
@@ -20,10 +21,15 @@ export function collectTrustedOrigins(
 
 export const EXPOSED_RESPONSE_HEADERS = ['x-request-id', 'Retry-After'];
 
-export function configureApp(app: INestApplication): void {
+export function configureApp(
+  app: INestApplication,
+  env: NodeJS.ProcessEnv = process.env,
+): void {
   app.enableCors({
-    origin: collectTrustedOrigins(),
+    origin: collectTrustedOrigins(env),
     credentials: true,
     exposedHeaders: EXPOSED_RESPONSE_HEADERS,
   });
+
+  configureDocs(app, env);
 }

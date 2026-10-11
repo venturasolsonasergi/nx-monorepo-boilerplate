@@ -312,16 +312,6 @@ export class AuthController {
     }
   }
 
-  @Post('verify-email')
-  @HttpCode(410)
-  retiredVerifyEmail() {
-    return {
-      statusCode: 410,
-      message: 'Verification endpoint retired',
-      error: 'Gone',
-    };
-  }
-
   @Get('verify-email')
   verifyEmailLink(
     @Query('token') token: string | undefined,

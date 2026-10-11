@@ -104,33 +104,6 @@ paths:
               schema:
                 type: string
                 format: uri
-    post:
-      operationId: authVerifyEmail
-      deprecated: true
-      summary: Retired password-free email verification
-      description: >
-        The former password-free activation endpoint. It always returns 410 and
-        never verifies an identity, changes a credential, or issues a session.
-        Activation is completed through `POST /auth/signup/complete`.
-      responses:
-        '410':
-          description: Endpoint retired; no activation or session change
-          headers:
-            x-request-id:
-              $ref: '#/components/headers/RequestId'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GoneError'
-        '403':
-          description: Request from an untrusted origin
-          headers:
-            x-request-id:
-              $ref: '#/components/headers/RequestId'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForbiddenError'
   /auth/signup/complete:
     post:
       operationId: authCompleteSignup
@@ -1135,22 +1108,6 @@ components:
         error:
           type: string
           enum: [Conflict]
-    GoneError:
-      type: object
-      required:
-        - statusCode
-        - message
-        - error
-      properties:
-        statusCode:
-          type: integer
-          enum: [410]
-        message:
-          type: string
-          enum: [Verification endpoint retired]
-        error:
-          type: string
-          enum: [Gone]
     TooManyRequestsError:
       type: object
       required:

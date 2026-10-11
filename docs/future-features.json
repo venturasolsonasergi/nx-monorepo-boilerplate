@@ -142,6 +142,30 @@
       ]
     },
     {
+      "id": "production-api-docs",
+      "title": "Expose API documentation in production behind auth",
+      "status": "proposed",
+      "priority": "low",
+      "description": "Enable GET /docs and GET /docs/openapi.json in production behind session authentication, building on the dev-only API docs capability (add-platform-api-docs) that already provides the API_DOCS_ENABLED flag.",
+      "motivation": "The merged OpenAPI reference is currently a development-only tool; enabling it in production would let consumers and integrators consult the authoritative contracts of the running API, but the merged document is internal information that must not be public, so exposure requires an authenticated audience.",
+      "design": {
+        "deferredFrom": "add-platform-api-docs",
+        "considerations": [
+          "Flip or extend API_DOCS_ENABLED rather than adding a new mechanism; the production default stays off until this feature lands.",
+          "Decide the audience: any authenticated session versus an admin role, and whether apps/web may link to the reference for signed-in users.",
+          "Reuse the existing middleware patterns (SessionValidationMiddleware scoping and origin validation) instead of a bespoke auth path.",
+          "Self-host the Scalar UI bundle instead of loading it from the public CDN, and pin the version for determinism.",
+          "Define caching headers for the spec JSON (private, no-store or short max-age) since the document changes with each release.",
+          "Consider disabling the interactive request console in production to avoid sending credentials through the reference UI."
+        ]
+      },
+      "affectedFiles": [
+        "apps/api/src/platform/docs/",
+        "apps/api/src/configure-app.ts",
+        ".env.example"
+      ]
+    },
+    {
       "id": "playwright-isolated-dev-server",
       "title": "Make local Playwright runs use an isolated Vite server",
       "status": "proposed",

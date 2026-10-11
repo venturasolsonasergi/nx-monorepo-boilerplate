@@ -102,8 +102,7 @@ pending, unknown, expired, and verified addresses and discloses no account state
 `POST /auth/signup/complete` consumes the single-use token, establishes the
 verified identity and credential with the chosen password, and issues the
 session cookie; replaying the token returns `400`. Signup and resend share
-per-address and per-source limits, and a blocked source returns `429`. The
-legacy password-free `POST /auth/verify-email` is retired and returns `410`.
+per-address and per-source limits, and a blocked source returns `429`.
 
 ## OpenSpec Workflow
 

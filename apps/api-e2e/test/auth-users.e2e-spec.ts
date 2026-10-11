@@ -271,16 +271,11 @@ describe('Auth and users (e2e)', () => {
     await signUpAndActivate(email);
   }
 
-  it('reports health without a session while preserving the root route', async () => {
+  it('reports health without a session', async () => {
     await request(app.getHttpServer())
       .get('/users/health')
       .expect(200)
       .expect({ status: 'ok' });
-
-    await request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
   });
 
   it('exposes credentialed CORS for the web origin', async () => {
