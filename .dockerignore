@@ -3,3 +3,12 @@ node_modules
 dist
 coverage
 .git
+archive
+
+# Generated Prisma clients are regenerated inside image builds; keep the build
+# context source-only.
+**/generated
+
+# Secrets and local env files must never reach a build context or image.
+.env
+.env.*

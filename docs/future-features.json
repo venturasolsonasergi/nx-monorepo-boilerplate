@@ -120,9 +120,9 @@
             "trackedBy": "add-platform-structured-logging"
           },
           {
-            "item": "Set service and environment base fields; add build/version metadata when its source is defined.",
-            "disposition": "in_scope_for_service_and_environment_deferred_for_version",
-            "trackedBy": "add-platform-structured-logging"
+            "item": "Set service and environment base fields; add build/version metadata from APP_VERSION and GIT_SHA with a dev fallback.",
+            "disposition": "in_scope",
+            "trackedBy": "add-production-deploy-path"
           },
           {
             "item": "Configure multiple production destinations such as file and external monitoring only after deployment requirements are known.",
@@ -264,6 +264,29 @@
         "nx.json",
         ".github/workflows/ci.yml",
         "package.json"
+      ]
+    },
+    {
+      "id": "first-production-deployment",
+      "title": "First production deployment and platform smoke tests",
+      "status": "proposed",
+      "priority": "high",
+      "description": "Execute the production deploy path documented in docs/deployment.md on nan.builders Spaces: bootstrap the three service databases, create the API and web apps, and run the first-deploy smoke tests. The deploy-path change (add-production-deploy-path) ships the images, the self-migrating entrypoint, and the runbook; this feature is the operational first run that verifies the platform assumptions the change left open.",
+      "motivation": "The production deploy path is complete as code and verified locally (scripts/smoke-production-images.mjs covers the container scenarios against the compose Postgres), but the platform-specific behavior — cross-app DNS visibility, migrate deploy in deploy logs, public HTTPS health, same-site session cookies, and version/commit fields in platform logs — can only be observed on a live deployment. Tracking it here keeps the first deployment of every project derived from this boilerplate an explicit, repeatable checklist instead of tribal knowledge.",
+      "design": {
+        "deferredFrom": "add-production-deploy-path",
+        "runbook": "docs/deployment.md",
+        "smokeTests": [
+          "Bootstrap auth_db, users_db, and orders_db on the managed PostgreSQL instance and rotate any database credential that was ever shared in plaintext.",
+          "Deploy the API app (docker/api/Dockerfile, internal port 3000, runtime env from the production section of .env.example including APP_VERSION and GIT_SHA): deploy logs must show prisma migrate deploy applying the auth and users migrations, then the listening log.",
+          "GET https://<api-app-origin>/users/health returns 200 with {\"status\":\"ok\"} from the public URL, which also proves cross-app DNS visibility.",
+          "Deploy the web app (docker/web/Dockerfile, internal port 80, build variable VITE_API_URL=<api origin>): a deep link renders the client and a sign-in round trip completes with the session cookie preserved (same-site flow, no SameSite=None changes).",
+          "With APP_VERSION and GIT_SHA set, an operational log entry on the platform's log view carries matching version and commit fields."
+        ]
+      },
+      "affectedFiles": [
+        "platform dashboard configuration (external)",
+        "docs/deployment.md"
       ]
     }
   ],

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T09:28:57.416Z",
+  "generatedAt": "2026-10-12T16:15:40.141Z",
   "nodes": [
     "apps\\api\\src\\app.module.ts",
     "apps\\api\\src\\configure-app.ts",
@@ -178,8 +178,6 @@
     "libs\\orders\\infrastructure\\prisma\\generated\\client\\index.d.ts",
     "libs\\orders\\infrastructure\\prisma\\generated\\client\\runtime\\client.d.ts",
     "libs\\orders\\infrastructure\\prisma\\generated\\client\\runtime\\index-browser.d.ts",
-    "libs\\orders\\infrastructure\\prisma\\generated\\client\\runtime\\library.d.ts",
-    "libs\\orders\\infrastructure\\prisma\\generated\\client\\wasm.d.ts",
     "libs\\orders\\infrastructure\\prisma\\prisma.config.ts",
     "libs\\orders\\tests\\orders.contract.spec.ts",
     "libs\\shared\\domain\\password-policy.spec.ts",
@@ -204,8 +202,6 @@
     "libs\\users\\infrastructure\\prisma\\generated\\client\\index.d.ts",
     "libs\\users\\infrastructure\\prisma\\generated\\client\\runtime\\client.d.ts",
     "libs\\users\\infrastructure\\prisma\\generated\\client\\runtime\\index-browser.d.ts",
-    "libs\\users\\infrastructure\\prisma\\generated\\client\\runtime\\library.d.ts",
-    "libs\\users\\infrastructure\\prisma\\generated\\client\\wasm.d.ts",
     "libs\\users\\infrastructure\\prisma\\prisma.config.ts",
     "libs\\users\\infrastructure\\prisma\\prisma.service.ts",
     "libs\\users\\infrastructure\\user-settings.repository.prisma.ts",

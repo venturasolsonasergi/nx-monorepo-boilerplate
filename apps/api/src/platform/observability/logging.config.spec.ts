@@ -112,11 +112,62 @@ describe('logging configuration', () => {
       expect(buildPinoOptions({ NODE_ENV: 'production' }).base).toEqual({
         service: 'api',
         environment: 'production',
+        version: 'dev',
+        commit: 'dev',
       });
       expect(buildPinoOptions({}).base).toEqual({
         service: 'api',
         environment: 'development',
+        version: 'dev',
+        commit: 'dev',
       });
+    });
+
+    it('carries build metadata when APP_VERSION and GIT_SHA are configured', () => {
+      expect(
+        buildPinoOptions({
+          NODE_ENV: 'production',
+          APP_VERSION: '1.2.3',
+          GIT_SHA: 'abc1234',
+        }).base,
+      ).toEqual({
+        service: 'api',
+        environment: 'production',
+        version: '1.2.3',
+        commit: 'abc1234',
+      });
+    });
+
+    it('falls back to dev for each unset build metadata variable', () => {
+      expect(buildPinoOptions({ APP_VERSION: '1.2.3' }).base).toMatchObject({
+        version: '1.2.3',
+        commit: 'dev',
+      });
+      expect(buildPinoOptions({ GIT_SHA: 'abc1234' }).base).toMatchObject({
+        version: 'dev',
+        commit: 'abc1234',
+      });
+    });
+
+    it('treats blank build metadata values as unset', () => {
+      expect(
+        buildPinoOptions({ APP_VERSION: '   ', GIT_SHA: '' }).base,
+      ).toMatchObject({ version: 'dev', commit: 'dev' });
+    });
+
+    it('uses one process-wide configuration regardless of module', () => {
+      const options = buildPinoOptions({
+        NODE_ENV: 'production',
+        APP_VERSION: '1.2.3',
+        GIT_SHA: 'abc1234',
+      });
+      expect(options.base).toEqual(
+        buildPinoOptions({
+          NODE_ENV: 'production',
+          APP_VERSION: '1.2.3',
+          GIT_SHA: 'abc1234',
+        }).base,
+      );
     });
   });
 
@@ -171,10 +222,14 @@ describe('logging configuration', () => {
       expect(development.base).toEqual({
         service: 'api',
         environment: 'development',
+        version: 'dev',
+        commit: 'dev',
       });
       expect(production.base).toEqual({
         service: 'api',
         environment: 'production',
+        version: 'dev',
+        commit: 'dev',
       });
     });
 
