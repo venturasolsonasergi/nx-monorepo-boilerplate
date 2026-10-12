@@ -20,7 +20,7 @@ import {
 import { AuthPrismaService } from '@app/auth/infrastructure/prisma/prisma.service';
 
 const WEB_ORIGIN = 'http://localhost:4200';
-const PASSWORD = 'password123';
+const PASSWORD = 'Str0ng!Passphrase';
 
 class RecordingMailSender implements MailPort {
   readonly messages: MailMessage[] = [];
