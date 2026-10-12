@@ -47,10 +47,11 @@ Job `checks` runs sequentially: `pnpm lint` → `pnpm validate:architecture` →
 - Alternative: parallel jobs per check for granular required checks and faster wall time. Deferred — the suite is small; one job keeps the workflow trivial and the required-check list short.
 - Implementation note: the Prisma clients are gitignored, so the job generates them (`pnpm prisma:generate`) before lint; `prisma.config.ts` resolves the per-service database URLs at generate time, so the job sets localhost placeholder `*_DATABASE_URL` values. These require no running database (no service is declared) and are never connected to by the fast tier.
 
-**D4. API e2e uses a Postgres service container initialized by the existing script.**
-Job `e2e-api` declares a `postgres:16-alpine` service (matching compose parity) that mounts `docker/postgres/init-databases.sh`, then runs `pnpm api:test:e2e` with the test-database URLs pointing at `127.0.0.1:5432` (`USERS_TEST_DATABASE_URL`, `AUTH_TEST_DATABASE_URL`) and a dummy `AUTH_SECRET` — mirroring `.env.example`. The suite creates and migrates the disposable databases itself.
+**D4. API e2e uses a Postgres service container the suite provisions itself.**
+Job `e2e-api` declares a `postgres:16-alpine` service (matching compose parity) and runs `pnpm api:test:e2e` with the test-database URLs pointing at `127.0.0.1:5432` (`USERS_TEST_DATABASE_URL`, `AUTH_TEST_DATABASE_URL`), placeholder `AUTH_DATABASE_URL`/`USERS_DATABASE_URL`/`ORDERS_DATABASE_URL` (resolved by `prisma:generate`) and a dummy `AUTH_SECRET` — mirroring `.env.example`. The suite creates and migrates the disposable test databases itself (`ensureDatabaseExists` + `prisma migrate deploy` in global setup).
+- No init-script mount: service containers are created before the checkout step, so a bind-mounted `docker/postgres/init-databases.sh` would materialize as an empty directory and abort container startup. Provisioning is left to the suite.
+- Alternative rejected: inline `psql` database creation — unnecessary now that global setup guarantees the two test databases.
 - Alternative rejected: running compose — heavier and designed for development, not CI.
-- Fallback if the init script misbehaves under the service container: inline `psql` commands creating the five databases (same names as compose).
 
 **D5. Web e2e leans on the suite's existing CI posture.**
 Job `e2e-web` installs the chromium browser (`pnpm exec playwright install --with-deps chromium`) and runs `pnpm web:e2e`. The config already provides CI behavior: fresh server via `strictPort`, `reuseExistingServer: false` under `CI`, retries, and mocked backend calls — so this job needs no services.
