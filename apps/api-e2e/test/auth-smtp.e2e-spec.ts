@@ -17,7 +17,7 @@ import {
 } from './support/in-process-smtp';
 
 const WEB_ORIGIN = 'http://localhost:4200';
-const PASSWORD = 'password123';
+const PASSWORD = 'Str0ng!Passphrase';
 
 function responseBody<T>(response: Response): T {
   return response.body as T;

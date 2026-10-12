@@ -229,7 +229,7 @@ describe('Auth and users (e2e)', () => {
 
   async function signUpAndActivate(
     email: string,
-    password = 'password123',
+    password = 'Str0ng!Passphrase',
   ): Promise<{ userId: string; session: string }> {
     await request(app.getHttpServer())
       .post('/auth/signup')
@@ -301,7 +301,7 @@ describe('Auth and users (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(200);
 
     expect(responseBody<{ status: string }>(loginResponse).status).toBe(
@@ -388,7 +388,7 @@ describe('Auth and users (e2e)', () => {
     const loginA = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email: emailA, password: 'password123' })
+      .send({ email: emailA, password: 'Str0ng!Passphrase' })
       .expect(200);
     const sessionA = cookieHeader(loginA);
     const { userId: userIdA } = responseBody<{ userId: string }>(loginA);
@@ -436,7 +436,7 @@ describe('Auth and users (e2e)', () => {
     const loginB = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email: emailB, password: 'password123' })
+      .send({ email: emailB, password: 'Str0ng!Passphrase' })
       .expect(200);
     const sessionB = cookieHeader(loginB);
 
@@ -472,7 +472,7 @@ describe('Auth and users (e2e)', () => {
     const loginA = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email: emailA, password: 'password123' })
+      .send({ email: emailA, password: 'Str0ng!Passphrase' })
       .expect(200);
     const sessionA = cookieHeader(loginA);
     const { userId: userIdA } = responseBody<{ userId: string }>(loginA);
@@ -489,14 +489,14 @@ describe('Auth and users (e2e)', () => {
       .set('Cookie', sessionA)
       .send({ language: 'ca' })
       .expect(200)
-      .expect({ language: 'ca' });
+      .expect({ language: 'ca', theme: 'system' });
 
     await request(app.getHttpServer())
       .get('/users/me/settings')
       .set('Origin', WEB_ORIGIN)
       .set('Cookie', sessionA)
       .expect(200)
-      .expect({ language: 'ca' });
+      .expect({ language: 'ca', theme: 'system' });
 
     await request(app.getHttpServer())
       .patch('/users/me/settings')
@@ -504,7 +504,7 @@ describe('Auth and users (e2e)', () => {
       .set('Cookie', sessionA)
       .send({ language: 'en' })
       .expect(200)
-      .expect({ language: 'en' });
+      .expect({ language: 'en', theme: 'system' });
 
     const emailB = testEmail('settings-b');
     await signUpAndVerify(emailB);
@@ -512,7 +512,7 @@ describe('Auth and users (e2e)', () => {
     const loginB = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email: emailB, password: 'password123' })
+      .send({ email: emailB, password: 'Str0ng!Passphrase' })
       .expect(200);
     const sessionB = cookieHeader(loginB);
 
@@ -528,14 +528,14 @@ describe('Auth and users (e2e)', () => {
       .set('Cookie', sessionB)
       .send({ language: 'es' })
       .expect(200)
-      .expect({ language: 'es' });
+      .expect({ language: 'es', theme: 'system' });
 
     await request(app.getHttpServer())
       .get('/users/me/settings')
       .set('Origin', WEB_ORIGIN)
       .set('Cookie', sessionA)
       .expect(200)
-      .expect({ language: 'en' });
+      .expect({ language: 'en', theme: 'system' });
   });
 
   it('issues UUID-format ids for new identities while legacy ids still resolve', async () => {
@@ -579,7 +579,7 @@ describe('Auth and users (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(200);
     expect(responseBody<{ userId: string }>(loginResponse).userId).toBe(userId);
 
@@ -610,7 +610,7 @@ describe('Auth and users (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(200);
     const { userId } = responseBody<{ userId: string }>(loginResponse);
     const session = cookieHeader(loginResponse);
@@ -665,7 +665,7 @@ describe('Auth and users (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(200);
     const session = cookieHeader(loginResponse);
     const profile = {
@@ -715,7 +715,7 @@ describe('Auth and users (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(403);
   });
 
@@ -727,7 +727,7 @@ describe('Auth and users (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(200);
     const oldSession = cookieHeader(loginResponse);
 
@@ -766,7 +766,7 @@ describe('Auth and users (e2e)', () => {
 
     expect(resetLocation.startsWith(`${WEB_ORIGIN}/reset-password`)).toBe(true);
     const resetToken = tokenFromLocation(resetLocation);
-    const newPassword = 'newpassword456';
+    const newPassword = 'N3w!Passphrase';
 
     await request(app.getHttpServer())
       .post('/auth/reset-password/confirm')
@@ -796,7 +796,7 @@ describe('Auth and users (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(401);
 
     await request(app.getHttpServer())
@@ -821,7 +821,7 @@ describe('Auth and users (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(401);
   });
 
@@ -853,7 +853,7 @@ describe('Auth and users (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/signup/complete')
       .set('Origin', WEB_ORIGIN)
-      .send({ token, password: 'password123' })
+      .send({ token, password: 'Str0ng!Passphrase' })
       .expect(400);
   });
 
@@ -879,7 +879,7 @@ describe('Auth and users (e2e)', () => {
     const first = await request(app.getHttpServer())
       .post('/auth/signup/complete')
       .set('Origin', WEB_ORIGIN)
-      .send({ token, password: 'password123' })
+      .send({ token, password: 'Str0ng!Passphrase' })
       .expect(200);
 
     expect(cookieHeader(first)).toContain('better-auth.session_token');
@@ -887,7 +887,7 @@ describe('Auth and users (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/signup/complete')
       .set('Origin', WEB_ORIGIN)
-      .send({ token, password: 'password456' })
+      .send({ token, password: 'An0ther!Passphrase' })
       .expect(400);
   });
 
@@ -921,7 +921,7 @@ describe('Auth and users (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/reset-password/confirm')
       .set('Origin', WEB_ORIGIN)
-      .send({ token: resetToken, password: 'newpassword456' })
+      .send({ token: resetToken, password: 'N3w!Passphrase' })
       .expect(400);
   });
 
@@ -932,7 +932,7 @@ describe('Auth and users (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(200);
     const session = cookieHeader(loginResponse);
     const { userId } = responseBody<{ userId: string }>(loginResponse);
@@ -1027,7 +1027,7 @@ describe('Auth and users (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/signup/complete')
       .set('Origin', WEB_ORIGIN)
-      .send({ token, password: 'password123' })
+      .send({ token, password: 'Str0ng!Passphrase' })
       .expect(200);
   });
 
@@ -1051,7 +1051,7 @@ describe('Auth and users (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/signup/complete')
       .set('Origin', WEB_ORIGIN)
-      .send({ token, password: 'password123' })
+      .send({ token, password: 'Str0ng!Passphrase' })
       .expect(409);
   });
 
@@ -1078,7 +1078,7 @@ describe('Auth and users (e2e)', () => {
     const complete = await request(app.getHttpServer())
       .post('/auth/signup/complete')
       .set('Origin', WEB_ORIGIN)
-      .send({ token, password: 'password123' })
+      .send({ token, password: 'Str0ng!Passphrase' })
       .expect(200);
 
     expect(responseBody<{ userId: string }>(complete).userId).toBe(legacyId);
@@ -1111,11 +1111,11 @@ describe('Auth and users (e2e)', () => {
       request(app.getHttpServer())
         .post('/auth/signup/complete')
         .set('Origin', WEB_ORIGIN)
-        .send({ token, password: 'password123' }),
+        .send({ token, password: 'Str0ng!Passphrase' }),
       request(app.getHttpServer())
         .post('/auth/signup/complete')
         .set('Origin', WEB_ORIGIN)
-        .send({ token, password: 'password123' }),
+        .send({ token, password: 'Str0ng!Passphrase' }),
     ]);
 
     const statuses = attempts.map((response) => response.status).sort();
@@ -1214,7 +1214,7 @@ describe('Auth and users (e2e)', () => {
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
       .set('X-Forwarded-For', '203.0.113.10')
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(200);
     const { userId } = responseBody<{ userId: string }>(loginA);
     expect(cookieHeader(loginA)).toContain('better-auth.session_token');
@@ -1223,7 +1223,7 @@ describe('Auth and users (e2e)', () => {
       .post('/auth/login')
       .set('Origin', WEB_ORIGIN)
       .set('X-Forwarded-For', '203.0.113.20')
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'Str0ng!Passphrase' })
       .expect(200);
 
     const sessions = await app
