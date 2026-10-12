@@ -50,6 +50,7 @@ Job `checks` runs sequentially: `pnpm lint` → `pnpm validate:architecture` →
 **D4. API e2e uses a Postgres service container the suite provisions itself.**
 Job `e2e-api` declares a `postgres:16-alpine` service (matching compose parity) and runs `pnpm api:test:e2e` with the test-database URLs pointing at `127.0.0.1:5432` (`USERS_TEST_DATABASE_URL`, `AUTH_TEST_DATABASE_URL`), placeholder `AUTH_DATABASE_URL`/`USERS_DATABASE_URL`/`ORDERS_DATABASE_URL` (resolved by `prisma:generate`) and a dummy `AUTH_SECRET` — mirroring `.env.example`. The suite creates and migrates the disposable test databases itself (`ensureDatabaseExists` + `prisma migrate deploy` in global setup).
 - No init-script mount: service containers are created before the checkout step, so a bind-mounted `docker/postgres/init-databases.sh` would materialize as an empty directory and abort container startup. Provisioning is left to the suite.
+- The job also sets `AUTH_BASE_URL`/`AUTH_TRUSTED_ORIGINS` because `configureApp` reads CORS origins from the environment rather than the injected auth config, and runs `pnpm openapi:merge` because the merged OpenAPI document is gitignored and the docs e2e suite reads it.
 - Alternative rejected: inline `psql` database creation — unnecessary now that global setup guarantees the two test databases.
 - Alternative rejected: running compose — heavier and designed for development, not CI.
 
