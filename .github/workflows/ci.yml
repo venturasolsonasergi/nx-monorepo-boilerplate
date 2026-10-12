@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - master
+  push:
+    branches:
+      - develop
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Placeholders only: prisma.config.ts resolves these at generate time, and
+      # no fast-tier step connects to a database. No service is provisioned.
+      AUTH_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/auth_db?schema=public
+      USERS_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/users_db?schema=public
+      ORDERS_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/orders_db?schema=public
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma clients
+        run: pnpm prisma:generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Validate architecture
+        run: pnpm validate:architecture
+
+      - name: Validate domain purity
+        run: pnpm validate:domain
+
+      - name: Check domain invariants
+        run: pnpm check:domain-invariants
+
+      - name: Check package versions
+        run: pnpm check:package-versions
+
+      - name: Contract tests
+        run: pnpm test:contract
+
+      - name: API unit tests
+        run: pnpm api:test
+
+      - name: Web unit tests
+        run: pnpm web:test --run
+
+      - name: Build API
+        run: pnpm api:build
+
+      - name: Build web
+        run: pnpm web:build
+
+  e2e-api:
+    name: e2e-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master') }}
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # prisma.config.ts resolves these at generate time; the e2e suite creates
+      # and migrates the disposable *_test_db databases itself in global setup.
+      AUTH_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/auth_test_db?schema=public
+      USERS_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/users_test_db?schema=public
+      ORDERS_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/orders_test_db?schema=public
+      USERS_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/users_test_db?schema=public
+      AUTH_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/auth_test_db?schema=public
+      AUTH_SECRET: ci-dummy-auth-secret
+      # configureApp reads CORS origins from the environment (not the injected
+      # config), mirroring .env.example.
+      AUTH_BASE_URL: http://localhost:3000
+      AUTH_TRUSTED_ORIGINS: http://localhost:4200
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Merge OpenAPI contracts
+        run: pnpm openapi:merge
+
+      - name: API e2e tests
+        run: pnpm api:test:e2e
+
+  e2e-web:
+    name: e2e-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Web e2e tests
+        run: pnpm web:e2e
