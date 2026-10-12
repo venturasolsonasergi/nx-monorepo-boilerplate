@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-for (const service of ['users', 'orders']) {
+for (const service of ['auth', 'users', 'orders']) {
   const source = path.join(
     root,
     'libs',

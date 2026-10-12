@@ -50,11 +50,17 @@ test.describe('dashboard shell layout', () => {
     await expect(sidebar).toHaveAttribute('data-state', 'collapsed');
     await expect(sidebar.getByText('Panel')).toBeHidden();
 
-    await expect(sidebar.getByRole('link', { name: /Panel/ })).toBeVisible();
+    await expect(sidebar.getByRole('link', { name: 'Panel' })).toBeVisible();
     await expect(
       sidebar.getByRole('list').getByRole('link', { name: 'Mi perfil' }),
+    ).toHaveCount(0);
+    await expect(sidebar.getByRole('link', { name: /Inicio/ })).toHaveCount(0);
+    // Settings stays reachable through the shell's account footer.
+    await expect(
+      sidebar
+        .locator('[data-slot="sidebar-footer"]')
+        .getByRole('link', { name: 'Mi perfil' }),
     ).toBeVisible();
-    await expect(sidebar.getByRole('link', { name: /Inicio/ })).toBeVisible();
 
     const noHorizontalScroll = await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
@@ -107,7 +113,7 @@ test.describe('dashboard shell layout', () => {
     const dialog = page.getByRole('dialog', { name: 'Menú de navegación' });
     await expect(dialog).toBeVisible();
     await expect(
-      dialog.getByRole('list').getByRole('link', { name: 'Mi perfil' }),
+      dialog.getByRole('list').getByRole('link', { name: 'Panel' }),
     ).toBeVisible();
 
     await page.keyboard.press('Escape');

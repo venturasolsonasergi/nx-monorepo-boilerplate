@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { PanelLeftIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/cn';
 import { useIsMobile } from '../lib/use-mobile';
 import { Button } from './button';
@@ -121,6 +122,7 @@ function Sidebar({
   ...props
 }: React.ComponentProps<'aside'> & { side?: 'left' | 'right' }) {
   const { isMobile, openMobile, setOpenMobile, state } = useSidebar();
+  const { t } = useTranslation('common');
   // The control that opened the sheet lives outside the dialog, so remember it
   // and return focus there when the sheet closes (Escape or overlay click).
   const openerRef = React.useRef<HTMLElement | null>(null);
@@ -145,10 +147,8 @@ function Sidebar({
           )}
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>Menú de navegación</SheetTitle>
-            <SheetDescription>
-              Navegación principal del panel y acciones de cuenta.
-            </SheetDescription>
+            <SheetTitle>{t('nav.menuTitle')}</SheetTitle>
+            <SheetDescription>{t('nav.menuDescription')}</SheetDescription>
           </SheetHeader>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
@@ -182,6 +182,7 @@ function SidebarTrigger({
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar();
+  const { t } = useTranslation('common');
 
   return (
     <Button
@@ -190,7 +191,7 @@ function SidebarTrigger({
       size="sm"
       type="button"
       className={cn('h-8 w-8 shrink-0', className)}
-      aria-label="Alternar menú lateral"
+      aria-label={t('nav.toggleMenu')}
       onClick={(event) => {
         onClick?.(event);
         toggleSidebar();

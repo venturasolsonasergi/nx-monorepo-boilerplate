@@ -116,7 +116,7 @@ test.describe('language preference', () => {
       ),
     ).toBeVisible();
     // The workspace shell has no language switcher: only the settings one exists.
-    await expect(page.getByRole('combobox', { name: 'Idioma' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Idioma' })).toHaveCount(1);
   });
 
   test('the language switcher persists a signed-in choice', async ({
@@ -142,7 +142,8 @@ test.describe('language preference', () => {
     );
 
     await page.goto('/settings');
-    await page.getByRole('combobox', { name: 'Idioma' }).selectOption('en');
+    await page.getByRole('button', { name: 'Idioma' }).click();
+    await page.getByRole('menuitemradio', { name: 'English' }).click();
 
     await expect.poll(() => patched).toEqual({ language: 'en' });
   });

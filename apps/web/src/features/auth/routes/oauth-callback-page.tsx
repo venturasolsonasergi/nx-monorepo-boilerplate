@@ -48,7 +48,7 @@ export default function OAuthCallbackPage() {
 
   if (error) {
     return (
-      <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+      <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
         <h1 className="text-lg font-semibold">{t('oauth.title')}</h1>
         <p role="alert" className="text-sm text-destructive">
           {t('oauth.failed', { error })}
@@ -62,7 +62,7 @@ export default function OAuthCallbackPage() {
 
   if (state === 'unauthenticated' || state === 'unknown') {
     return (
-      <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+      <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
         <h1 className="text-lg font-semibold">{t('oauth.title')}</h1>
         <p role="alert" className="text-sm text-destructive">
           {t('oauth.sessionUnresolved')}
@@ -75,7 +75,7 @@ export default function OAuthCallbackPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
       <h1 className="text-lg font-semibold">{t('oauth.title')}</h1>
       <Spinner />
     </main>

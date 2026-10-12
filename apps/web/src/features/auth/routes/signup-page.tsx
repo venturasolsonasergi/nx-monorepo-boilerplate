@@ -67,7 +67,7 @@ export default function SignupPage() {
       resend.isPending || (resendUntil !== null && now < resendUntil);
 
     return (
-      <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+      <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
         <h1 className="text-lg font-semibold">{t('signup.pendingTitle')}</h1>
         {expired ? (
           <p className="text-sm text-muted-foreground">{t('signup.expired')}</p>
@@ -125,7 +125,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
       <h1 className="text-lg font-semibold">{t('signup.title')}</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <label htmlFor="signup-email" className="text-sm font-medium">

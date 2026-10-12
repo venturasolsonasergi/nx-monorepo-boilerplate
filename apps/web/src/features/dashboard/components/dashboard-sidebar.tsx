@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { Home, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react';
+import { LayoutDashboard, Menu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../../shared/lib/cn';
 import {
@@ -7,7 +7,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -20,8 +19,6 @@ import { AccountFooter } from './account-footer';
 
 const NAV_ITEMS = [
   { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-  { to: '/settings', labelKey: 'nav.profile', icon: SettingsIcon },
-  { to: '/', labelKey: 'nav.home', icon: Home },
 ] as const;
 
 // Only implemented destinations are listed; no demo or placeholder navigation.
@@ -36,10 +33,10 @@ export function DashboardSidebar() {
         <Link
           to="/"
           className={cn('text-sm', collapsed && 'flex justify-center')}
-          aria-label="Ir al inicio"
+          aria-label={t('nav.home')}
         >
           {collapsed ? (
-            <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+            <Menu className="h-4 w-4" aria-hidden="true" />
           ) : (
             <Wordmark />
           )}
@@ -47,7 +44,6 @@ export function DashboardSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('nav.section')}</SidebarGroupLabel>
           <SidebarMenu>
             {NAV_ITEMS.map((item) => {
               const label = t(item.labelKey);
@@ -57,7 +53,6 @@ export function DashboardSidebar() {
                     <Link
                       to={item.to}
                       aria-label={label}
-                      activeOptions={{ exact: item.to === '/' }}
                       activeProps={{ className: 'bg-accent font-medium' }}
                     >
                       <item.icon

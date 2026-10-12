@@ -19,10 +19,12 @@
     "retry": "Reintenta"
   },
   "nav": {
-    "section": "Navegació",
     "dashboard": "Tauler",
     "profile": "El meu perfil",
-    "home": "Inici"
+    "home": "Ves a l'inici",
+    "menuTitle": "Menú de navegació",
+    "menuDescription": "Navegació principal del tauler i accions del compte.",
+    "toggleMenu": "Alterna el menú lateral"
   },
   "workspace": {
     "defaultTitle": "Tauler"

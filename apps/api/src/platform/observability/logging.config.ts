@@ -8,6 +8,7 @@ import { REQUEST_ID_HEADER, resolveRequestId } from './request-id';
 export const LOG_SERVICE = 'api';
 export const DEFAULT_LOG_LEVEL = 'info';
 export const PRODUCTION_LOG_LEVEL = 'warn';
+export const DEV_BUILD_METADATA = 'dev';
 
 export const SUPPORTED_LOG_LEVELS = [
   'trace',
@@ -22,6 +23,8 @@ export const SUPPORTED_LOG_LEVELS = [
 export interface LoggerEnvironment {
   NODE_ENV?: string;
   LOG_LEVEL?: string;
+  APP_VERSION?: string;
+  GIT_SHA?: string;
 }
 
 interface PinoHttpOptions extends LoggerOptions {
@@ -82,6 +85,18 @@ export function resolveLogLevel(env: LoggerEnvironment = process.env): string {
     : DEFAULT_LOG_LEVEL;
 }
 
+export function resolveBuildMetadata(env: LoggerEnvironment = process.env): {
+  version: string;
+  commit: string;
+} {
+  const version = env.APP_VERSION?.trim();
+  const commit = env.GIT_SHA?.trim();
+  return {
+    version: version && version.length > 0 ? version : DEV_BUILD_METADATA,
+    commit: commit && commit.length > 0 ? commit : DEV_BUILD_METADATA,
+  };
+}
+
 export function buildPinoOptions(
   env: LoggerEnvironment = process.env,
 ): LoggerOptions {
@@ -90,6 +105,7 @@ export function buildPinoOptions(
     base: {
       service: LOG_SERVICE,
       environment: resolveEnvironment(env),
+      ...resolveBuildMetadata(env),
     },
     redact: redactionOptions(),
     serializers: {

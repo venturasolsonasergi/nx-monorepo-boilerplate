@@ -20,7 +20,7 @@ export default function CompleteSignupPage() {
 
   if (!token) {
     return (
-      <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+      <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
         <h1 className="text-lg font-semibold">
           {t('completeSignup.invalidLinkTitle')}
         </h1>
@@ -48,7 +48,7 @@ export default function CompleteSignupPage() {
 
   if (activationCommitted) {
     return (
-      <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+      <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
         <h1 className="text-lg font-semibold">
           {t('completeSignup.activatedTitle')}
         </h1>
@@ -63,7 +63,7 @@ export default function CompleteSignupPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
       <h1 className="text-lg font-semibold">
         {t('completeSignup.choosePassword')}
       </h1>
