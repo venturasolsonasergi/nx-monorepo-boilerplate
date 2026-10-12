@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - master
+  push:
+    branches:
+      - develop
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Validate architecture
+        run: pnpm validate:architecture
+
+      - name: Validate domain purity
+        run: pnpm validate:domain
+
+      - name: Check domain invariants
+        run: pnpm check:domain-invariants
+
+      - name: Check package versions
+        run: pnpm check:package-versions
+
+      - name: Contract tests
+        run: pnpm test:contract
+
+      - name: API unit tests
+        run: pnpm api:test
+
+      - name: Web unit tests
+        run: pnpm web:test --run
+
+      - name: Build API
+        run: pnpm api:build
+
+      - name: Build web
+        run: pnpm web:build
+
+  e2e-api:
+    name: e2e-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master') }}
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+          --volume "${{ github.workspace }}/docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh"
+    env:
+      USERS_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/users_test_db?schema=public
+      AUTH_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/auth_test_db?schema=public
+      AUTH_SECRET: ci-dummy-auth-secret
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: API e2e tests
+        run: pnpm api:test:e2e
+
+  e2e-web:
+    name: e2e-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Web e2e tests
+        run: pnpm web:e2e
