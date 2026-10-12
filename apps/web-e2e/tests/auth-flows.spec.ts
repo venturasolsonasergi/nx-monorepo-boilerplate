@@ -102,12 +102,13 @@ test.describe('login', () => {
     await expect(
       page
         .locator('[data-slot="sidebar-menu"]')
-        .getByRole('link', { name: 'Mi perfil' }),
+        .getByRole('link', { name: 'Panel' }),
     ).toBeVisible();
+    // Settings and the landing stay reachable through the shell, not the menu.
     await expect(
       page
-        .locator('[data-slot="sidebar-menu"]')
-        .getByRole('link', { name: 'Panel' }),
+        .locator('[data-slot="sidebar-footer"]')
+        .getByRole('link', { name: 'Mi perfil' }),
     ).toBeVisible();
     // The public header does not render on workspace pages
     await expect(

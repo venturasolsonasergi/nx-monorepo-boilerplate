@@ -42,6 +42,20 @@ vi.mock('../ui/dropdown-menu', () => ({
   DropdownMenuLabel: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
+  DropdownMenuRadioGroup: ({ children }: { children: ReactNode }) => (
+    <div role="radiogroup">{children}</div>
+  ),
+  DropdownMenuRadioItem: ({
+    children,
+    value,
+  }: {
+    children: ReactNode;
+    value?: string;
+  }) => (
+    <div role="menuitemradio" data-value={value}>
+      {children}
+    </div>
+  ),
   DropdownMenuSeparator: () => <hr />,
 }));
 
@@ -150,7 +164,7 @@ describe('AppHeader', () => {
     expect(
       screen.getByRole('button', { name: 'Comprobando sesión' }),
     ).toBeDisabled();
-    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByRole('menuitem')).toBeNull();
   });
 
   it('offers "Acceder" linking to /login when unauthenticated', () => {
@@ -204,19 +218,19 @@ describe('AppHeader', () => {
     expect(screen.getByRole('link', { name: 'Mi perfil' })).toBeInTheDocument();
   });
 
-  it('shows the language switcher when no session is active', () => {
+  it('shows the language control when no session is active', () => {
     withState('unauthenticated');
     renderHeader();
 
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Idioma' })).toBeInTheDocument();
   });
 
-  it('hides the language switcher when authenticated', () => {
+  it('hides the language control when authenticated', () => {
     withState('authenticated');
     withProfile({ name: 'Ana', surname: 'García' });
     renderHeader();
 
-    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Idioma' })).toBeNull();
   });
 
   it('shows the theme toggle when no session is active', () => {

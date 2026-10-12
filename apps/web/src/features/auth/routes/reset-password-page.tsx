@@ -40,7 +40,7 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <main className="mx-auto max-w-md p-6 text-sm text-red-600">
+      <main className="mx-auto w-full max-w-md p-6 text-sm text-red-600">
         {t('reset.missingToken')}
       </main>
     );
@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
 
   if (status === 'done') {
     return (
-      <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+      <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
         <p className="text-sm text-green-700">{t('reset.done')}</p>
         <Link to="/login" className="text-sm underline">
           {t('reset.toLogin')}
@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
       <h1 className="text-lg font-semibold">{t('reset.title')}</h1>
       <form
         onSubmit={(event) => {

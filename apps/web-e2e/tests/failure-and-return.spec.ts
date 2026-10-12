@@ -76,7 +76,7 @@ test.describe('failure and return paths', () => {
     );
     await expect(
       page
-        .locator('[data-slot="sidebar-menu"]')
+        .locator('[data-slot="sidebar-footer"]')
         .getByRole('link', { name: 'Mi perfil' }),
     ).toBeVisible();
   });

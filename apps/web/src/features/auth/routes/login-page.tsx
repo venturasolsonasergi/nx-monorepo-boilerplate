@@ -22,7 +22,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
       <h1 className="text-lg font-semibold">{t('login.title')}</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <label htmlFor="login-email" className="text-sm font-medium">

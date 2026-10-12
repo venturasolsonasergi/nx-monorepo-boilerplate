@@ -25,6 +25,14 @@ function setSession(state: 'unauthenticated' | 'authenticated') {
   });
 }
 
+function selectLocale(name: string) {
+  fireEvent.pointerDown(screen.getByRole('button', { name: 'Idioma' }), {
+    button: 0,
+    ctrlKey: false,
+  });
+  fireEvent.click(screen.getByRole('menuitemradio', { name }));
+}
+
 beforeEach(() => {
   mutateMock = vi.fn();
   mockUpdate.mockReturnValue({
@@ -45,9 +53,7 @@ describe('LanguageSwitcher', () => {
   it('changes only the URL when signed out', () => {
     render(<LanguageSwitcher />);
 
-    fireEvent.change(screen.getByRole('combobox'), {
-      target: { value: 'en' },
-    });
+    selectLocale('English');
 
     expect(mockSwitch).toHaveBeenCalledWith('en', expect.any(String));
     expect(mutateMock).not.toHaveBeenCalled();
@@ -61,9 +67,7 @@ describe('LanguageSwitcher', () => {
     );
 
     render(<LanguageSwitcher />);
-    fireEvent.change(screen.getByRole('combobox'), {
-      target: { value: 'ca' },
-    });
+    selectLocale('Català');
 
     const [input, options] = mutateMock.mock.calls[0] as [
       unknown,
@@ -82,9 +86,7 @@ describe('LanguageSwitcher', () => {
     );
 
     render(<LanguageSwitcher />);
-    fireEvent.change(screen.getByRole('combobox'), {
-      target: { value: 'en' },
-    });
+    selectLocale('English');
 
     const [input, options] = mutateMock.mock.calls[0] as [
       unknown,

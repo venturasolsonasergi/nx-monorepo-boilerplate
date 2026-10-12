@@ -19,10 +19,12 @@
     "retry": "Reintentar"
   },
   "nav": {
-    "section": "Navegación",
     "dashboard": "Panel",
     "profile": "Mi perfil",
-    "home": "Inicio"
+    "home": "Ir al inicio",
+    "menuTitle": "Menú de navegación",
+    "menuDescription": "Navegación principal del panel y acciones de cuenta.",
+    "toggleMenu": "Alternar menú lateral"
   },
   "workspace": {
     "defaultTitle": "Panel"

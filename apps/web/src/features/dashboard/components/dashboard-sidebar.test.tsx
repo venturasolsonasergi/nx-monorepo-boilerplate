@@ -5,12 +5,18 @@ vi.mock('@tanstack/react-router', () => ({
   Link: ({
     to,
     children,
+    'aria-label': ariaLabel,
   }: {
     to: string;
     children: React.ReactNode;
+    'aria-label'?: string;
     activeOptions?: unknown;
     activeProps?: unknown;
-  }) => <a href={to}>{children}</a>,
+  }) => (
+    <a href={to} aria-label={ariaLabel}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock('../../../shared/lib/use-mobile', () => ({
@@ -26,26 +32,38 @@ import { DashboardSidebar } from './dashboard-sidebar';
 
 afterEach(cleanup);
 
-describe('DashboardSidebar', () => {
-  it('links only to the implemented destinations', () => {
-    render(
-      <SidebarProvider>
-        <DashboardSidebar />
-      </SidebarProvider>,
-    );
+function renderSidebar(open = true) {
+  return render(
+    <SidebarProvider open={open}>
+      <DashboardSidebar />
+    </SidebarProvider>,
+  );
+}
 
-    expect(screen.getByRole('link', { name: /Panel/ })).toHaveAttribute(
+describe('DashboardSidebar', () => {
+  it('links only to the dashboard navigation entry', () => {
+    renderSidebar();
+
+    expect(screen.getByRole('link', { name: 'Panel' })).toHaveAttribute(
       'href',
       '/dashboard',
     );
-    expect(screen.getByRole('link', { name: /Mi perfil/ })).toHaveAttribute(
-      'href',
-      '/settings',
-    );
-    expect(screen.getByRole('link', { name: /Inicio/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute(
       'href',
       '/',
     );
+    expect(screen.queryByRole('link', { name: 'Mi perfil' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Inicio' })).toBeNull();
     expect(screen.queryByText('Próximamente')).toBeNull();
+  });
+
+  it('shows the brand menu icon when collapsed, distinct from the dashboard icon', () => {
+    const { container } = renderSidebar(false);
+
+    const brand = screen.getByRole('link', { name: 'Ir al inicio' });
+    expect(brand.querySelector('svg.lucide-menu')).not.toBeNull();
+    expect(
+      container.querySelector('svg.lucide-layout-dashboard'),
+    ).not.toBeNull();
   });
 });
