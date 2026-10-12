@@ -21,10 +21,10 @@
 ## 4. Branch layout and protection (platform)
 
 - [x] 4.1 (platform) Create the `develop` branch from `master` and push it; verify with `git ls-remote --heads origin develop`.
-- [ ] 4.2 (platform) Configure `master` branch protection: require pull requests, require status checks `e2e-api` and `e2e-web` (plus `checks` if desired); verify the rule appears via `gh api repos/{owner}/{repo}/branches/master/protection` or the Settings > Branches UI.
+- [x] 4.2 (platform) Configure `master` branch protection: require pull requests, require status checks `e2e-api` and `e2e-web` (plus `checks` if desired); verify the rule appears via `gh api repos/{owner}/{repo}/branches/master/protection` or the Settings > Branches UI.
 
 ## 5. Integration verification (platform)
 
-- [ ] 5.1 (platform) Push the workflow, open a feature-branch PR into `develop`, and observe the run: `checks` executes the full fast tier and passes; verify the run is green on the PR.
-- [ ] 5.2 (platform) Open a `develop` → `master` PR and observe the run: `checks`, `e2e-api`, and `e2e-web` all execute and pass; verify all required checks are green and the merge is permitted only then.
+- [x] 5.1 (platform) Push the workflow, open a feature-branch PR into `develop`, and observe the run: `checks` executes the full fast tier and passes; verify the run is green on the PR.
+- [x] 5.2 (platform) Open a `develop` → `master` PR and observe the run: `checks`, `e2e-api`, and `e2e-web` all execute and pass; verify all required checks are green and the merge is permitted only then.
 - [x] 5.3 (platform) Run repo-wide gates after the toolchain changes: `pnpm lint`, `pnpm run verify`, and `openspec validate add-github-actions-ci`; verify all three pass.
