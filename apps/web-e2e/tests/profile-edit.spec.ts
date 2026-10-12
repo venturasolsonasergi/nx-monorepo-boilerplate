@@ -17,6 +17,7 @@ const updatedProfile = {
 
 const accountSummary = {
   email: 'a@example.com',
+  name: 'Ana García',
   hasPassword: true,
   passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
 };

@@ -1,5 +1,6 @@
 export interface AccountSummary {
   email: string;
+  name: string | null;
   hasPassword: boolean;
   passwordUpdatedAt: Date | null;
 }

@@ -1177,6 +1177,22 @@ describe('Auth and users (e2e)', () => {
     const session = cookieHeader(callbackResponse);
     expect(session).toContain('better-auth.session_token');
 
+    const publicConfig = await request(app.getHttpServer())
+      .get('/auth/public-config')
+      .expect(200);
+    expect(
+      responseBody<{ allowedProviders: string[] }>(publicConfig)
+        .allowedProviders,
+    ).toContain('test-oauth');
+
+    const account = await request(app.getHttpServer())
+      .get('/auth/account')
+      .set('Cookie', session)
+      .expect(200);
+    expect(responseBody<{ name: string | null }>(account).name).toBe(
+      'OAuth User',
+    );
+
     await request(app.getHttpServer())
       .post('/users')
       .set('Origin', WEB_ORIGIN)

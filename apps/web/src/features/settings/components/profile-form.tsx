@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CreateProfileInput } from '../../users/api/users.schema';
 import {
@@ -17,6 +17,9 @@ interface ProfileFormProps {
   // Presentational pre-fill and submit wording so creation and update reuse the
   // same form without coupling their targets.
   initialValues?: CreateProfileInput;
+  // Display name disclosed by the auth service, used to suggest an empty
+  // creation form's name and surname. Ignored when a profile already exists.
+  displayName?: string | null;
   submitLabel?: string;
   showLanguage?: boolean;
   onCancel?: () => void;
@@ -31,6 +34,17 @@ const EMPTY_PROFILE: CreateProfileInput = {
   phone: '',
 };
 
+// First whitespace-separated token fills the name, the remainder fills the
+// surname, and a single token leaves the surname empty.
+function splitDisplayName(displayName: string): {
+  name: string;
+  surname: string;
+} {
+  const tokens = displayName.trim().split(/\s+/).filter(Boolean);
+  const [name = '', ...rest] = tokens;
+  return { name, surname: rest.join(' ') };
+}
+
 // Collects the business profile fields plus, for creation, the language
 // preference, which is pre-selected to the active locale and remains editable
 // before submission.
@@ -38,6 +52,7 @@ export function ProfileForm({
   onSubmit,
   isSubmitting,
   initialValues,
+  displayName,
   submitLabel,
   showLanguage = true,
   onCancel,
@@ -51,6 +66,27 @@ export function ProfileForm({
     initialValues ?? EMPTY_PROFILE,
   );
   const [language, setLanguage] = useState<Locale>(active);
+
+  // Suggest the provider display name only for a missing profile (creation
+  // form) and only into still-empty fields, so any value the caller has already
+  // typed is preserved. Address and phone are never pre-filled.
+  useEffect(() => {
+    if (initialValues || displayName === undefined || displayName === null) {
+      return;
+    }
+
+    const suggestion = splitDisplayName(displayName);
+    if (suggestion.name === '' && suggestion.surname === '') {
+      return;
+    }
+
+    setProfile((current) => ({
+      ...current,
+      name: current.name.trim() === '' ? suggestion.name : current.name,
+      surname:
+        current.surname.trim() === '' ? suggestion.surname : current.surname,
+    }));
+  }, [initialValues, displayName]);
 
   function hasError(field: keyof CreateProfileInput): boolean {
     return fieldErrors.includes(field);

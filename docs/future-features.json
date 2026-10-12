@@ -235,6 +235,36 @@
         "apps/web/src/features/auth/routes/reset-password-page.tsx",
         ".env.example"
       ]
+    },
+    {
+      "id": "nx-task-executor-migration",
+      "title": "Migrate build/test orchestration to Nx targets with remote cache",
+      "status": "proposed",
+      "priority": "low",
+      "description": "Turn the pnpm-script orchestration (root package.json scripts plus scripts/cli.ts) into executable Nx targets per project (nx build api, nx test users, ...) so Nx can cache task outputs and run affected-only work in CI.",
+      "motivation": "Nx is currently used as a project map (project graph, tags, module boundaries) but not as an executor: project.json files define no targets, so targetDefaults in nx.json are inert and nx affected has nothing to affect. At the current repo size this is fine and CI runs the pnpm scripts directly; once the suite or the project count grows, per-project targets unlock affected-only pipelines and local/remote caching.",
+      "design": {
+        "deferredFrom": "add-github-actions-ci",
+        "currentState": [
+          "All tasks run through root package.json scripts and scripts/cli.ts; no project.json defines executable targets.",
+          "nx.json defaultBase was aligned to develop when the GitHub Actions CI change landed.",
+          "CI (ci.yml) runs pnpm scripts in single jobs; no per-target caching."
+        ],
+        "considerations": [
+          "Add build/test/lint targets to each project.json, backed by the existing scripts rather than duplicating them.",
+          "Keep scripts/cli.ts orchestration alongside Nx targets during the migration; avoid a big-bang cutover.",
+          "Enable a shared cache (self-hosted or Nx Cloud) consumed by CI so PR runs reuse main-branch artifacts.",
+          "Switch PR pipelines to nx affected --base develop once targets exist, replacing the always-run job set."
+        ]
+      },
+      "affectedFiles": [
+        "apps/api/project.json",
+        "apps/web/project.json",
+        "libs/*/project.json",
+        "nx.json",
+        ".github/workflows/ci.yml",
+        "package.json"
+      ]
     }
   ],
   "workflowImpact": {

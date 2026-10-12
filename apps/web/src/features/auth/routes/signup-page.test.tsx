@@ -15,6 +15,7 @@ vi.mock('../api/auth.api', () => ({
     signup: vi.fn(),
     resendVerification: vi.fn(),
     getPublicConfig: vi.fn(),
+    startOAuth: vi.fn(),
   },
 }));
 
@@ -24,6 +25,7 @@ import SignupPage from './signup-page';
 const signup = vi.mocked(authApi.signup);
 const resend = vi.mocked(authApi.resendVerification);
 const getPublicConfig = vi.mocked(authApi.getPublicConfig);
+const startOAuth = vi.mocked(authApi.startOAuth);
 
 function renderPage() {
   const client = new QueryClient({
@@ -48,9 +50,39 @@ afterEach(() => {
   signup.mockReset();
   resend.mockReset();
   getPublicConfig.mockReset();
+  startOAuth.mockReset();
 });
 
 describe('SignupPage', () => {
+  it('offers the Google action when the provider is configured', async () => {
+    getPublicConfig.mockResolvedValue({
+      supportEmail: null,
+      allowedProviders: ['google'],
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole('button', { name: 'Continuar con Google' }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the Google action when no provider is configured', () => {
+    getPublicConfig.mockResolvedValue({
+      supportEmail: null,
+      allowedProviders: [],
+    });
+
+    renderPage();
+
+    expect(
+      screen.queryByRole('button', { name: 'Continuar con Google' }),
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Crear cuenta' }),
+    ).toBeInTheDocument();
+  });
+
   it('shows the pending state with the original deadline and support on success', async () => {
     getPublicConfig.mockResolvedValue({ supportEmail: 'help@example.com' });
     signup.mockResolvedValue({

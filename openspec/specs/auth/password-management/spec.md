@@ -45,15 +45,19 @@ The auth service SHALL accept `POST /auth/password/change` from an authenticated
 - **THEN** the service returns `429` with a retry interval or a recoverable non-`401` error, the credential is unchanged, and the session is not revoked solely because of that failure
 
 ### Requirement: Disclose the account summary to the session identity
-The auth service SHALL expose `GET /auth/account` for the caller's session-derived identity, returning the identity's `email`, whether a password credential exists (`hasPassword`), and the time the current password was established or last changed (`passwordUpdatedAt`). The endpoint SHALL use only the identity resolved from the active valid verified session and SHALL return `401` without data when the session is missing, invalid, revoked, expired, or unverified. No physical storage identifier SHALL leak into the response.
+The auth service SHALL expose `GET /auth/account` for the caller's session-derived identity, returning the identity's `email`, the display name recorded for that identity by the authentication provider (`name`), whether a password credential exists (`hasPassword`), and the time the current password was established or last changed (`passwordUpdatedAt`). `name` SHALL be the display name established at identity creation or by a later provider sign-in, and MAY be absent (null) when no display name is recorded. The endpoint SHALL use only the identity resolved from the active valid verified session and SHALL return `401` without data when the session is missing, invalid, revoked, expired, or unverified. No physical storage identifier SHALL leak into the response.
 
 #### Scenario: Authenticated account summary
 - **WHEN** a caller with a valid verified session requests `GET /auth/account`
-- **THEN** the service returns `200` with that identity's `email`, `hasPassword`, and `passwordUpdatedAt`
+- **THEN** the service returns `200` with that identity's `email`, `name`, `hasPassword`, and `passwordUpdatedAt`
 
 #### Scenario: Identity without a password credential
 - **WHEN** an identity without a password credential requests `GET /auth/account`
 - **THEN** the service returns `200` with `hasPassword: false` and a null `passwordUpdatedAt`, and never another identity's data
+
+#### Scenario: Identity without a recorded display name
+- **WHEN** an identity for which the provider recorded no display name requests `GET /auth/account`
+- **THEN** the service returns `200` with a null `name` and the remaining summary fields
 
 #### Scenario: Unauthenticated account summary
 - **WHEN** `GET /auth/account` is requested without a valid verified session

@@ -37,10 +37,15 @@ test.describe('navigation', () => {
 });
 
 test.describe('authentication entry points', () => {
-  test('oauth callback success is announced', async ({ page }) => {
+  test('oauth callback without a resolvable session prompts to sign in', async ({
+    page,
+  }) => {
     await page.goto('/auth/oauth/callback');
     await expect(
-      page.getByText('Sesión iniciada correctamente.'),
+      page.getByText('No se pudo confirmar tu sesión. Inicia sesión de nuevo.'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: 'Ir a iniciar sesión' }),
     ).toBeVisible();
   });
 

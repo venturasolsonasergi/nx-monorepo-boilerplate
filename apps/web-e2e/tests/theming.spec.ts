@@ -96,6 +96,7 @@ test.describe('signed-in theme', () => {
         status: 200,
         ...json({
           email: 'a@example.com',
+          name: null,
           hasPassword: true,
           passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
         }),

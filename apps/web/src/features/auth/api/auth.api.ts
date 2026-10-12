@@ -26,6 +26,7 @@ export const resendVerificationResponseSchema = z.object({
 });
 export const publicConfigResponseSchema = z.object({
   supportEmail: z.string().email().nullable(),
+  allowedProviders: z.array(z.string()),
 });
 export const completeSignupResponseSchema = z.object({
   userId: z.string().min(1),
@@ -43,6 +44,7 @@ export const logoutResponseSchema = z.object({ status: z.literal('ok') });
 // Mirrors the auth OpenAPI AccountSummaryResponse.
 export const accountSummaryResponseSchema = z.object({
   email: z.string().email(),
+  name: z.string().nullable(),
   hasPassword: z.boolean(),
   passwordUpdatedAt: z.string().nullable(),
 });

@@ -44,16 +44,47 @@ The `/reset-password` route SHALL read the `token` query parameter, SHALL refuse
 - **WHEN** `POST /auth/reset-password/confirm` fails with a network error
 - **THEN** the page shows a recoverable message that is not the invalid-link message and no confirmation is shown
 
+### Requirement: Offer social sign-in from login and signup
+The `/login` and `/signup` routes SHALL render a "Continue with Google" action only when the public auth configuration's `allowedProviders` includes `google`, obtained from `GET /auth/public-config`. Activating the action SHALL call `POST /auth/oauth/google` with credentials included and SHALL send the browser to the returned `authorizationUrl` as a full-page navigation. While the start request is in flight the action SHALL be disabled. A failed start request SHALL show an inline recoverable message, SHALL NOT navigate the browser away, and SHALL leave the action usable again. The client SHALL treat a failed or missing public configuration as "no social options known" and SHALL still render the email flows.
+
+#### Scenario: Google action offered when configured
+- **WHEN** `/login` or `/signup` renders and public configuration reports `allowedProviders` including `google`
+- **THEN** the page shows the "Continue with Google" action alongside the email form
+
+#### Scenario: Google action hidden when not configured
+- **WHEN** `/login` or `/signup` renders and public configuration reports `allowedProviders` without `google`, or the configuration request fails
+- **THEN** the page shows no Google action and the email flows remain usable
+
+#### Scenario: Starting the Google flow
+- **WHEN** the user activates the "Continue with Google" action and `POST /auth/oauth/google` succeeds
+- **THEN** the browser is sent to the returned authorization URL as a full-page navigation, carrying the state cookie set by that response
+
+#### Scenario: Start request fails
+- **WHEN** the user activates the action and the start request fails with a validation, rate-limit, or network error
+- **THEN** the page shows an inline recoverable message, the browser stays on the page, and the action becomes usable again
+
 ### Requirement: Present the OAuth callback outcome
-The `/auth/oauth/callback` route SHALL read the `error` query parameter and SHALL render a failure message when it is present or a success message when it is absent, plus a link back to the account settings page.
+The `/auth/oauth/callback` route SHALL read the `error` query parameter. When it is present the route SHALL render a failure message that includes the error value and offer a link to `/login`. When it is absent the route SHALL resolve the browser session established by the callback's HTTP-only cookie, clear any previous caller's cached private data, and continue to `/settings` opened with the authorized return destination `/dashboard`; it SHALL NOT itself present sign-in or profile forms. If the session cannot be resolved after a callback without an error, the route SHALL show a recoverable message and offer a link to `/login` instead of continuing.
 
 #### Scenario: OAuth login succeeded
 - **WHEN** the browser opens `/auth/oauth/callback` without an `error` parameter
-- **THEN** the page shows a success message that the session was started and offers a link to the account settings page
+- **THEN** the session is resolved and the client continues to `/settings` opened with the authorized return destination `/dashboard`
+
+#### Scenario: OAuth login succeeded for an identity with a profile
+- **WHEN** the browser opens `/auth/oauth/callback` without an `error` parameter for an identity that already owns a profile
+- **THEN** the session is resolved and the client continues to `/dashboard`
+
+#### Scenario: OAuth login succeeded for an identity without a profile
+- **WHEN** the browser opens `/auth/oauth/callback` without an `error` parameter for an identity that owns no profile
+- **THEN** the client continues to `/settings` opened with return destination `/dashboard`, which presents the profile creation form
 
 #### Scenario: OAuth login failed
 - **WHEN** the browser opens `/auth/oauth/callback?error=<code>`
-- **THEN** the page shows a failure message that includes the error value and offers a link to the account settings page
+- **THEN** the page shows a failure message that includes the error value and offers a link to `/login`
+
+#### Scenario: Callback without an error but without a resolvable session
+- **WHEN** the browser opens `/auth/oauth/callback` without an `error` parameter and the session cannot be resolved
+- **THEN** the page shows a recoverable message and offers a link to `/login`, and does not continue to `/settings`
 
 ### Requirement: Present the login flow
 The `/login` route SHALL collect an email and a password, SHALL submit them to `POST /auth/login` with credentials included, and on success SHALL continue to an authorized `returnTo` destination when the route was opened with one, and to `/dashboard` otherwise. On success it SHALL apply the caller's stored language preference by requesting `GET /users/me/settings` and continue under that locale prefix, and when the caller has no stored settings it SHALL apply the default language created for the account. The client SHALL accept only the exact value `/dashboard` as an authorized destination; any other value, including an external URL, a protocol-relative host, or a different internal route, SHALL be discarded and the default `/dashboard` continuation SHALL be used. On success it SHALL update the resolved session so that the header and the account settings page reflect the signed-in user and SHALL NOT retain the previous caller's private data. On a `401` response it SHALL show an inline invalid credentials message without revealing whether the email is registered. On a validation or network failure it SHALL show an inline recoverable message. The client MUST NOT persist session material in `localStorage` or any storage other than the HTTP-only session cookie.

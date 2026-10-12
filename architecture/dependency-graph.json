@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T07:30:27.058Z",
+  "generatedAt": "2026-10-12T09:28:57.416Z",
   "nodes": [
     "apps\\api\\src\\app.module.ts",
     "apps\\api\\src\\configure-app.ts",
@@ -36,6 +36,7 @@
     "apps\\web\\src\\features\\auth\\hooks\\use-resend-verification.ts",
     "apps\\web\\src\\features\\auth\\hooks\\use-session.ts",
     "apps\\web\\src\\features\\auth\\hooks\\use-signup.ts",
+    "apps\\web\\src\\features\\auth\\hooks\\use-start-oauth.ts",
     "apps\\web\\src\\features\\auth\\index.ts",
     "apps\\web\\src\\features\\auth\\lib\\auth-messages.ts",
     "apps\\web\\src\\features\\auth\\routes\\auth.routes.ts",
@@ -84,6 +85,7 @@
     "apps\\web-e2e\\tests\\dashboard-layout.spec.ts",
     "apps\\web-e2e\\tests\\dashboard.spec.ts",
     "apps\\web-e2e\\tests\\failure-and-return.spec.ts",
+    "apps\\web-e2e\\tests\\google-sign-in.spec.ts",
     "apps\\web-e2e\\tests\\header-keyboard.spec.ts",
     "apps\\web-e2e\\tests\\landing-layout.spec.ts",
     "apps\\web-e2e\\tests\\language.spec.ts",

@@ -138,7 +138,10 @@ export class AuthController {
 
   @Get('public-config')
   publicConfig() {
-    return { supportEmail: this.config.supportEmail };
+    return {
+      supportEmail: this.config.supportEmail,
+      allowedProviders: [...this.config.allowedProviders].sort(),
+    };
   }
 
   @Get('account')

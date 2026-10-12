@@ -243,9 +243,11 @@ paths:
       operationId: authPublicConfig
       summary: Read the public auth configuration
       description: >
-        Returns only the configured public support email so clients can offer
-        help when registration mail is not received. It never contains SMTP
-        credentials, auth secrets, tokens, or private account data.
+        Returns the configured public support email and the list of configured
+        social providers so clients can offer help when registration mail is
+        not received and render only the sign-in options the service can
+        serve. It never contains SMTP credentials, auth secrets, tokens, or
+        private account data.
       responses:
         '200':
           description: Public auth configuration
@@ -415,8 +417,9 @@ paths:
       summary: Read the session identity's account summary
       description: >
         Returns the email of the identity resolved from the active valid
-        verified session, whether a password credential exists for it, and
-        when the current password was established or last changed. It uses
+        verified session, the display name recorded for it by the
+        authentication provider, whether a password credential exists for it,
+        and when the current password was established or last changed. It uses
         only the session-derived identity and never returns another
         identity's data. No physical storage identifier is exposed.
       responses:
@@ -864,12 +867,21 @@ components:
       additionalProperties: false
       required:
         - supportEmail
+        - allowedProviders
       properties:
         supportEmail:
           type: string
           format: email
           nullable: true
           description: Public support contact; null outside production when unconfigured.
+        allowedProviders:
+          type: array
+          items:
+            type: string
+          description: >
+            Identifiers of the social providers configured at startup, sorted
+            alphabetically. A provider appears only when its client
+            credentials are configured.
     LoginRequest:
       type: object
       additionalProperties: false
@@ -911,12 +923,19 @@ components:
       additionalProperties: false
       required:
         - email
+        - name
         - hasPassword
         - passwordUpdatedAt
       properties:
         email:
           type: string
           format: email
+        name:
+          type: string
+          nullable: true
+          description: >
+            Display name recorded for the identity by the authentication
+            provider; null when no display name is recorded.
         hasPassword:
           type: boolean
           description: Whether the identity has a password credential.

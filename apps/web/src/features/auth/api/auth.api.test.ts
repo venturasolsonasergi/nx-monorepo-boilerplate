@@ -58,13 +58,25 @@ describe('auth response schemas', () => {
     ).toEqual({ status: 'accepted', retryAfterSeconds: 15 });
   });
 
-  it('accepts a nullable or configured support email', () => {
+  it('accepts a nullable or configured support email and the allowed providers', () => {
     expect(
-      publicConfigResponseSchema.parse({ supportEmail: 'help@example.com' }),
-    ).toEqual({ supportEmail: 'help@example.com' });
-    expect(publicConfigResponseSchema.parse({ supportEmail: null })).toEqual({
-      supportEmail: null,
+      publicConfigResponseSchema.parse({
+        supportEmail: 'help@example.com',
+        allowedProviders: ['google'],
+      }),
+    ).toEqual({
+      supportEmail: 'help@example.com',
+      allowedProviders: ['google'],
     });
+    expect(
+      publicConfigResponseSchema.parse({
+        supportEmail: null,
+        allowedProviders: [],
+      }),
+    ).toEqual({ supportEmail: null, allowedProviders: [] });
+    expect(() =>
+      publicConfigResponseSchema.parse({ supportEmail: null }),
+    ).toThrow();
   });
 
   it('accepts the uniform reset-request response', () => {
@@ -86,11 +98,13 @@ describe('auth response schemas', () => {
     expect(
       accountSummaryResponseSchema.parse({
         email: 'ada@example.com',
+        name: 'Ada Lovelace',
         hasPassword: true,
         passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
       }),
     ).toEqual({
       email: 'ada@example.com',
+      name: 'Ada Lovelace',
       hasPassword: true,
       passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
     });
@@ -98,11 +112,13 @@ describe('auth response schemas', () => {
     expect(
       accountSummaryResponseSchema.parse({
         email: 'ada@example.com',
+        name: null,
         hasPassword: false,
         passwordUpdatedAt: null,
       }),
     ).toEqual({
       email: 'ada@example.com',
+      name: null,
       hasPassword: false,
       passwordUpdatedAt: null,
     });

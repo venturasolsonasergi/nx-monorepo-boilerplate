@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useSessionState } from '../../auth';
+import { useAccount, useSessionState } from '../../auth';
 import {
   ApiError,
   isNotFoundError,
@@ -230,12 +230,16 @@ function updateFieldErrors(error: unknown): string[] {
 function CreateProfile({ userId }: { userId: string }) {
   const { t } = useTranslation('settings');
   const complete = useCompleteProfile(userId);
+  // The account summary discloses the display name recorded by the provider (if
+  // any); it only suggests values for the still-empty name and surname fields.
+  const account = useAccount(true);
 
   return (
     <main className={PAGE}>
       <h1 className="text-lg font-semibold">{t('createTitle')}</h1>
       <ProfileForm
         isSubmitting={complete.isPending}
+        displayName={account.data?.name ?? null}
         onSubmit={(input) => complete.mutate(input)}
       />
     </main>

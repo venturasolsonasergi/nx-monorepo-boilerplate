@@ -109,6 +109,7 @@ class FixedAccountSummaryReader implements AccountSummaryReader {
   read(): Promise<AccountSummary> {
     return Promise.resolve({
       email: EMAIL,
+      name: 'Ada Lovelace',
       hasPassword: true,
       passwordUpdatedAt: new Date('2026-01-01T00:00:00.000Z'),
     });

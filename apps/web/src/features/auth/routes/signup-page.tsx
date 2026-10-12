@@ -7,6 +7,7 @@ import { signupErrorMessage, resendErrorMessage } from '../lib/auth-messages';
 import { useSignup } from '../hooks/use-signup';
 import { useResendVerification } from '../hooks/use-resend-verification';
 import { usePublicConfig } from '../hooks/use-public-config';
+import { GoogleSignInButton } from '../components/google-sign-in-button';
 
 export default function SignupPage() {
   const { t } = useTranslation('auth');
@@ -144,6 +145,7 @@ export default function SignupPage() {
           {signup.isPending ? t('signup.sending') : t('signup.submit')}
         </Button>
       </form>
+      <GoogleSignInButton />
       {signup.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {tCommon(signupErrorMessage(signup.error))}

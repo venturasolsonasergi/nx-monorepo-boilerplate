@@ -14,6 +14,7 @@ test.beforeEach(async ({ page }) => {
       status: 200,
       ...json({
         email: 'a@example.com',
+        name: null,
         hasPassword: true,
         passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
       }),
@@ -82,7 +83,7 @@ test.describe('failure and return paths', () => {
 
   // Simulated contracts: this verifies the browser flow and that the session
   // cookie survives the return path, not a real backend authentication.
-  test('oauth callback continues to /users with the session cookie preserved', async ({
+  test('oauth callback continues to /settings with the session cookie preserved', async ({
     page,
   }) => {
     await page.context().addCookies([
@@ -99,26 +100,14 @@ test.describe('failure and return paths', () => {
       }),
     );
     await page.route('**/users/me', (route) =>
-      route.fulfill({
-        status: 200,
-        ...json({
-          id: 1,
-          authUserId: 'A',
-          name: 'Ana',
-          surname: 'García',
-          address: 'Calle 1',
-          phone: '600000000',
-        }),
-      }),
+      route.fulfill({ status: 404, ...json({}) }),
     );
 
     await page.goto('/auth/oauth/callback');
+    await expect(page).toHaveURL(/\/es\/settings/);
     await expect(
-      page.getByText('Sesión iniciada correctamente.'),
+      page.getByRole('heading', { name: 'Crear perfil' }),
     ).toBeVisible();
-    await page.getByRole('link', { name: 'Continuar' }).click();
-    await expect(page).toHaveURL(/\/es\/settings$/);
-    await expect(page.getByText('Ana García')).toBeVisible();
 
     const cookies = await page.context().cookies();
     expect(

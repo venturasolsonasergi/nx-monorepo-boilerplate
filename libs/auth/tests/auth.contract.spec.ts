@@ -55,8 +55,11 @@ describe('auth contract', () => {
     basePath: '/auth',
     webURL: 'http://localhost:4200',
     trustedOrigins: ['http://localhost:4200', 'http://localhost:3000'],
-    allowedProviders: ['google'],
-    socialProviders: { google: { clientId: 'id', clientSecret: 'secret' } },
+    allowedProviders: ['google', 'github'],
+    socialProviders: {
+      google: { clientId: 'google-id', clientSecret: 'google-secret' },
+      github: { clientId: 'github-id', clientSecret: 'github-secret' },
+    },
     isProduction: false,
     supportEmail: 'support@example.com',
     smtp: null,
@@ -200,6 +203,23 @@ describe('auth contract', () => {
       .send({ email: 'ada@example.com' })
       .expect(200)
       .expect({ status: 'accepted' });
+  });
+
+  it('discloses the configured social providers without any secrets', async () => {
+    await request(app.getHttpServer())
+      .get('/auth/public-config')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          supportEmail: 'support@example.com',
+          allowedProviders: ['github', 'google'],
+        });
+
+        const body = JSON.stringify(response.body);
+        expect(body).not.toMatch(
+          /clientId|clientSecret|google-secret|github-secret/i,
+        );
+      });
   });
 
   it('activates the account and issues a session cookie', async () => {
@@ -551,6 +571,7 @@ describe('auth contract', () => {
   it('returns the account summary for the session identity', async () => {
     getAccountSummary.mockResolvedValue({
       email: 'ada@example.com',
+      name: 'Ada Lovelace',
       hasPassword: true,
       passwordUpdatedAt: new Date('2026-01-02T03:04:05.000Z'),
     });
@@ -561,6 +582,7 @@ describe('auth contract', () => {
       .expect(200)
       .expect({
         email: 'ada@example.com',
+        name: 'Ada Lovelace',
         hasPassword: true,
         passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
       });
@@ -571,15 +593,17 @@ describe('auth contract', () => {
     );
   });
 
-  it('returns the account summary for an identity without a password credential', async () => {
+  it('returns the account summary for an email-registered identity without a display name', async () => {
     getAccountSummary.mockResolvedValue({
       email: 'grace@example.com',
+      name: null,
       hasPassword: false,
       passwordUpdatedAt: null,
     });
 
     await request(app.getHttpServer()).get('/auth/account').expect(200).expect({
       email: 'grace@example.com',
+      name: null,
       hasPassword: false,
       passwordUpdatedAt: null,
     });
@@ -594,6 +618,7 @@ describe('auth contract', () => {
   it('does not leak storage names in the account summary', async () => {
     getAccountSummary.mockResolvedValue({
       email: 'ada@example.com',
+      name: 'Ada Lovelace',
       hasPassword: true,
       passwordUpdatedAt: new Date('2026-01-02T03:04:05.000Z'),
     });
@@ -606,7 +631,7 @@ describe('auth contract', () => {
         expect(body).not.toMatch(/auth_users|auth_accounts|password_hash/i);
         expect(
           Object.keys(response.body as Record<string, unknown>).sort(),
-        ).toEqual(['email', 'hasPassword', 'passwordUpdatedAt']);
+        ).toEqual(['email', 'hasPassword', 'name', 'passwordUpdatedAt']);
       });
   });
 });

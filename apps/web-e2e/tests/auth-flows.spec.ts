@@ -140,7 +140,7 @@ test.describe('signup', () => {
     await page.route('**/auth/public-config', (route) =>
       route.fulfill({
         status: 200,
-        ...json({ supportEmail: 'help@example.com' }),
+        ...json({ supportEmail: 'help@example.com', allowedProviders: [] }),
       }),
     );
     await page.route('**/auth/signup', (route) =>
@@ -173,7 +173,10 @@ test.describe('signup', () => {
   }) => {
     await routeAnonymous(page);
     await page.route('**/auth/public-config', (route) =>
-      route.fulfill({ status: 200, ...json({ supportEmail: null }) }),
+      route.fulfill({
+        status: 200,
+        ...json({ supportEmail: null, allowedProviders: [] }),
+      }),
     );
     await page.route('**/auth/signup', (route) =>
       route.fulfill({
@@ -207,7 +210,10 @@ test.describe('complete signup', () => {
   }) => {
     let activated = false;
     await page.route('**/auth/public-config', (route) =>
-      route.fulfill({ status: 200, ...json({ supportEmail: null }) }),
+      route.fulfill({
+        status: 200,
+        ...json({ supportEmail: null, allowedProviders: [] }),
+      }),
     );
     await page.route('**/auth/refresh', (route) =>
       route.fulfill(

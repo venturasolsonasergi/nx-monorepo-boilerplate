@@ -63,7 +63,12 @@
   "oauth": {
     "title": "Inicio de sesión con proveedor",
     "failed": "No se pudo completar el inicio de sesión ({{error}}).",
-    "success": "Sesión iniciada correctamente.",
-    "continue": "Continuar"
+    "sessionUnresolved": "No se pudo confirmar tu sesión. Inicia sesión de nuevo.",
+    "toLogin": "Ir a iniciar sesión"
+  },
+  "google": {
+    "continue": "Continuar con Google",
+    "pending": "Conectando…",
+    "failed": "No se pudo iniciar sesión con Google. Inténtalo de nuevo."
   }
 }

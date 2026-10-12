@@ -63,7 +63,12 @@
   "oauth": {
     "title": "Sign in with provider",
     "failed": "Could not complete sign in ({{error}}).",
-    "success": "Signed in successfully.",
-    "continue": "Continue"
+    "sessionUnresolved": "Your session could not be confirmed. Sign in again.",
+    "toLogin": "Go to sign in"
+  },
+  "google": {
+    "continue": "Continue with Google",
+    "pending": "Connecting…",
+    "failed": "Could not start Google sign-in. Try again."
   }
 }

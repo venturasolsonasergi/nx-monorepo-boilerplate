@@ -7,7 +7,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../../shared/lib/api-client';
 import { sessionQueryKey } from '../../../shared/lib/query-keys';
 
@@ -23,7 +23,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 vi.mock('../api/auth.api', () => ({
-  authApi: { login: vi.fn() },
+  authApi: { login: vi.fn(), getPublicConfig: vi.fn(), startOAuth: vi.fn() },
 }));
 
 vi.mock('../../../shared/i18n/routing', () => ({
@@ -39,6 +39,7 @@ import {
 import LoginPage from './login-page';
 
 const login = vi.mocked(authApi.login);
+const getPublicConfig = vi.mocked(authApi.getPublicConfig);
 
 function renderPage() {
   const client = new QueryClient({
@@ -62,9 +63,17 @@ function submit() {
   fireEvent.click(screen.getByRole('button', { name: 'Acceder' }));
 }
 
+beforeEach(() => {
+  getPublicConfig.mockResolvedValue({
+    supportEmail: null,
+    allowedProviders: [],
+  });
+});
+
 afterEach(() => {
   cleanup();
   login.mockReset();
+  getPublicConfig.mockReset();
   mockNavigate.mockReset();
   mockSearch.current = {};
   vi.mocked(ensureSignedInLanguage).mockReset();
@@ -82,6 +91,28 @@ describe('LoginPage', () => {
     expect(
       screen.getByRole('link', { name: 'He olvidado mi contraseña' }),
     ).toHaveAttribute('href', '/forgot-password');
+  });
+
+  it('offers the Google action when the provider is configured', async () => {
+    getPublicConfig.mockResolvedValue({
+      supportEmail: null,
+      allowedProviders: ['google'],
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole('button', { name: 'Continuar con Google' }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the Google action when no provider is configured', async () => {
+    renderPage();
+
+    await waitFor(() => expect(getPublicConfig).toHaveBeenCalled());
+    expect(
+      screen.queryByRole('button', { name: 'Continuar con Google' }),
+    ).toBeNull();
   });
 
   it('shows invalid-credentials feedback on 401', async () => {

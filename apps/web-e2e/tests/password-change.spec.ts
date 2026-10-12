@@ -42,6 +42,7 @@ test.describe('change-password flow', () => {
         status: 200,
         ...json({
           email: 'a@example.com',
+          name: 'Ada Lovelace',
           hasPassword: true,
           passwordUpdatedAt:
             accountReads > 1
@@ -107,6 +108,7 @@ test.describe('change-password flow', () => {
         status: 200,
         ...json({
           email: 'a@example.com',
+          name: 'Ada Lovelace',
           hasPassword: true,
           passwordUpdatedAt: '2026-01-02T03:04:05.000Z',
         }),

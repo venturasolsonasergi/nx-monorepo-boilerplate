@@ -108,6 +108,20 @@ describe('loadAuthConfig', () => {
     expect(loadAuthConfig({ ...baseEnv }).trustedProxies).toEqual([]);
   });
 
+  it('lists a social provider only when its client credentials are configured', () => {
+    const config = loadAuthConfig({
+      ...baseEnv,
+      GOOGLE_CLIENT_ID: 'google-client-id',
+      GOOGLE_CLIENT_SECRET: 'google-client-secret',
+    });
+
+    expect(config.allowedProviders).toEqual(['google']);
+  });
+
+  it('lists no social providers when no credentials are configured', () => {
+    expect(loadAuthConfig({ ...baseEnv }).allowedProviders).toEqual([]);
+  });
+
   it('uses verification limit defaults', () => {
     const config = loadAuthConfig({ ...baseEnv });
 

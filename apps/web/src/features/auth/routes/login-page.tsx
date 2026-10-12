@@ -6,6 +6,7 @@ import { Button } from '../../../shared/ui/button';
 import { Input } from '../../../shared/ui/input';
 import { loginErrorMessage } from '../lib/auth-messages';
 import { useLogin } from '../hooks/use-login';
+import { GoogleSignInButton } from '../components/google-sign-in-button';
 
 export default function LoginPage() {
   const { t } = useTranslation('auth');
@@ -54,6 +55,7 @@ export default function LoginPage() {
           {login.isPending ? t('login.submitting') : t('login.submit')}
         </Button>
       </form>
+      <GoogleSignInButton />
       {login.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {tCommon(loginErrorMessage(login.error))}

@@ -16,7 +16,7 @@ export class AccountSummaryPrismaReader implements AccountSummaryReader {
   async read(userId: string): Promise<AccountSummary | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true },
+      select: { email: true, name: true },
     });
 
     if (!user) {
@@ -30,6 +30,7 @@ export class AccountSummaryPrismaReader implements AccountSummaryReader {
 
     return {
       email: user.email,
+      name: user.name.length > 0 ? user.name : null,
       hasPassword: Boolean(credential?.password),
       passwordUpdatedAt: credential?.password ? credential.updatedAt : null,
     };

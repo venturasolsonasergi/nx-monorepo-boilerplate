@@ -46,6 +46,7 @@ describe('GetAccountSummaryUseCase', () => {
     const reader = new InMemoryAccountSummaryReader();
     reader.summaries.set('user-1', {
       email: 'ada@example.com',
+      name: 'Ada Lovelace',
       hasPassword: true,
       passwordUpdatedAt: new Date('2026-01-02T03:04:05.000Z'),
     });
@@ -61,6 +62,7 @@ describe('GetAccountSummaryUseCase', () => {
 
     await expect(useCase.execute('cookie', CONTEXT)).resolves.toEqual({
       email: 'ada@example.com',
+      name: 'Ada Lovelace',
       hasPassword: true,
       passwordUpdatedAt: new Date('2026-01-02T03:04:05.000Z'),
     });
@@ -93,6 +95,7 @@ describe('GetAccountSummaryUseCase', () => {
 interface UserRow {
   id: string;
   email: string;
+  name: string;
 }
 
 interface AccountRow {
@@ -137,7 +140,11 @@ function readerWith(prisma: InMemoryAuthPrisma): AccountSummaryPrismaReader {
 describe('AccountSummaryPrismaReader', () => {
   it('reads the identity email and the credential account metadata', async () => {
     const prisma = new InMemoryAuthPrisma();
-    prisma.users.push({ id: 'user-1', email: 'ada@example.com' });
+    prisma.users.push({
+      id: 'user-1',
+      email: 'ada@example.com',
+      name: 'Ada Lovelace',
+    });
     prisma.accounts.push({
       userId: 'user-1',
       providerId: 'credential',
@@ -147,6 +154,7 @@ describe('AccountSummaryPrismaReader', () => {
 
     await expect(readerWith(prisma).read('user-1')).resolves.toEqual({
       email: 'ada@example.com',
+      name: 'Ada Lovelace',
       hasPassword: true,
       passwordUpdatedAt: new Date('2026-01-02T03:04:05.000Z'),
     });
@@ -154,10 +162,15 @@ describe('AccountSummaryPrismaReader', () => {
 
   it('reports no password credential with a null timestamp', async () => {
     const prisma = new InMemoryAuthPrisma();
-    prisma.users.push({ id: 'user-1', email: 'ada@example.com' });
+    prisma.users.push({
+      id: 'user-1',
+      email: 'ada@example.com',
+      name: '',
+    });
 
     await expect(readerWith(prisma).read('user-1')).resolves.toEqual({
       email: 'ada@example.com',
+      name: null,
       hasPassword: false,
       passwordUpdatedAt: null,
     });
@@ -165,7 +178,11 @@ describe('AccountSummaryPrismaReader', () => {
 
   it('ignores non-credential accounts', async () => {
     const prisma = new InMemoryAuthPrisma();
-    prisma.users.push({ id: 'user-1', email: 'ada@example.com' });
+    prisma.users.push({
+      id: 'user-1',
+      email: 'ada@example.com',
+      name: 'Ada Lovelace',
+    });
     prisma.accounts.push({
       userId: 'user-1',
       providerId: 'google',
@@ -175,6 +192,7 @@ describe('AccountSummaryPrismaReader', () => {
 
     await expect(readerWith(prisma).read('user-1')).resolves.toEqual({
       email: 'ada@example.com',
+      name: 'Ada Lovelace',
       hasPassword: false,
       passwordUpdatedAt: null,
     });
