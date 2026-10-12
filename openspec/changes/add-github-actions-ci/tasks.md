@@ -9,8 +9,8 @@
 ## 2. Fast-tier workflow (platform)
 
 - [x] 2.1 (platform) Create `.github/workflows/ci.yml` skeleton: name, triggers on `pull_request` targeting `develop`/`master` and `push` to `develop`/`master`, per-PR `concurrency` group with cancel-in-progress, `pnpm/action-setup@v4` followed by `actions/setup-node@v4` with `node-version-file: .nvmrc` and `cache: pnpm`, and `pnpm install --frozen-lockfile`; verify the file is valid YAML and the trigger branch list matches the two-branch strategy.
-- [x] 2.2 (platform) Implement the `checks` job with an explicit `timeout-minutes`, running in order: `pnpm lint`, `pnpm validate:architecture`, `pnpm validate:domain`, `pnpm check:domain-invariants`, `pnpm check:package-versions`, `pnpm test:contract`, `pnpm api:test`, `pnpm web:test --run`, `pnpm api:build`, `pnpm web:build`; verify each command passes locally when run in that order from a clean state.
-- [x] 2.3 (platform) Confirm no fast-tier step requires external services (no database or SMTP configuration anywhere in the job); verify by grepping the job for service declarations and secret references and finding none.
+- [x] 2.2 (platform) Implement the `checks` job with an explicit `timeout-minutes`, generating the Prisma clients first (they are gitignored and absent on a fresh checkout), then running in order: `pnpm lint`, `pnpm validate:architecture`, `pnpm validate:domain`, `pnpm check:domain-invariants`, `pnpm check:package-versions`, `pnpm test:contract`, `pnpm api:test`, `pnpm web:test --run`, `pnpm api:build`, `pnpm web:build`; verify each command passes locally when run in that order from a clean state.
+- [x] 2.3 (platform) Confirm no fast-tier step requires a running external service: the job declares no service containers and no secret references; the only database values are localhost placeholder URLs that exist solely so `prisma.config.ts` can resolve at generate time, and no step connects to them.
 
 ## 3. Release-gate jobs (platform)
 

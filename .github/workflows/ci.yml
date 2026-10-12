@@ -19,6 +19,12 @@ jobs:
     name: checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # Placeholders only: prisma.config.ts resolves these at generate time, and
+      # no fast-tier step connects to a database. No service is provisioned.
+      AUTH_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/auth_db?schema=public
+      USERS_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/users_db?schema=public
+      ORDERS_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/orders_db?schema=public
     steps:
       - name: Checkout
         uses: actions/checkout@v4
